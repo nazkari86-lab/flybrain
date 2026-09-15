@@ -58,3 +58,22 @@ cache with:
 ```bash
 uv run flybrain data acquire data/manifests/male-cns-v1.0-essential.json --root data/cache
 ```
+
+## Import the real MaleCNS v1.0 graph
+
+The adapter reproduces the official valid-superclass selection and defaults to the published
+connection threshold `weight >= 5`. It streams the 151,856,684-row source table instead of loading
+it into memory:
+
+```bash
+uv run flybrain snapshot import-malecns \
+  data/manifests/male-cns-v1.0-essential.json \
+  --cache-root data/cache \
+  --output artifacts/male-cns-v1.0-w5 \
+  --min-weight 5
+```
+
+The verified run on this host selected 166,606 neurons and retained 6,240,402 directed edges.
+Unknown receptor-dependent and neuromodulatory signs remain explicit as zero-sign edges; they are
+not silently converted to excitation. See `docs/data/male-cns-v1.0-import.md` for measured counts,
+resource use, and scientific limitations.

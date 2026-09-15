@@ -10,6 +10,7 @@ from flybrain.acquire import acquire_artifact
 from flybrain.bundle import write_bundle
 from flybrain.experiment import ExperimentConfig, run_experiment
 from flybrain.importers.csv_edges import import_csv_snapshot
+from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.schema import SnapshotMetadata
 
@@ -70,6 +71,20 @@ def import_snapshot(
         ),
     )
     typer.echo(str(result))
+
+
+@snapshot_app.command("import-malecns")
+def import_malecns_snapshot(
+    manifest_path: Path,
+    cache_root: Annotated[Path, typer.Option("--cache-root")],
+    output: Annotated[Path, typer.Option("--output")],
+    min_weight: Annotated[int, typer.Option("--min-weight", min=1)] = 5,
+) -> None:
+    """Import a verified official MaleCNS flat connectome without dense matrices."""
+
+    sources = MaleCNSSources.from_manifest(manifest_path, cache_root)
+    metrics = import_malecns(sources, output, min_weight=min_weight)
+    typer.echo(metrics.model_dump_json())
 
 
 def load_experiment(path: Path) -> ExperimentConfig:

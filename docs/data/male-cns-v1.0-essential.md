@@ -15,9 +15,8 @@ Total local payload: 1,887,070,920 bytes. Files are stored under the ignored
 `data/manifests/male-cns-v1.0-essential.json`.
 
 The annotation row count is not a neuron-count claim. Source tables use different units and
-filters, and the full graph must be constructed by an explicit, documented body-selection rule.
-Likewise, the 151,856,684 weight rows are source records, not yet the number of retained canonical
-edges. Those distinctions will be tested in the MaleCNS adapter phase.
+filters. The streaming adapter now applies the explicit valid-superclass and minimum-weight policy;
+its measured graph counts are documented in `male-cns-v1.0-import.md`.
 
 The following official products were deliberately deferred because their combined size would
 violate the machine's 10 GiB free-space reserve:
