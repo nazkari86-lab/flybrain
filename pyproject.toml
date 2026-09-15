@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flybrain"
+version = "0.1.0"
+description = "Reproducible sparse connectome simulation research platform"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "numpy>=2.1",
+  "pydantic>=2.10",
+  "pyarrow>=18",
+  "scipy>=1.14",
+  "typer>=0.15",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hypothesis>=6.120",
+  "mypy>=1.14",
+  "pytest>=8.3",
+  "ruff>=0.9",
+  "types-PyYAML>=6.0",
+]
+
+[project.scripts]
+flybrain = "flybrain.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flybrain"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["flybrain"]
