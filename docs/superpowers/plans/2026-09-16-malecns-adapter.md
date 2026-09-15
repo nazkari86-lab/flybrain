@@ -1,6 +1,6 @@
 # MaleCNS v1.0 Streaming Adapter Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Convert verified official MaleCNS v1.0 Feather exports into a canonical sparse snapshot using the published filtering mechanism and bounded memory.
 
@@ -34,11 +34,11 @@
 - Produces canonical neuron fields `superclass`, `annotation_status`, `status_label`, and `transmitter_provenance`.
 - Accepts canonical edge signs in `{-1, 0, 1}` while retaining zero-sign rows in Parquet.
 
-- [ ] Write failing schema and zero-sign preservation tests.
-- [ ] Run the focused tests and confirm contract failures.
-- [ ] Implement the schema evolution and importer validation.
-- [ ] Run import and graph tests; confirm all pass.
-- [ ] Commit as `feat: preserve unresolved connectome metadata`.
+- [x] Write failing schema and zero-sign preservation tests.
+- [x] Run the focused tests and confirm contract failures.
+- [x] Implement the schema evolution and importer validation.
+- [x] Run import and graph tests; confirm all pass.
+- [x] Commit as `feat: preserve unresolved connectome metadata`.
 
 ### Task 2: Resolve verified MaleCNS artifacts and metadata joins
 
@@ -52,11 +52,11 @@
 - Produces `select_neurons(annotations, neurotransmitters) -> tuple[pa.Table, MaleCNSSelectionMetrics]`.
 - Produces `transmitter_sign(name: str) -> tuple[int, str]`.
 
-- [ ] Write fixture-based failing tests for superclass selection, metadata fallbacks, and transmitter signs.
-- [ ] Verify the tests fail because the adapter is absent.
-- [ ] Implement verified source resolution and deterministic metadata selection.
-- [ ] Run metadata tests and all pre-existing tests.
-- [ ] Commit as `feat: select canonical MaleCNS neurons`.
+- [x] Write fixture-based failing tests for superclass selection, metadata fallbacks, and transmitter signs.
+- [x] Verify the tests fail because the adapter is absent.
+- [x] Implement verified source resolution and deterministic metadata selection.
+- [x] Run metadata tests and all pre-existing tests.
+- [x] Commit as `feat: select canonical MaleCNS neurons`.
 
 ### Task 3: Stream weights into an atomic canonical snapshot
 
@@ -68,11 +68,11 @@
 - Produces `import_malecns(sources, output, min_weight=5) -> MaleCNSImportMetrics`.
 - Produces `validate_malecns_snapshot(path) -> MaleCNSImportMetrics`.
 
-- [ ] Write failing tests for thresholding, endpoint filtering, unresolved signs, batch-order invariance, output refusal, and partial-output behavior.
-- [ ] Verify focused tests fail for missing streaming behavior.
-- [ ] Implement record-batch filtering, Parquet row-group writing, metrics, and atomic promotion.
-- [ ] Run streaming tests and full suite.
-- [ ] Commit as `feat: stream MaleCNS weights into snapshots`.
+- [x] Write failing tests for thresholding, endpoint filtering, unresolved signs, batch-order invariance, output refusal, and partial-output behavior.
+- [x] Verify focused tests fail for missing streaming behavior.
+- [x] Implement record-batch filtering, Parquet row-group writing, metrics, and atomic promotion.
+- [x] Run streaming tests and full suite.
+- [x] Commit as `feat: stream MaleCNS weights into snapshots`.
 
 ### Task 4: CLI and real-data acceptance run
 
@@ -86,12 +86,12 @@
 - Produces `flybrain snapshot import-malecns MANIFEST --cache-root PATH --output PATH --min-weight 5`.
 - Produces JSON metrics on stdout and canonical snapshot files on disk.
 
-- [ ] Write a failing CLI fixture import test.
-- [ ] Implement the thin CLI command and exact README workflow.
-- [ ] Run Ruff, mypy, and the complete pytest suite.
-- [ ] Run the adapter against all verified v1.0 source batches while measuring `/usr/bin/time -l`.
-- [ ] Validate the produced real snapshot, document measured counts/resources, and verify free-space reserve.
-- [ ] Commit as `feat: import verified MaleCNS v1.0 snapshot`.
+- [x] Write a failing CLI fixture import test.
+- [x] Implement the thin CLI command and exact README workflow.
+- [x] Run Ruff, mypy, and the complete pytest suite.
+- [x] Run the adapter against all verified v1.0 source batches while measuring `/usr/bin/time -l`.
+- [x] Validate the produced real snapshot, document measured counts/resources, and verify free-space reserve.
+- [x] Commit as `feat: import verified MaleCNS v1.0 snapshot`.
 
 ## Self-review record
 
