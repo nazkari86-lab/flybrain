@@ -46,3 +46,7 @@ select = ["E", "F", "I", "B", "UP", "RUF"]
 python_version = "3.12"
 strict = true
 packages = ["flybrain"]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*", "scipy", "scipy.*"]
+ignore_missing_imports = true

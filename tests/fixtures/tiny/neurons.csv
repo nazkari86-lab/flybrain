@@ -1,0 +1,4 @@
+neuron_id,source_dataset,cell_type,side,transmitter,role,annotation_confidence
+1,tiny-v1,sensory,left,acetylcholine,sensory,1.0
+2,tiny-v1,relay,left,acetylcholine,interneuron,1.0
+3,tiny-v1,motor,left,unknown,motor,1.0
