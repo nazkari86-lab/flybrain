@@ -51,6 +51,8 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
 
     benchmark: str
     steps: int
+    sensory_map: SensoryMap
+    motor_map: MotorMap
     sensory_events: tuple[ExternalEvent, ...]
     actions: tuple[MotorCommand, ...]
     rewards: tuple[float, ...]
@@ -257,6 +259,8 @@ def run_embodied_episode(
     return EmbodiedEpisodeResult(
         benchmark="embodied-loop-v1",
         steps=config.max_steps,
+        sensory_map=config.sensory_map,
+        motor_map=config.motor_map,
         sensory_events=first.sensory_events,
         actions=first.actions,
         rewards=first.rewards,

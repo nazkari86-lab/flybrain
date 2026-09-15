@@ -112,3 +112,17 @@ The measured run and its scientific limits are recorded in
 `docs/data/male-cns-shiu-plastic-memory.md`. This is a dynamic synaptic-memory integration test,
 not yet an embodied fly: there is no body, environmental loop, neuromodulatory ecology, or
 behavioral validation.
+
+## Run the embodied loop fixture
+
+The deterministic planar embodied harness connects world observations to declared sensory neurons,
+decodes motor spikes into bounded body commands, and feeds body state into the next neural step:
+
+```bash
+uv run flybrain experiment embodied-loop artifacts/embodied-fixture-snapshot \
+  --max-steps 8 \
+  --output artifacts/embodied-loop-fixture.json
+```
+
+See `docs/data/embodied-loop-fixture.md`. This validates closed-loop plumbing and replay, not yet
+biologically calibrated food seeking or threat avoidance.

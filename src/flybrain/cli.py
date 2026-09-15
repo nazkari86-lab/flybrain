@@ -11,7 +11,11 @@ import typer
 
 from flybrain.acquire import acquire_artifact
 from flybrain.bundle import write_bundle
+from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episode
+from flybrain.embodied_interfaces import MotorMap, SensoryMap
+from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.experiment import ExperimentConfig, run_experiment
+from flybrain.graph import EventConnectome, SparseConnectome
 from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
@@ -216,6 +220,59 @@ def shiu_plastic_command(
         payload = (result.model_dump_json(indent=2) + "\n").encode("utf-8")
         with stage.open("xb") as stream:
             stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("embodied-loop")
+def embodied_loop_command(
+    snapshot: Path,
+    output: Annotated[Path, typer.Option("--output")],
+    max_steps: Annotated[int, typer.Option("--max-steps", min=1)] = 100,
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    sensory_limit: Annotated[int, typer.Option("--sensory-limit", min=1)] = 32,
+    motor_limit: Annotated[int, typer.Option("--motor-limit", min=1)] = 16,
+) -> None:
+    """Run the deterministic world-to-connectome-to-body feedback loop."""
+
+    output_final = output.resolve()
+    if output_final == snapshot.resolve():
+        raise typer.BadParameter("--output must differ from snapshot")
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot))
+    sensory_ids = tuple(
+        int(neuron_id)
+        for neuron_id, role in zip(graph.neuron_ids, graph.roles, strict=True)
+        if role == "sensory"
+    )[:sensory_limit]
+    motor_ids = tuple(
+        int(neuron_id)
+        for neuron_id, role in zip(graph.neuron_ids, graph.roles, strict=True)
+        if role == "motor"
+    )[:motor_limit]
+    if not sensory_ids or not motor_ids:
+        raise typer.BadParameter("snapshot must contain sensory and motor neurons")
+    config = EmbodiedEpisodeConfig(
+        max_steps=max_steps,
+        seed=seed,
+        sensory_map=SensoryMap(sensory_ids, (), (), ()),
+        motor_map=MotorMap((), (), motor_ids),
+    )
+    world = ArenaWorld(
+        ArenaConfig(10.0, 10.0, 0.1, 0.2),
+        FlyBody(5.0, 5.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6),
+        food=(8.0, 5.0),
+        threat=(1.0, 1.0),
+    )
+    result = run_embodied_episode(graph, config, world=world)
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
             stream.flush()
             os.fsync(stream.fileno())
         os.link(stage, output_final)
