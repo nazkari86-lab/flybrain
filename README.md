@@ -77,3 +77,20 @@ The verified run on this host selected 166,606 neurons and retained 6,240,402 di
 Unknown receptor-dependent and neuromodulatory signs remain explicit as zero-sign edges; they are
 not silently converted to excitation. See `docs/data/male-cns-v1.0-import.md` for measured counts,
 resource use, and scientific limitations.
+
+## Run published Shiu dynamics on the whole CNS
+
+The source-profile simulator uses `dt=0.1 ms`, membrane time constant `20 ms`, alpha-synapse
+decay `5 ms`, refractory period `2.2 ms`, synaptic delay `1.8 ms`, and `0.275 mV` per signed
+synapse. All annotated sensory neurons receive deterministic seeded Poisson drive at `150 Hz`:
+
+```bash
+uv run flybrain experiment shiu-smoke artifacts/male-cns-v1.0-w5 \
+  --duration-ms 10 \
+  --seed 7 \
+  --output artifacts/shiu-smoke-10ms-seed7.json
+```
+
+The measured reference run emitted activity in sensory, interneuron, ascending, descending, and
+motor populations. It is a propagation validation, not evidence of adaptive intelligence; learning
+and body feedback are separate required stages. See `docs/data/shiu-whole-cns-smoke.md`.

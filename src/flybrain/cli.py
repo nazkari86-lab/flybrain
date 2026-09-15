@@ -13,6 +13,7 @@ from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.schema import SnapshotMetadata
+from flybrain.shiu_experiment import run_shiu_smoke
 
 app = typer.Typer(help="Reproducible sparse connectome experiments.")
 manifest_app = typer.Typer(help="Validate immutable source declarations.")
@@ -113,3 +114,21 @@ def run_command(
         )
     )
     typer.echo(f"bundle={bundle}")
+
+
+@experiment_app.command("shiu-smoke")
+def shiu_smoke_command(
+    snapshot: Path,
+    duration_ms: Annotated[float, typer.Option("--duration-ms", min=0.1)] = 10.0,
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+) -> None:
+    """Run published Shiu dynamics with Poisson drive on all sensory neurons."""
+
+    metrics = run_shiu_smoke(snapshot, duration_ms=duration_ms, seed=seed)
+    serialized = metrics.model_dump_json()
+    if output is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with output.open("x") as stream:
+            stream.write(metrics.model_dump_json(indent=2) + "\n")
+    typer.echo(serialized)

@@ -12,25 +12,25 @@
 
 ### Task 1: Outgoing event graph
 
-- [ ] Write failing tests for outgoing direction, duplicate accumulation, metadata, and linear storage.
-- [ ] Implement `EventConnectome.from_sparse()` and `propagate_indices()`.
-- [ ] Run focused and full tests.
-- [ ] Commit `feat: add sparse event connectome`.
+- [x] Write failing tests for outgoing direction, duplicate accumulation, metadata, and linear storage.
+- [x] Implement `EventConnectome.from_sparse()` and `propagate_indices()`.
+- [x] Run focused and full tests.
+- [x] Commit `feat: add sparse event connectome`.
 
 ### Task 2: Analytic Shiu dynamics
 
-- [ ] Write failing analytic decay, exact-delay, refractory, silencing, and replay tests.
-- [ ] Implement `ShiuParameters`, `ShiuState`, `poisson_voltage_events()`, and `simulate_shiu()`.
-- [ ] Run focused and full quality gates.
-- [ ] Commit `feat: implement Shiu reference dynamics`.
+- [x] Write failing analytic decay, exact-delay, refractory, silencing, and replay tests.
+- [x] Implement `ShiuParameters`, `ShiuState`, `poisson_voltage_events()`, and `simulate_shiu()`.
+- [x] Run focused and full quality gates.
+- [x] Commit `feat: implement Shiu reference dynamics`.
 
 ### Task 3: Whole-CNS smoke experiment
 
-- [ ] Write a failing CLI fixture test for `experiment shiu-smoke`.
-- [ ] Implement metrics and CLI without privileged game state.
-- [ ] Run the full MaleCNS 10 ms sensory experiment under `/usr/bin/time -l`.
-- [ ] Validate deterministic replay and document measured output/resources.
-- [ ] Commit `feat: run whole-CNS Shiu smoke experiment`.
+- [x] Write a failing CLI fixture test for `experiment shiu-smoke`.
+- [x] Implement metrics and CLI without privileged game state.
+- [x] Run the full MaleCNS 10 ms sensory experiment under `/usr/bin/time -l`.
+- [x] Validate deterministic replay and document measured output/resources.
+- [x] Commit `feat: run whole-CNS Shiu smoke experiment`.
 
 ## Global constraints
 
