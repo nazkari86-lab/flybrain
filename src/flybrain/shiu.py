@@ -138,6 +138,7 @@ def simulate_shiu(
     seed: int = 0,
     state: ShiuState | None = None,
     silenced: NDArray[np.bool_] | None = None,
+    refractory_exempt: NDArray[np.bool_] | None = None,
 ) -> Iterator[SpikeBatch]:
     """Advance analytic alpha-synapse LIF dynamics with delayed sparse events."""
 
@@ -157,6 +158,13 @@ def simulate_shiu(
     )
     if silence_mask.shape != (graph.neuron_count,):
         raise ValueError("silence mask must match graph neuron count")
+    exempt_mask = (
+        refractory_exempt
+        if refractory_exempt is not None
+        else np.zeros(graph.neuron_count, dtype=np.bool_)
+    )
+    if exempt_mask.shape != (graph.neuron_count,):
+        raise ValueError("refractory exemption mask must match graph neuron count")
     voltage_events = external_voltage_events or {}
 
     membrane_decay = np.float32(np.exp(-params.dt_ms / params.membrane_tau_ms))
@@ -209,7 +217,10 @@ def simulate_shiu(
         if fired_indices.size:
             active_state.voltage_mv[fired_indices] = np.float32(params.reset_mv)
             active_state.conductance_mv[fired_indices] = 0.0
-            active_state.refractory_steps_left[fired_indices] = params.refractory_steps
+            refractory_values = np.where(
+                exempt_mask[fired_indices], 0, params.refractory_steps
+            ).astype(np.int32, copy=False)
+            active_state.refractory_steps_left[fired_indices] = refractory_values
             arrival_step = step + params.delay_steps
             arrival_index = arrival_step % active_state.delayed_conductance_mv.shape[0]
             active_state.delayed_conductance_mv[arrival_index] += graph.propagate_indices(

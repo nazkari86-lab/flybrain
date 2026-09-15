@@ -104,3 +104,24 @@ def test_silencing_prevents_spike_emission() -> None:
     )
 
     assert batches[0].neuron_ids.size == 0
+
+
+def test_poisson_target_can_be_exempt_from_refractory_like_source_model() -> None:
+    params = ShiuParameters()
+    graph = event_graph(np.zeros((1, 1), dtype=np.float32))
+    events = {
+        step: (np.array([0]), np.array([8.0], dtype=np.float32)) for step in range(3)
+    }
+
+    batches = list(
+        simulate_shiu(
+            graph,
+            params,
+            steps=3,
+            external_voltage_events=events,
+            refractory_exempt=np.array([True]),
+            seed=4,
+        )
+    )
+
+    assert [batch.step for batch in batches if batch.neuron_ids.size] == [0, 1, 2]
