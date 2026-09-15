@@ -1,5 +1,6 @@
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from flybrain.cli import app
-from flybrain.mb_association import run_mb_association
+from flybrain.mb_association import _software_revision, run_mb_association
 from flybrain.plasticity import load_plastic_state
 from flybrain.schema import EDGE_SCHEMA
 
@@ -158,6 +159,15 @@ def test_benchmark_resolves_revision_outside_git_checkout(
     )
 
     assert result.software_revision
+
+
+def test_revision_falls_back_when_git_is_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def missing_git(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(subprocess, "run", missing_git)
+
+    assert _software_revision().startswith("package:")
 
 
 def test_cli_writes_association_metrics_and_plastic_state(tmp_path: Path) -> None:

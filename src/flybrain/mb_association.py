@@ -79,35 +79,44 @@ def _peak_rss_bytes() -> int:
 
 
 def _software_revision() -> str:
+    def package_revision() -> str:
+        try:
+            return f"package:{version('flybrain')}"
+        except PackageNotFoundError:
+            return "package:unknown"
+
     repository = Path(__file__).resolve().parents[2]
-    completed = subprocess.run(
-        ["git", "-C", str(repository), "rev-parse", "HEAD"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if completed.returncode == 0:
-        revision = completed.stdout.strip()
-        status = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repository),
-                "status",
-                "--porcelain",
-                "--",
-                "src/flybrain",
-                "pyproject.toml",
-            ],
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repository), "rev-parse", "HEAD"],
             check=False,
             capture_output=True,
             text=True,
         )
+    except OSError:
+        return package_revision()
+    if completed.returncode == 0:
+        revision = completed.stdout.strip()
+        try:
+            status = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repository),
+                    "status",
+                    "--porcelain",
+                    "--",
+                    "src/flybrain",
+                    "pyproject.toml",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError:
+            return package_revision()
         return f"{revision}+dirty" if status.stdout else revision
-    try:
-        return f"package:{version('flybrain')}"
-    except PackageNotFoundError:
-        return "package:unknown"
+    return package_revision()
 
 
 def _fresh_overlay(source: PlasticEdgeSet) -> PlasticEdgeSet:
