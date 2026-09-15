@@ -12,6 +12,7 @@ from flybrain.experiment import ExperimentConfig, run_experiment
 from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
+from flybrain.mb_association import run_mb_association
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
 
@@ -132,3 +133,29 @@ def shiu_smoke_command(
         with output.open("x") as stream:
             stream.write(metrics.model_dump_json(indent=2) + "\n")
     typer.echo(serialized)
+
+
+@experiment_app.command("mb-association")
+def mb_association_command(
+    snapshot: Path,
+    state_output: Annotated[Path, typer.Option("--state-output")],
+    output: Annotated[Path, typer.Option("--output")],
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    cue_size: Annotated[int, typer.Option("--cue-size", min=1)] = 64,
+    trials: Annotated[int, typer.Option("--trials", min=1)] = 3,
+    dopamine: Annotated[float, typer.Option("--dopamine", min=0.000001)] = 1.0,
+) -> None:
+    """Validate persistent cue-specific memory on measured KC-to-MBON edges."""
+
+    result = run_mb_association(
+        snapshot,
+        state_path=state_output,
+        seed=seed,
+        cue_size=cue_size,
+        trials=trials,
+        dopamine=dopamine,
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("x") as stream:
+        stream.write(result.model_dump_json(indent=2) + "\n")
+    typer.echo(result.model_dump_json())
