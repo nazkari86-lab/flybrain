@@ -41,6 +41,7 @@ class MBAssociationResult(BaseModel, frozen=True):
     cue_a_ids: tuple[int, ...]
     cue_b_ids: tuple[int, ...]
     trials: int
+    control_trials: int
     dopamine: float
     parameters: dict[str, float]
     trained_before: float
@@ -117,10 +118,18 @@ def run_mb_association(
     active_params.validate()
     edges, anatomy = extract_kc_mbon_edges(snapshot)
 
-    target_ids, input_counts = np.unique(edges.post_ids, return_counts=True)
+    target_ids = np.unique(edges.post_ids)
     if target_ids.size == 0:
         raise ValueError("snapshot has no measured KC-to-MBON edges")
-    target_mbon_id = int(target_ids[int(np.argmax(input_counts))])
+    distinct_input_counts = np.fromiter(
+        (
+            np.unique(edges.pre_ids[edges.post_ids == target_id]).size
+            for target_id in target_ids
+        ),
+        dtype=np.int64,
+        count=target_ids.size,
+    )
+    target_mbon_id = int(target_ids[int(np.argmax(distinct_input_counts))])
     connected_kcs = np.unique(edges.pre_ids[edges.post_ids == target_mbon_id])
     if connected_kcs.size < cue_size * 2:
         raise ValueError(
@@ -150,25 +159,28 @@ def run_mb_association(
 
     no_dopamine = _fresh_overlay(edges)
     no_dopamine_before = _response(no_dopamine, cue_a, target_mbon_id)
-    no_dopamine.update_eligibility(
-        active_pre_ids=cue_a,
-        gated_post_ids=target,
-        dt_ms=0.0,
-        params=active_params,
-    )
-    no_dopamine.apply_dopamine({}, active_params)
+    for _ in range(trials):
+        no_dopamine.clear_eligibility()
+        no_dopamine.update_eligibility(
+            active_pre_ids=cue_a,
+            gated_post_ids=target,
+            dt_ms=0.0,
+            params=active_params,
+        )
+        no_dopamine.apply_dopamine({}, active_params)
     no_dopamine_after = _response(no_dopamine, cue_a, target_mbon_id)
 
     cleared = _fresh_overlay(edges)
     cleared_before = _response(cleared, cue_a, target_mbon_id)
-    cleared.update_eligibility(
-        active_pre_ids=cue_a,
-        gated_post_ids=target,
-        dt_ms=0.0,
-        params=active_params,
-    )
-    cleared.clear_eligibility()
-    cleared.apply_dopamine({target_mbon_id: dopamine}, active_params)
+    for _ in range(trials):
+        cleared.update_eligibility(
+            active_pre_ids=cue_a,
+            gated_post_ids=target,
+            dt_ms=0.0,
+            params=active_params,
+        )
+        cleared.clear_eligibility()
+        cleared.apply_dopamine({target_mbon_id: dopamine}, active_params)
     cleared_after = _response(cleared, cue_a, target_mbon_id)
 
     save_plastic_state(state_path, edges, active_params)
@@ -195,6 +207,7 @@ def run_mb_association(
         cue_a_ids=tuple(int(value) for value in cue_a),
         cue_b_ids=tuple(int(value) for value in cue_b),
         trials=trials,
+        control_trials=trials,
         dopamine=dopamine,
         parameters={key: float(value) for key, value in asdict(active_params).items()},
         trained_before=trained_before,
