@@ -50,3 +50,11 @@ uv run pytest -q
 Official source URLs and their current storage status are recorded in
 `data/registry/sources.yaml`. Large synapse-coordinate products are deferred while this machine has
 only 32 GiB free because downloading all three would violate the mandatory 10 GiB reserve.
+
+The four essential MaleCNS v1.0 products are declared with verified SHA-256 hashes in
+`data/manifests/male-cns-v1.0-essential.json`. Acquire or revalidate their local content-addressed
+cache with:
+
+```bash
+uv run flybrain data acquire data/manifests/male-cns-v1.0-essential.json --root data/cache
+```
