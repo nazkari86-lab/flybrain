@@ -18,6 +18,7 @@ from flybrain.manifest import load_manifest
 from flybrain.mb_association import run_mb_association
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
+from flybrain.shiu_plastic_experiment import run_shiu_plastic_integration
 
 app = typer.Typer(help="Reproducible sparse connectome experiments.")
 manifest_app = typer.Typer(help="Validate immutable source declarations.")
@@ -181,4 +182,41 @@ def mb_association_command(
         except OSError:
             state_final.unlink()
             raise
+    typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("shiu-plastic")
+def shiu_plastic_command(
+    snapshot: Path,
+    association: Annotated[Path, typer.Option("--association")],
+    state: Annotated[Path, typer.Option("--state")],
+    output: Annotated[Path, typer.Option("--output")],
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    batch_size: Annotated[int, typer.Option("--batch-size", min=1)] = 8,
+) -> None:
+    """Run paired Shiu dynamics with a persisted mushroom-body overlay."""
+
+    output_final = output.resolve()
+    input_paths = {snapshot.resolve(), association.resolve(), state.resolve()}
+    if output_final in input_paths:
+        raise typer.BadParameter("--output must differ from snapshot, association, and state")
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        result = run_shiu_plastic_integration(
+            snapshot,
+            association,
+            state,
+            seed=seed,
+            batch_size=batch_size,
+        )
+        payload = (result.model_dump_json(indent=2) + "\n").encode("utf-8")
+        with stage.open("xb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
     typer.echo(result.model_dump_json())
