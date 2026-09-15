@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
+from test_shiu_plastic_experiment import canonical_snapshot
 from typer.testing import CliRunner
 
 from flybrain.cli import app
 from flybrain.mb_association import run_mb_association
-from test_shiu_plastic_experiment import canonical_snapshot
 
 runner = CliRunner()
 

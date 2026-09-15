@@ -94,3 +94,21 @@ uv run flybrain experiment shiu-smoke artifacts/male-cns-v1.0-w5 \
 The measured reference run emitted activity in sensory, interneuron, ascending, descending, and
 motor populations. It is a propagation validation, not evidence of adaptive intelligence; learning
 and body feedback are separate required stages. See `docs/data/shiu-whole-cns-smoke.md`.
+
+## Run the paired plastic-memory integration
+
+This experiment replays the same two recorded Kenyon-cell cues through baseline and plasticized
+Shiu dynamics. It measures cue-attributable target input, preserves provenance, and publishes the
+result without overwriting an existing artifact:
+
+```bash
+uv run flybrain experiment shiu-plastic artifacts/male-cns-v1.0-w5 \
+  --association artifacts/mb-association-seed7.json \
+  --state artifacts/mb-association-seed7-state.npz \
+  --output artifacts/shiu-plastic-memory-seed7.json
+```
+
+The measured run and its scientific limits are recorded in
+`docs/data/male-cns-shiu-plastic-memory.md`. This is a dynamic synaptic-memory integration test,
+not yet an embodied fly: there is no body, environmental loop, neuromodulatory ecology, or
+behavioral validation.
