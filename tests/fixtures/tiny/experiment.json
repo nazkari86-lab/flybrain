@@ -1,0 +1,16 @@
+{
+  "dataset_id": "tiny-v1",
+  "snapshot_path": "artifacts/tiny-snapshot",
+  "seed": 23,
+  "steps": 3,
+  "dt_ms": 1.0,
+  "tau_ms": 1.0,
+  "rest_mv": 0.0,
+  "reset_mv": 0.0,
+  "threshold_mv": 1.0,
+  "synaptic_scale": 1.0,
+  "stimuli": [
+    {"step": 0, "neuron_id": 1, "current": 2.0}
+  ],
+  "lesion_cell_types": ["relay"]
+}

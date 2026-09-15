@@ -63,6 +63,16 @@ class SparseConnectome:
             + self.adjacency.indptr.size
         )
 
+    @property
+    def storage_bytes(self) -> int:
+        """Bytes used by CSR values, indices, and row pointers."""
+
+        return int(
+            self.adjacency.data.nbytes
+            + self.adjacency.indices.nbytes
+            + self.adjacency.indptr.nbytes
+        )
+
     def propagate(self, activity: NDArray[np.float32]) -> NDArray[np.float32]:
         """Propagate presynaptic activity to postsynaptic weighted input."""
 

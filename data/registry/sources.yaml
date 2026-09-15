@@ -1,0 +1,51 @@
+registry_version: 1
+reviewed_at: 2026-09-16
+sources:
+  - dataset_id: male-cns-v1.0
+    authority: HHMI Janelia FlyEM
+    project_url: https://male-cns.janelia.org/
+    download_page: https://male-cns.janelia.org/download/
+    license: CC-BY-4.0
+    status: official-current
+    artifacts:
+      - name: body-annotations
+        bytes: 14483314
+        priority: essential
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather
+      - name: body-neurotransmitters
+        bytes: 43282834
+        priority: essential
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-neurotransmitters-male-cns-v1.0.feather
+      - name: body-stats
+        bytes: 778062826
+        priority: essential
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-stats-male-cns-v1.0-minconf-0.5.feather
+      - name: connectome-weights
+        bytes: 1051241946
+        priority: essential
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/connectome-weights-male-cns-v1.0-minconf-0.5.feather
+      - name: syn-points
+        bytes: 13061489098
+        priority: deferred-storage-budget
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-points-male-cns-v1.0-minconf-0.5.feather
+      - name: syn-partners
+        bytes: 6777179098
+        priority: deferred-storage-budget
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather
+      - name: tbar-neurotransmitters
+        bytes: 2651680218
+        priority: deferred-storage-budget
+        url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/tbar-neurotransmitters-male-cns-v1.0.feather
+  - dataset_id: flywire-fafb-v783
+    authority: FlyWire Consortium
+    project_url: https://flywire.ai/
+    annotations_repo: https://github.com/flyconnectome/flywire_annotations
+    status: adapter-research-required
+  - dataset_id: shiu-lif-reference
+    authority: Shiu et al.
+    repository: https://github.com/philshiu/Drosophila_brain_model
+    status: reproduction-source
+  - dataset_id: flygym
+    authority: NeLy EPFL
+    repository: https://github.com/NeLy-EPFL/flygym
+    status: deferred-embodiment
