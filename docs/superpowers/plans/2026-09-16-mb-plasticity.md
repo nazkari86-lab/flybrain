@@ -12,17 +12,17 @@
 
 ### Task 1: Plastic edge rule and persistence
 
-- [ ] Write failing locality, no-dopamine, decay, bounds, and save/load tests.
-- [ ] Implement `PlasticEdgeSet`, `PlasticityParameters`, and atomic state I/O.
-- [ ] Run focused and full quality gates.
-- [ ] Commit `feat: add dopamine-gated synaptic plasticity`.
+- [x] Write failing locality, no-dopamine, decay, bounds, and save/load tests.
+- [x] Implement `PlasticEdgeSet`, `PlasticityParameters`, and atomic state I/O.
+- [x] Run focused and full quality gates.
+- [x] Commit `feat: add dopamine-gated synaptic plasticity`.
 
 ### Task 2: MaleCNS mushroom-body extraction
 
-- [ ] Write failing fixture tests for class-based KC/MBON extraction and exact edge accounting.
-- [ ] Implement streaming `extract_kc_mbon_edges()` with source identity metadata.
-- [ ] Run focused and full tests.
-- [ ] Commit `feat: extract MaleCNS mushroom-body plastic edges`.
+- [x] Write failing fixture tests for class-based KC/MBON extraction and exact edge accounting.
+- [x] Implement streaming `extract_kc_mbon_edges()` with source identity metadata.
+- [x] Run focused and full tests.
+- [x] Commit `feat: extract MaleCNS mushroom-body plastic edges`.
 
 ### Task 3: Real associative-memory benchmark
 
