@@ -1,6 +1,6 @@
 # Connectome Core Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a provenance-aware sparse connectome pipeline and deterministic LIF experiment runner that can acquire verified data, simulate a sensory-to-motor circuit, apply a lesion, restore a checkpoint, and export a reproducible experiment bundle.
 
@@ -52,7 +52,7 @@
 - Consumes: JSON-compatible dictionaries loaded by callers.
 - Produces: `SourceManifest`, `Artifact`, and `load_manifest(path: Path) -> SourceManifest`.
 
-- [ ] **Step 1: Write a failing manifest test**
+- [x] **Step 1: Write a failing manifest test**
 
 ```python
 def test_manifest_rejects_artifact_without_sha256(tmp_path: Path) -> None:
@@ -62,13 +62,13 @@ def test_manifest_rejects_artifact_without_sha256(tmp_path: Path) -> None:
         load_manifest(path)
 ```
 
-- [ ] **Step 2: Verify the red state**
+- [x] **Step 2: Verify the red state**
 
 Run: `uv run pytest tests/test_manifest.py::test_manifest_rejects_artifact_without_sha256 -v`
 
 Expected: import failure because `flybrain.manifest` does not exist.
 
-- [ ] **Step 3: Add package configuration and minimal validated models**
+- [x] **Step 3: Add package configuration and minimal validated models**
 
 ```python
 class Artifact(BaseModel):
@@ -86,13 +86,13 @@ def load_manifest(path: Path) -> SourceManifest:
     return SourceManifest.model_validate_json(path.read_text())
 ```
 
-- [ ] **Step 4: Add valid-manifest and duplicate-URL tests, then run the file**
+- [x] **Step 4: Add valid-manifest and duplicate-URL tests, then run the file**
 
 Run: `uv run pytest tests/test_manifest.py -v`
 
 Expected: all manifest tests pass.
 
-- [ ] **Step 5: Commit the package and contract**
+- [x] **Step 5: Commit the package and contract**
 
 ```bash
 git add pyproject.toml .gitignore src/flybrain tests/test_manifest.py
@@ -109,7 +109,7 @@ git commit -m "feat: define source manifest contract"
 - Consumes: `Artifact`, destination root, injectable free-space and stream functions.
 - Produces: `DiskBudgetError`, `ChecksumMismatch`, `artifact_path(root: Path, artifact: Artifact) -> Path`, and `acquire_artifact(...) -> Path`.
 
-- [ ] **Step 1: Write a failing disk-reserve test**
+- [x] **Step 1: Write a failing disk-reserve test**
 
 ```python
 def test_acquire_refuses_when_ten_gib_reserve_would_be_crossed(tmp_path: Path) -> None:
@@ -118,13 +118,13 @@ def test_acquire_refuses_when_ten_gib_reserve_would_be_crossed(tmp_path: Path) -
         acquire_artifact(artifact, tmp_path, free_bytes=lambda _: TEN_GIB + 2)
 ```
 
-- [ ] **Step 2: Verify it fails because acquisition is absent**
+- [x] **Step 2: Verify it fails because acquisition is absent**
 
 Run: `uv run pytest tests/test_acquire.py::test_acquire_refuses_when_ten_gib_reserve_would_be_crossed -v`
 
 Expected: import failure for `flybrain.acquire`.
 
-- [ ] **Step 3: Implement the space gate and content address**
+- [x] **Step 3: Implement the space gate and content address**
 
 ```python
 TEN_GIB = 10 * 1024**3
@@ -137,13 +137,13 @@ def ensure_space(root: Path, expected_bytes: int, free_bytes: Callable[[Path], i
         raise DiskBudgetError(expected_bytes)
 ```
 
-- [ ] **Step 4: Test checksum mismatch, atomic promotion, cache hit, and partial-file quarantine**
+- [x] **Step 4: Test checksum mismatch, atomic promotion, cache hit, and partial-file quarantine**
 
 Run: `uv run pytest tests/test_acquire.py -v`
 
 Expected: all acquisition tests pass using local byte streams only.
 
-- [ ] **Step 5: Commit verified acquisition**
+- [x] **Step 5: Commit verified acquisition**
 
 ```bash
 git add src/flybrain/acquire.py tests/test_acquire.py
@@ -166,7 +166,7 @@ git commit -m "feat: add verified dataset acquisition"
 - Consumes: source neuron and edge CSV paths.
 - Produces: `SnapshotMetadata`, `import_csv_snapshot(neurons, edges, output, metadata) -> Path`, and `SparseConnectome.from_snapshot(path) -> SparseConnectome` with CSR incoming/outgoing arrays.
 
-- [ ] **Step 1: Write a failing referential-integrity test**
+- [x] **Step 1: Write a failing referential-integrity test**
 
 ```python
 def test_import_rejects_edge_to_unknown_neuron(tmp_path: Path) -> None:
@@ -174,13 +174,13 @@ def test_import_rejects_edge_to_unknown_neuron(tmp_path: Path) -> None:
         import_csv_snapshot(fixture("neurons.csv"), fixture("bad_edges.csv"), tmp_path, metadata())
 ```
 
-- [ ] **Step 2: Verify the importer test is red**
+- [x] **Step 2: Verify the importer test is red**
 
 Run: `uv run pytest tests/test_import_csv.py::test_import_rejects_edge_to_unknown_neuron -v`
 
 Expected: import failure for the missing importer.
 
-- [ ] **Step 3: Define exact Arrow fields and write canonical Parquet files**
+- [x] **Step 3: Define exact Arrow fields and write canonical Parquet files**
 
 ```python
 NEURON_SCHEMA = pa.schema([
@@ -196,13 +196,13 @@ EDGE_SCHEMA = pa.schema([
 ])
 ```
 
-- [ ] **Step 4: Write graph tests for direction, index stability, edge-order invariance, and `O(N+E)` storage**
+- [x] **Step 4: Write graph tests for direction, index stability, edge-order invariance, and `O(N+E)` storage**
 
 Run: `uv run pytest tests/test_import_csv.py tests/test_graph.py -v`
 
 Expected: fixture imports and sparse invariants pass.
 
-- [ ] **Step 5: Commit the canonical snapshot path**
+- [x] **Step 5: Commit the canonical snapshot path**
 
 ```bash
 git add src/flybrain/schema.py src/flybrain/importers src/flybrain/graph.py tests/fixtures tests/test_import_csv.py tests/test_graph.py
@@ -219,7 +219,7 @@ git commit -m "feat: import canonical sparse connectomes"
 - Consumes: `SparseConnectome`, `LIFParameters`, initial state, and timestamped input currents.
 - Produces: `LIFState`, `SpikeBatch`, and `simulate_lif(...) -> Iterator[SpikeBatch]`.
 
-- [ ] **Step 1: Write a failing hand-calculated threshold test**
+- [x] **Step 1: Write a failing hand-calculated threshold test**
 
 ```python
 def test_single_neuron_spikes_at_analytic_threshold() -> None:
@@ -228,13 +228,13 @@ def test_single_neuron_spikes_at_analytic_threshold() -> None:
     assert [batch.step for batch in spikes if batch.neuron_ids.size] == [6]
 ```
 
-- [ ] **Step 2: Verify the dynamics test is red**
+- [x] **Step 2: Verify the dynamics test is red**
 
 Run: `uv run pytest tests/test_dynamics.py::test_single_neuron_spikes_at_analytic_threshold -v`
 
 Expected: import failure for `flybrain.dynamics`.
 
-- [ ] **Step 3: Implement vector state with sparse event propagation**
+- [x] **Step 3: Implement vector state with sparse event propagation**
 
 ```python
 voltage += (-(voltage - params.rest_mv) + current) * (params.dt_ms / params.tau_ms)
@@ -243,13 +243,13 @@ voltage[fired] = params.reset_mv
 current_next = graph.propagate(fired.astype(np.float32))
 ```
 
-- [ ] **Step 4: Add tests for inhibitory sign, one-step delay, reset, identical-seed replay, and no dense allocation API**
+- [x] **Step 4: Add tests for inhibitory sign, one-step delay, reset, identical-seed replay, and no dense allocation API**
 
 Run: `uv run pytest tests/test_dynamics.py -v`
 
 Expected: analytic and determinism tests pass.
 
-- [ ] **Step 5: Commit reference dynamics**
+- [x] **Step 5: Commit reference dynamics**
 
 ```bash
 git add src/flybrain/dynamics.py tests/test_dynamics.py
@@ -268,7 +268,7 @@ git commit -m "feat: add deterministic LIF reference engine"
 - Consumes: neuron metadata predicates and `LIFState`.
 - Produces: `silence_mask(graph, predicate) -> NDArray[np.bool_]`, `save_checkpoint(path, state, metadata)`, and `load_checkpoint(path, expected_config_hash) -> tuple[LIFState, CheckpointMetadata]`.
 
-- [ ] **Step 1: Write a failing causal-lesion test**
+- [x] **Step 1: Write a failing causal-lesion test**
 
 ```python
 def test_silencing_relay_removes_motor_spikes() -> None:
@@ -278,13 +278,13 @@ def test_silencing_relay_removes_motor_spikes() -> None:
     assert lesioned.motor_spikes == 0
 ```
 
-- [ ] **Step 2: Verify the lesion test is red**
+- [x] **Step 2: Verify the lesion test is red**
 
 Run: `uv run pytest tests/test_interventions.py::test_silencing_relay_removes_motor_spikes -v`
 
 Expected: missing intervention API.
 
-- [ ] **Step 3: Apply masks at spike emission and persist complete state atomically**
+- [x] **Step 3: Apply masks at spike emission and persist complete state atomically**
 
 ```python
 fired &= ~silenced
@@ -293,13 +293,13 @@ np.savez_compressed(temporary, voltage=state.voltage, step=state.step, rng_state
 temporary.replace(path)
 ```
 
-- [ ] **Step 4: Test config-hash mismatch, corrupt checkpoint rejection, and split-run replay equivalence**
+- [x] **Step 4: Test config-hash mismatch, corrupt checkpoint rejection, and split-run replay equivalence**
 
 Run: `uv run pytest tests/test_interventions.py tests/test_checkpoint.py -v`
 
 Expected: lesion and restoration behavior passes.
 
-- [ ] **Step 5: Commit intervention and replay support**
+- [x] **Step 5: Commit intervention and replay support**
 
 ```bash
 git add src/flybrain/interventions.py src/flybrain/checkpoint.py tests/test_interventions.py tests/test_checkpoint.py
@@ -318,7 +318,7 @@ git commit -m "feat: support lesions and deterministic checkpoints"
 - Consumes: `ExperimentConfig`, canonical snapshot, stimulus, and optional lesion.
 - Produces: `ExperimentResult`, `run_experiment(config) -> ExperimentResult`, and `write_bundle(result, output) -> Path`.
 
-- [ ] **Step 1: Write a failing bundle-completeness test**
+- [x] **Step 1: Write a failing bundle-completeness test**
 
 ```python
 def test_bundle_contains_required_reproducibility_records(tmp_path: Path) -> None:
@@ -328,13 +328,13 @@ def test_bundle_contains_required_reproducibility_records(tmp_path: Path) -> Non
     }
 ```
 
-- [ ] **Step 2: Verify the bundle test is red**
+- [x] **Step 2: Verify the bundle test is red**
 
 Run: `uv run pytest tests/test_bundle.py::test_bundle_contains_required_reproducibility_records -v`
 
 Expected: import failure for the bundle module.
 
-- [ ] **Step 3: Implement config hashing, causal metric, timing, and peak-memory capture**
+- [x] **Step 3: Implement config hashing, causal metric, timing, and peak-memory capture**
 
 ```python
 class ExperimentResult(BaseModel):
@@ -348,13 +348,13 @@ class ExperimentResult(BaseModel):
     software_revision: str
 ```
 
-- [ ] **Step 4: Test normal/lesioned paired execution and deterministic observable output**
+- [x] **Step 4: Test normal/lesioned paired execution and deterministic observable output**
 
 Run: `uv run pytest tests/test_experiment.py tests/test_bundle.py -v`
 
 Expected: metrics and bundle tests pass.
 
-- [ ] **Step 5: Commit experiment outputs**
+- [x] **Step 5: Commit experiment outputs**
 
 ```bash
 git add src/flybrain/experiment.py src/flybrain/bundle.py tests/test_experiment.py tests/test_bundle.py
@@ -374,7 +374,7 @@ git commit -m "feat: export reproducible lesion experiments"
 - Consumes: manifests, fixture/source paths, and experiment configuration.
 - Produces: `flybrain manifest validate`, `flybrain data acquire`, `flybrain snapshot import-csv`, and `flybrain experiment run` commands.
 
-- [ ] **Step 1: Write a failing CLI smoke test**
+- [x] **Step 1: Write a failing CLI smoke test**
 
 ```python
 def test_cli_runs_tiny_lesion_experiment(tmp_path: Path) -> None:
@@ -383,13 +383,13 @@ def test_cli_runs_tiny_lesion_experiment(tmp_path: Path) -> None:
     assert "lesion_effect" in result.stdout
 ```
 
-- [ ] **Step 2: Verify the CLI test is red**
+- [x] **Step 2: Verify the CLI test is red**
 
 Run: `uv run pytest tests/test_cli.py::test_cli_runs_tiny_lesion_experiment -v`
 
 Expected: import failure for `flybrain.cli`.
 
-- [ ] **Step 3: Wire thin CLI commands to tested library interfaces and document exact commands**
+- [x] **Step 3: Wire thin CLI commands to tested library interfaces and document exact commands**
 
 ```python
 @experiment_app.command("run")
@@ -400,25 +400,25 @@ def run_command(config: Path, output: Path) -> None:
     typer.echo(f"bundle={bundle}")
 ```
 
-- [ ] **Step 4: Add a scaling regression that compares 1,000-edge and 10,000-edge sparse graphs**
+- [x] **Step 4: Add a scaling regression that compares 1,000-edge and 10,000-edge sparse graphs**
 
 Run: `uv run pytest tests/test_cli.py tests/test_scaling.py -v`
 
 Expected: stored sparse array bytes grow linearly within a 12x upper bound; no dense matrix exists.
 
-- [ ] **Step 5: Run the complete quality gate**
+- [x] **Step 5: Run the complete quality gate**
 
 Run: `uv run ruff check . && uv run mypy src && uv run pytest -q`
 
 Expected: zero lint errors, zero type errors, and zero failed tests.
 
-- [ ] **Step 6: Run the real tiny experiment and inspect its bundle**
+- [x] **Step 6: Run the real tiny experiment and inspect its bundle**
 
 Run: `uv run flybrain experiment run tests/fixtures/tiny/experiment.json --output artifacts/tiny-run`
 
 Expected: exit code 0, a nonzero normal motor spike count, zero lesioned motor spikes, and all five reproducibility records.
 
-- [ ] **Step 7: Commit the milestone**
+- [x] **Step 7: Commit the milestone**
 
 ```bash
 git add src/flybrain/cli.py data/registry/sources.yaml tests/test_cli.py tests/test_scaling.py README.md
