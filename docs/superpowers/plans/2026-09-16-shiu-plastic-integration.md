@@ -150,7 +150,7 @@ git commit -m "refactor: centralize snapshot identity validation"
 - Produces: `PlasticGraphMetrics(BaseModel, frozen=True)`
 - Produces: `materialize_plastic_event_graph(graph: EventConnectome, edges: PlasticEdgeSet) -> tuple[EventConnectome, PlasticGraphMetrics]`
 
-- [ ] **Step 1: Write failing locality and immutability tests**
+- [x] **Step 1: Write failing locality and immutability tests**
 
 Build a four-neuron outgoing graph ordered as IDs `[1, 2, 10, 11]`, with signed edges `1→10=5`,
 `2→10=7`, and `10→11=-3`.
@@ -171,13 +171,13 @@ assert metrics.effective_absolute_weight == 9.5
 
 Use explicit index lookup rather than relying on dense conversion in the production code.
 
-- [ ] **Step 2: Write failing rejection tests**
+- [x] **Step 2: Write failing rejection tests**
 
 Add separate tests for duplicate plastic pairs, unknown neuron IDs, missing graph pairs, baseline
 weight mismatch, zero-sign graph edges, and nonfinite multipliers. Each must assert a specific
 `ValueError` fragment and verify the original graph arrays did not change.
 
-- [ ] **Step 3: Run tests and verify RED**
+- [x] **Step 3: Run tests and verify RED**
 
 Run:
 
@@ -187,7 +187,7 @@ Run:
 
 Expected: collection fails because `flybrain.plastic_graph` does not exist.
 
-- [ ] **Step 4: Implement one-time CSR pair resolution and patching**
+- [x] **Step 4: Implement one-time CSR pair resolution and patching**
 
 For every plastic pair:
 
@@ -201,7 +201,7 @@ Reject duplicate `(pre_id, post_id)` pairs before patching. Copy the CSR once, r
 metadata tuple, and return exact metrics including `matched_edges`, `modified_edges`,
 `baseline_absolute_weight`, `effective_absolute_weight`, `min_multiplier`, and `max_multiplier`.
 
-- [ ] **Step 5: Run focused and scalability gates**
+- [x] **Step 5: Run focused and scalability gates**
 
 Run:
 
@@ -214,7 +214,7 @@ Run:
 Then run a real materialization smoke command and assert exactly `33_496` matched edges, no dense
 allocation, and an unchanged baseline CSR digest.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/flybrain/plastic_graph.py tests/test_plastic_graph.py
