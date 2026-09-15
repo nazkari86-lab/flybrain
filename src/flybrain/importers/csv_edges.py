@@ -43,8 +43,8 @@ def import_csv_snapshot(
                 raise SnapshotIntegrityError(f"unknown neuron {neuron_id}")
 
     signs = set(edges.column("sign").to_pylist())
-    if not signs.issubset({-1, 1}):
-        raise SnapshotIntegrityError("edge sign must be -1 or 1")
+    if not signs.issubset({-1, 0, 1}):
+        raise SnapshotIntegrityError("edge sign must be -1, 0, or 1")
 
     output.mkdir(parents=True, exist_ok=True)
     pq.write_table(neurons, output / "neurons.parquet")

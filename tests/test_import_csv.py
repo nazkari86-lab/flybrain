@@ -35,3 +35,16 @@ def test_import_writes_exact_canonical_schemas(tmp_path: Path) -> None:
     assert pq.read_schema(snapshot / "neurons.parquet") == NEURON_SCHEMA
     assert pq.read_schema(snapshot / "edges.parquet") == EDGE_SCHEMA
     assert (snapshot / "metadata.json").is_file()
+
+
+def test_import_preserves_unresolved_edge_sign(tmp_path: Path) -> None:
+    snapshot = import_csv_snapshot(
+        FIXTURES / "neurons.csv",
+        FIXTURES / "unresolved_edges.csv",
+        tmp_path,
+        metadata(),
+    )
+
+    edges = pq.read_table(snapshot / "edges.parquet")
+    assert edges.column("sign").to_pylist() == [0]
+    assert edges.column("sign_provenance").to_pylist() == ["receptor-context-required"]

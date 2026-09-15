@@ -8,9 +8,13 @@ NEURON_SCHEMA = pa.schema(
         ("neuron_id", pa.uint64()),
         ("source_dataset", pa.string()),
         ("cell_type", pa.string()),
+        ("superclass", pa.string()),
         ("side", pa.string()),
         ("transmitter", pa.string()),
+        ("transmitter_provenance", pa.string()),
         ("role", pa.string()),
+        ("annotation_status", pa.string()),
+        ("status_label", pa.string()),
         ("annotation_confidence", pa.float32()),
     ]
 )
