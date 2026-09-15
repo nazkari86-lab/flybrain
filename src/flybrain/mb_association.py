@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import resource
 import subprocess
 import sys
 import time
 from dataclasses import asdict
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import numpy as np
@@ -17,9 +19,14 @@ from flybrain.mushroom_body import extract_kc_mbon_edges
 from flybrain.plasticity import (
     PlasticEdgeSet,
     PlasticityParameters,
+    PlasticStateIdentity,
     load_plastic_state,
     save_plastic_state,
 )
+
+MINIMUM_TRAINED_RELATIVE_DECREASE = 0.10
+MAXIMUM_UNTRAINED_RELATIVE_DRIFT = 1e-6
+MAXIMUM_CONTROL_RELATIVE_DRIFT = 0.0
 
 
 class MBAssociationResult(BaseModel, frozen=True):
@@ -29,6 +36,8 @@ class MBAssociationResult(BaseModel, frozen=True):
     snapshot: str
     dataset_id: str
     source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot_metadata: dict[str, object]
     seed: int
     kenyon_cells: int
     dopamine_neurons: int
@@ -52,6 +61,10 @@ class MBAssociationResult(BaseModel, frozen=True):
     untrained_relative_drift: float
     no_dopamine_relative_drift: float
     cleared_eligibility_relative_drift: float
+    minimum_trained_relative_decrease: float
+    maximum_untrained_relative_drift: float
+    maximum_control_relative_drift: float
+    passed: bool
     persistence_replay_exact: bool
     state_path: str
     state_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -66,13 +79,35 @@ def _peak_rss_bytes() -> int:
 
 
 def _software_revision() -> str:
+    repository = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        check=True,
+        ["git", "-C", str(repository), "rev-parse", "HEAD"],
+        check=False,
         capture_output=True,
         text=True,
     )
-    return completed.stdout.strip()
+    if completed.returncode == 0:
+        revision = completed.stdout.strip()
+        status = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repository),
+                "status",
+                "--porcelain",
+                "--",
+                "src/flybrain",
+                "pyproject.toml",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        return f"{revision}+dirty" if status.stdout else revision
+    try:
+        return f"package:{version('flybrain')}"
+    except PackageNotFoundError:
+        return "package:unknown"
 
 
 def _fresh_overlay(source: PlasticEdgeSet) -> PlasticEdgeSet:
@@ -108,12 +143,13 @@ def run_mb_association(
         raise ValueError("cue_size must be positive")
     if trials <= 0:
         raise ValueError("trials must be positive")
-    if dopamine <= 0:
-        raise ValueError("dopamine must be positive")
+    if not math.isfinite(dopamine) or dopamine <= 0:
+        raise ValueError("dopamine must be finite and positive")
     if state_path.exists():
         raise FileExistsError(f"plastic state already exists: {state_path}")
 
     started = time.perf_counter()
+    software_revision = _software_revision()
     active_params = params or PlasticityParameters()
     active_params.validate()
     edges, anatomy = extract_kc_mbon_edges(snapshot)
@@ -183,10 +219,36 @@ def run_mb_association(
         cleared.apply_dopamine({target_mbon_id: dopamine}, active_params)
     cleared_after = _response(cleared, cue_a, target_mbon_id)
 
-    save_plastic_state(state_path, edges, active_params)
-    restored, restored_params = load_plastic_state(state_path)
-    replay_exact = restored_params == active_params and np.array_equal(
-        restored.effective_weights, edges.effective_weights
+    trained_relative_decrease = (trained_before - trained_after) / trained_before
+    untrained_relative_drift = _relative_drift(untrained_before, untrained_after)
+    no_dopamine_relative_drift = _relative_drift(no_dopamine_before, no_dopamine_after)
+    cleared_eligibility_relative_drift = _relative_drift(cleared_before, cleared_after)
+    passed = (
+        trained_relative_decrease >= MINIMUM_TRAINED_RELATIVE_DECREASE
+        and untrained_relative_drift <= MAXIMUM_UNTRAINED_RELATIVE_DRIFT
+        and no_dopamine_relative_drift <= MAXIMUM_CONTROL_RELATIVE_DRIFT
+        and cleared_eligibility_relative_drift <= MAXIMUM_CONTROL_RELATIVE_DRIFT
+    )
+    if not passed:
+        raise ValueError(
+            "association acceptance failed: "
+            f"trained_decrease={trained_relative_decrease}, "
+            f"untrained_drift={untrained_relative_drift}, "
+            f"no_dopamine_drift={no_dopamine_relative_drift}, "
+            f"cleared_eligibility_drift={cleared_eligibility_relative_drift}"
+        )
+
+    identity = PlasticStateIdentity(
+        dataset_id=anatomy.dataset_id,
+        source_manifest_sha256=anatomy.source_manifest_sha256,
+        snapshot_sha256=anatomy.snapshot_sha256,
+    )
+    save_plastic_state(state_path, edges, active_params, identity)
+    restored, restored_params, restored_identity = load_plastic_state(state_path)
+    replay_exact = (
+        restored_params == active_params
+        and restored_identity == identity
+        and np.array_equal(restored.effective_weights, edges.effective_weights)
     )
     state_sha256 = hashlib.sha256(state_path.read_bytes()).hexdigest()
 
@@ -195,6 +257,8 @@ def run_mb_association(
         snapshot=str(snapshot.resolve()),
         dataset_id=anatomy.dataset_id,
         source_manifest_sha256=anatomy.source_manifest_sha256,
+        snapshot_sha256=anatomy.snapshot_sha256,
+        snapshot_metadata=anatomy.snapshot_metadata,
         seed=seed,
         kenyon_cells=anatomy.kenyon_cells,
         dopamine_neurons=anatomy.dopamine_neurons,
@@ -212,16 +276,20 @@ def run_mb_association(
         parameters={key: float(value) for key, value in asdict(active_params).items()},
         trained_before=trained_before,
         trained_after=trained_after,
-        trained_relative_decrease=(trained_before - trained_after) / trained_before,
+        trained_relative_decrease=trained_relative_decrease,
         untrained_before=untrained_before,
         untrained_after=untrained_after,
-        untrained_relative_drift=_relative_drift(untrained_before, untrained_after),
-        no_dopamine_relative_drift=_relative_drift(no_dopamine_before, no_dopamine_after),
-        cleared_eligibility_relative_drift=_relative_drift(cleared_before, cleared_after),
+        untrained_relative_drift=untrained_relative_drift,
+        no_dopamine_relative_drift=no_dopamine_relative_drift,
+        cleared_eligibility_relative_drift=cleared_eligibility_relative_drift,
+        minimum_trained_relative_decrease=MINIMUM_TRAINED_RELATIVE_DECREASE,
+        maximum_untrained_relative_drift=MAXIMUM_UNTRAINED_RELATIVE_DRIFT,
+        maximum_control_relative_drift=MAXIMUM_CONTROL_RELATIVE_DRIFT,
+        passed=passed,
         persistence_replay_exact=bool(replay_exact),
         state_path=str(state_path.resolve()),
         state_sha256=state_sha256,
-        software_revision=_software_revision(),
+        software_revision=software_revision,
         runtime_seconds=time.perf_counter() - started,
         peak_rss_bytes=_peak_rss_bytes(),
     )

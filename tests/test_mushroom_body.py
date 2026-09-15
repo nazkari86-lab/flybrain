@@ -16,6 +16,8 @@ def mushroom_snapshot(root: Path, *, duplicate_body_id: bool = False) -> Path:
             {
                 "dataset_id": "fixture-male-cns",
                 "manifest_sha256": "a" * 64,
+                "importer": "fixture-importer-v1",
+                "min_weight": 5,
             }
         ),
         encoding="utf-8",
@@ -60,6 +62,9 @@ def test_extracts_only_measured_kc_to_mbon_edges_with_exact_counts(tmp_path: Pat
     assert metrics.total_synapse_weight == 21
     assert metrics.dataset_id == "fixture-male-cns"
     assert metrics.source_manifest_sha256 == "a" * 64
+    assert len(metrics.snapshot_sha256) == 64
+    assert metrics.snapshot_metadata["importer"] == "fixture-importer-v1"
+    assert metrics.snapshot_metadata["min_weight"] == 5
     assert edges.pre_ids.tolist() == [1, 2, 3]
     assert edges.post_ids.tolist() == [10, 10, 11]
     assert edges.baseline_weights.tolist() == [5.0, 7.0, 9.0]
@@ -69,4 +74,15 @@ def test_rejects_duplicate_source_body_ids(tmp_path: Path) -> None:
     snapshot = mushroom_snapshot(tmp_path / "snapshot", duplicate_body_id=True)
 
     with pytest.raises(ValueError, match="duplicate bodyId"):
+        extract_kc_mbon_edges(snapshot)
+
+
+def test_rejects_noncanonical_edge_schema(tmp_path: Path) -> None:
+    snapshot = mushroom_snapshot(tmp_path / "snapshot")
+    pq.write_table(
+        pa.table({"pre_id": [1], "post_id": [10], "synapse_count": [5]}),
+        snapshot / "edges.parquet",
+    )
+
+    with pytest.raises(ValueError, match="canonical edge schema"):
         extract_kc_mbon_edges(snapshot)

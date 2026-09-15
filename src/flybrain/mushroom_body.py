@@ -1,13 +1,23 @@
 """Mushroom-body plastic edge extraction from canonical snapshots."""
 
+import hashlib
 import json
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pyarrow.parquet as pq
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.plasticity import PlasticEdgeSet
+from flybrain.schema import EDGE_SCHEMA
+
+
+class _SnapshotProvenance(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    dataset_id: str = Field(min_length=1)
+    manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 class MushroomBodyMetrics(BaseModel, frozen=True):
@@ -15,6 +25,8 @@ class MushroomBodyMetrics(BaseModel, frozen=True):
 
     dataset_id: str = Field(min_length=1)
     source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot_metadata: dict[str, object]
     kenyon_cells: int
     dopamine_neurons: int
     mbons: int
@@ -22,10 +34,24 @@ class MushroomBodyMetrics(BaseModel, frozen=True):
     total_synapse_weight: int
 
 
+def _snapshot_digest(snapshot: Path) -> str:
+    digest = hashlib.sha256()
+    for name in ("metadata.json", "source-annotations.parquet", "edges.parquet"):
+        digest.update(name.encode())
+        digest.update(b"\0")
+        with (snapshot / name).open("rb") as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
 def extract_kc_mbon_edges(snapshot: Path) -> tuple[PlasticEdgeSet, MushroomBodyMetrics]:
     """Extract measured KC-to-MBON edges without loading the edge table at once."""
 
-    metadata = json.loads((snapshot / "metadata.json").read_text(encoding="utf-8"))
+    provenance = _SnapshotProvenance.model_validate_json(
+        (snapshot / "metadata.json").read_text(encoding="utf-8")
+    )
+    metadata = cast(dict[str, object], json.loads(provenance.model_dump_json()))
     annotations = pq.read_table(
         snapshot / "source-annotations.parquet",
         columns=["bodyId", "class", "type"],
@@ -51,6 +77,8 @@ def extract_kc_mbon_edges(snapshot: Path) -> tuple[PlasticEdgeSet, MushroomBodyM
     post_parts: list[np.ndarray] = []
     weight_parts: list[np.ndarray] = []
     edge_file = pq.ParquetFile(snapshot / "edges.parquet")
+    if edge_file.schema_arrow != EDGE_SCHEMA:
+        raise ValueError("invalid canonical edge schema")
     for batch in edge_file.iter_batches(columns=["pre_id", "post_id", "synapse_count"]):
         pre_ids = batch.column("pre_id").to_numpy(zero_copy_only=False).astype(
             np.uint64, copy=False
@@ -78,8 +106,10 @@ def extract_kc_mbon_edges(snapshot: Path) -> tuple[PlasticEdgeSet, MushroomBodyM
         baseline_weights=weights[order],
     )
     metrics = MushroomBodyMetrics(
-        dataset_id=metadata["dataset_id"],
-        source_manifest_sha256=metadata["manifest_sha256"],
+        dataset_id=provenance.dataset_id,
+        source_manifest_sha256=provenance.manifest_sha256,
+        snapshot_sha256=_snapshot_digest(snapshot),
+        snapshot_metadata=metadata,
         kenyon_cells=int(kenyon_ids.size),
         dopamine_neurons=dopamine_neurons,
         mbons=int(mbon_ids.size),

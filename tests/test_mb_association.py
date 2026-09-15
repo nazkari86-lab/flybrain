@@ -5,10 +5,12 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 from typer.testing import CliRunner
 
 from flybrain.cli import app
 from flybrain.mb_association import run_mb_association
+from flybrain.plasticity import load_plastic_state
 from flybrain.schema import EDGE_SCHEMA
 
 runner = CliRunner()
@@ -17,7 +19,14 @@ runner = CliRunner()
 def association_snapshot(root: Path, *, duplicate_bias: bool = False) -> Path:
     root.mkdir()
     (root / "metadata.json").write_text(
-        json.dumps({"dataset_id": "association-fixture", "manifest_sha256": "b" * 64}),
+        json.dumps(
+            {
+                "dataset_id": "association-fixture",
+                "manifest_sha256": "b" * 64,
+                "importer": "fixture-importer-v1",
+                "min_weight": 5,
+            }
+        ),
         encoding="utf-8",
     )
     body_ids = [1, 2, 3, 4, 5, 6, 10, 11, 20]
@@ -56,7 +65,7 @@ def association_snapshot(root: Path, *, duplicate_bias: bool = False) -> Path:
     return root
 
 
-def test_real_topology_benchmark_is_cue_specific_controlled_and_persistent(
+def test_fixture_topology_benchmark_is_cue_specific_controlled_and_persistent(
     tmp_path: Path,
 ) -> None:
     snapshot = association_snapshot(tmp_path / "snapshot")
@@ -81,6 +90,13 @@ def test_real_topology_benchmark_is_cue_specific_controlled_and_persistent(
     assert result.control_trials == result.trials
     assert result.persistence_replay_exact is True
     assert result.state_sha256 == hashlib.sha256(state.read_bytes()).hexdigest()
+    _, _, state_identity = load_plastic_state(state)
+    assert state_identity.dataset_id == result.dataset_id
+    assert state_identity.snapshot_sha256 == result.snapshot_sha256
+    assert result.snapshot_metadata["min_weight"] == 5
+    assert result.passed is True
+    assert result.minimum_trained_relative_decrease == 0.10
+    assert result.maximum_untrained_relative_drift == 1e-6
 
     replay = run_mb_association(
         snapshot,
@@ -107,6 +123,41 @@ def test_target_selection_counts_distinct_kc_inputs(tmp_path: Path) -> None:
 
     assert result.target_mbon_id == 11
     assert result.target_connected_kcs == 3
+
+
+def test_benchmark_rejects_failed_acceptance_before_writing_state(tmp_path: Path) -> None:
+    snapshot = association_snapshot(tmp_path / "snapshot")
+    state = tmp_path / "memory.npz"
+
+    with pytest.raises(ValueError, match="acceptance"):
+        run_mb_association(
+            snapshot,
+            state_path=state,
+            seed=17,
+            cue_size=2,
+            trials=3,
+            dopamine=0.000001,
+        )
+
+    assert not state.exists()
+
+
+def test_benchmark_resolves_revision_outside_git_checkout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot = association_snapshot(tmp_path / "snapshot")
+    monkeypatch.chdir(tmp_path)
+
+    result = run_mb_association(
+        snapshot,
+        state_path=tmp_path / "memory.npz",
+        seed=17,
+        cue_size=2,
+        trials=3,
+    )
+
+    assert result.software_revision
 
 
 def test_cli_writes_association_metrics_and_plastic_state(tmp_path: Path) -> None:
@@ -139,3 +190,52 @@ def test_cli_writes_association_metrics_and_plastic_state(tmp_path: Path) -> Non
     assert metrics["persistence_replay_exact"] is True
     assert json.loads(output.read_text(encoding="utf-8"))["dataset_id"] == "association-fixture"
     assert state.is_file()
+
+
+def test_cli_does_not_create_state_when_metrics_output_exists(tmp_path: Path) -> None:
+    snapshot = association_snapshot(tmp_path / "snapshot")
+    output = tmp_path / "metrics.json"
+    state = tmp_path / "memory.npz"
+    output.write_text("preserve", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "experiment",
+            "mb-association",
+            str(snapshot),
+            "--cue-size",
+            "2",
+            "--state-output",
+            str(state),
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert output.read_text(encoding="utf-8") == "preserve"
+    assert not state.exists()
+
+
+def test_cli_rejects_equal_output_paths_without_writing(tmp_path: Path) -> None:
+    snapshot = association_snapshot(tmp_path / "snapshot")
+    same_output = tmp_path / "same-output"
+
+    result = runner.invoke(
+        app,
+        [
+            "experiment",
+            "mb-association",
+            str(snapshot),
+            "--cue-size",
+            "2",
+            "--state-output",
+            str(same_output),
+            "--output",
+            str(same_output),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert not same_output.exists()

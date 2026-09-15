@@ -1,6 +1,9 @@
 """Command-line entry points for the Connectome Core milestone."""
 
 import json
+import os
+import tempfile
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Annotated
 
@@ -147,15 +150,35 @@ def mb_association_command(
 ) -> None:
     """Validate persistent cue-specific memory on measured KC-to-MBON edges."""
 
-    result = run_mb_association(
-        snapshot,
-        state_path=state_output,
-        seed=seed,
-        cue_size=cue_size,
-        trials=trials,
-        dopamine=dopamine,
-    )
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("x") as stream:
-        stream.write(result.model_dump_json(indent=2) + "\n")
+    state_final = state_output.resolve()
+    metrics_final = output.resolve()
+    if state_final == metrics_final:
+        raise typer.BadParameter("--state-output and --output must be different paths")
+    for path in (state_final, metrics_final):
+        if path.exists():
+            raise typer.BadParameter(f"output already exists: {path}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    with ExitStack() as stack:
+        state_stage = Path(
+            stack.enter_context(tempfile.TemporaryDirectory(dir=state_final.parent))
+        ) / state_final.name
+        metrics_stage = Path(
+            stack.enter_context(tempfile.TemporaryDirectory(dir=metrics_final.parent))
+        ) / metrics_final.name
+        result = run_mb_association(
+            snapshot,
+            state_path=state_stage,
+            seed=seed,
+            cue_size=cue_size,
+            trials=trials,
+            dopamine=dopamine,
+        ).model_copy(update={"state_path": str(state_final)})
+        metrics_stage.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        os.link(state_stage, state_final)
+        try:
+            os.link(metrics_stage, metrics_final)
+        except OSError:
+            state_final.unlink()
+            raise
     typer.echo(result.model_dump_json())

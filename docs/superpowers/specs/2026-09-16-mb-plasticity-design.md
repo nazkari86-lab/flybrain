@@ -25,6 +25,13 @@ m <- clip(m - eta * dopamine * e, min_multiplier, max_multiplier)
 
 Positive dopamine depresses eligible KC→MBON synapses, matching the commonly observed depression mechanism in conditioned mushroom-body compartments. The API allows signed modulation for future compartment-specific appetitive/aversive rules, but benchmark claims are limited to cue-specific synaptic memory rather than behavioral valence.
 
+Primary evidence for this scope includes Hige et al.,
+[“Heterosynaptic Plasticity Underlies Aversive Olfactory Learning in Drosophila”](https://doi.org/10.1016/j.neuron.2015.11.003),
+which measured dopamine-dependent depression at KC→MBON synapses, and Aso et al.,
+[“Mushroom body output neurons encode valence and guide memory-based action selection in Drosophila”](https://doi.org/10.7554/eLife.04580),
+which established the functional role of MBON pathways. These references support the mechanism and
+biological target, not the fitted coefficients or the externally imposed benchmark dopamine signal.
+
 ## Real-topology benchmark
 
 1. Select the real MBON with the largest number of retained KC inputs.
