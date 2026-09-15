@@ -19,6 +19,8 @@ class SparseConnectome:
     cell_types: tuple[str, ...]
     roles: tuple[str, ...]
     adjacency: csr_array
+    transmitters: tuple[str, ...] = ()
+    superclasses: tuple[str, ...] = ()
 
     @classmethod
     def from_snapshot(cls, path: Path) -> SparseConnectome:
@@ -45,6 +47,8 @@ class SparseConnectome:
             cell_types=tuple(neurons.column("cell_type").to_pylist()),
             roles=tuple(neurons.column("role").to_pylist()),
             adjacency=adjacency,
+            transmitters=tuple(neurons.column("transmitter").to_pylist()),
+            superclasses=tuple(neurons.column("superclass").to_pylist()),
         )
 
     @property
@@ -80,3 +84,77 @@ class SparseConnectome:
             expected = (self.neuron_count,)
             raise ValueError(f"expected activity shape {expected}, got {activity.shape}")
         return np.asarray(self.adjacency @ activity, dtype=np.float32)
+
+
+@dataclass(frozen=True)
+class EventConnectome:
+    """Pre-by-post CSR optimized for propagating sparse spike events."""
+
+    neuron_ids: NDArray[np.uint64]
+    cell_types: tuple[str, ...]
+    roles: tuple[str, ...]
+    transmitters: tuple[str, ...]
+    superclasses: tuple[str, ...]
+    outgoing: csr_array
+
+    @classmethod
+    def from_sparse(cls, graph: SparseConnectome) -> EventConnectome:
+        outgoing = graph.adjacency.transpose().tocsr()
+        outgoing.sum_duplicates()
+        outgoing.sort_indices()
+        return cls(
+            neuron_ids=graph.neuron_ids,
+            cell_types=graph.cell_types,
+            roles=graph.roles,
+            transmitters=graph.transmitters,
+            superclasses=graph.superclasses,
+            outgoing=outgoing,
+        )
+
+    @property
+    def neuron_count(self) -> int:
+        return int(self.neuron_ids.size)
+
+    @property
+    def edge_count(self) -> int:
+        return int(self.outgoing.nnz)
+
+    @property
+    def storage_items(self) -> int:
+        return int(
+            self.outgoing.data.size
+            + self.outgoing.indices.size
+            + self.outgoing.indptr.size
+        )
+
+    @property
+    def storage_bytes(self) -> int:
+        return int(
+            self.outgoing.data.nbytes
+            + self.outgoing.indices.nbytes
+            + self.outgoing.indptr.nbytes
+        )
+
+    def propagate_indices(
+        self,
+        fired_indices: NDArray[np.int64],
+        *,
+        scale: float,
+    ) -> NDArray[np.float32]:
+        """Accumulate outgoing signed weights for only the neurons that fired."""
+
+        if fired_indices.ndim != 1:
+            raise ValueError("fired_indices must be one-dimensional")
+        if fired_indices.size and (
+            int(fired_indices.min()) < 0 or int(fired_indices.max()) >= self.neuron_count
+        ):
+            raise ValueError("fired index outside graph")
+
+        output = np.zeros(self.neuron_count, dtype=np.float32)
+        for pre_index in fired_indices:
+            start = self.outgoing.indptr[pre_index]
+            stop = self.outgoing.indptr[pre_index + 1]
+            postsynaptic = self.outgoing.indices[start:stop]
+            values = self.outgoing.data[start:stop] * np.float32(scale)
+            np.add.at(output, postsynaptic, values)
+        return output
