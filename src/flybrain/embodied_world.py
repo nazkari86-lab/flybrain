@@ -163,6 +163,17 @@ class ArenaWorld:
             wall_contact=wall_contact,
         )
 
+    def observe(self) -> WorldStep:
+        """Read current contacts without advancing or mutating the world."""
+
+        position = (self.body.x, self.body.y)
+        return WorldStep(
+            body=self.body,
+            food_contact=_distance_sq(position, self.food) <= self.contact_radius**2,
+            threat_contact=_distance_sq(position, self.threat) <= self.contact_radius**2,
+            wall_contact=self._segment_contact(*position),
+        )
+
     def _segment_contact(self, x: float, y: float) -> bool:
         for x1, y1, x2, y2 in self.wall_segments:
             if x1 == x2 and min(y1, y2) <= y <= max(y1, y2) and abs(x - x1) <= self.contact_radius:

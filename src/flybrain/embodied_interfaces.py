@@ -64,14 +64,24 @@ class SensoryEncoder:
 
     version = "embodied-sensors-v1"
 
-    def __init__(self, mapping: SensoryMap, *, arena_width: float, arena_height: float) -> None:
+    def __init__(
+        self,
+        mapping: SensoryMap,
+        *,
+        arena_width: float,
+        arena_height: float,
+        voltage_scale: float = 68.75,
+    ) -> None:
         if not math.isfinite(arena_width) or not math.isfinite(arena_height):
             raise ValueError("arena dimensions must be finite")
         if arena_width <= 0 or arena_height <= 0:
             raise ValueError("arena dimensions must be positive")
+        if not math.isfinite(voltage_scale) or voltage_scale <= 0:
+            raise ValueError("voltage_scale must be finite and positive")
         self.mapping = mapping
         self.arena_width = arena_width
         self.arena_height = arena_height
+        self.voltage_scale = voltage_scale
 
     def encode(self, world_step: WorldStep, *, step: int) -> tuple[ExternalEvent, ...]:
         body = world_step.body
@@ -95,7 +105,12 @@ class SensoryEncoder:
             ("proprioception", self.mapping.proprioception_ids, proprioception),
         )
         return tuple(
-            ExternalEvent(step, ids, tuple(value for _ in ids), channel)
+            ExternalEvent(
+                step,
+                ids,
+                tuple(self.voltage_scale * value for _ in ids),
+                channel,
+            )
             for channel, ids, value in values
             if ids
         )
