@@ -6,6 +6,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from flybrain.mushroom_body import extract_kc_mbon_edges
+from flybrain.provenance import snapshot_sha256
 from flybrain.schema import EDGE_SCHEMA
 
 
@@ -53,7 +54,8 @@ def mushroom_snapshot(root: Path, *, duplicate_body_id: bool = False) -> Path:
 
 
 def test_extracts_only_measured_kc_to_mbon_edges_with_exact_counts(tmp_path: Path) -> None:
-    edges, metrics = extract_kc_mbon_edges(mushroom_snapshot(tmp_path / "snapshot"))
+    snapshot = mushroom_snapshot(tmp_path / "snapshot")
+    edges, metrics = extract_kc_mbon_edges(snapshot)
 
     assert metrics.kenyon_cells == 3
     assert metrics.dopamine_neurons == 1
@@ -62,7 +64,7 @@ def test_extracts_only_measured_kc_to_mbon_edges_with_exact_counts(tmp_path: Pat
     assert metrics.total_synapse_weight == 21
     assert metrics.dataset_id == "fixture-male-cns"
     assert metrics.source_manifest_sha256 == "a" * 64
-    assert len(metrics.snapshot_sha256) == 64
+    assert metrics.snapshot_sha256 == snapshot_sha256(snapshot)
     assert metrics.snapshot_metadata["importer"] == "fixture-importer-v1"
     assert metrics.snapshot_metadata["min_weight"] == 5
     assert edges.pre_ids.tolist() == [1, 2, 3]

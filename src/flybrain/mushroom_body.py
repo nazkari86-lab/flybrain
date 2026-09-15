@@ -1,6 +1,5 @@
 """Mushroom-body plastic edge extraction from canonical snapshots."""
 
-import hashlib
 import json
 from pathlib import Path
 from typing import cast
@@ -10,6 +9,7 @@ import pyarrow.parquet as pq
 from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.plasticity import PlasticEdgeSet
+from flybrain.provenance import snapshot_sha256
 from flybrain.schema import EDGE_SCHEMA
 
 
@@ -32,17 +32,6 @@ class MushroomBodyMetrics(BaseModel, frozen=True):
     mbons: int
     plastic_edges: int
     total_synapse_weight: int
-
-
-def _snapshot_digest(snapshot: Path) -> str:
-    digest = hashlib.sha256()
-    for name in ("metadata.json", "source-annotations.parquet", "edges.parquet"):
-        digest.update(name.encode())
-        digest.update(b"\0")
-        with (snapshot / name).open("rb") as stream:
-            while chunk := stream.read(1024 * 1024):
-                digest.update(chunk)
-    return digest.hexdigest()
 
 
 def extract_kc_mbon_edges(snapshot: Path) -> tuple[PlasticEdgeSet, MushroomBodyMetrics]:
@@ -108,7 +97,7 @@ def extract_kc_mbon_edges(snapshot: Path) -> tuple[PlasticEdgeSet, MushroomBodyM
     metrics = MushroomBodyMetrics(
         dataset_id=provenance.dataset_id,
         source_manifest_sha256=provenance.manifest_sha256,
-        snapshot_sha256=_snapshot_digest(snapshot),
+        snapshot_sha256=snapshot_sha256(snapshot),
         snapshot_metadata=metadata,
         kenyon_cells=int(kenyon_ids.size),
         dopamine_neurons=dopamine_neurons,
