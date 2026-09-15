@@ -26,11 +26,11 @@
 
 ### Task 3: Real associative-memory benchmark
 
-- [ ] Write a failing deterministic benchmark and CLI test.
-- [ ] Implement trained/untrained, no-dopamine, and cleared-eligibility conditions.
-- [ ] Run the benchmark on the real MaleCNS snapshot and verify persistence replay.
-- [ ] Document measured results and limitations.
-- [ ] Commit `feat: validate real-topology associative memory`.
+- [x] Write a failing deterministic benchmark and CLI test.
+- [x] Implement trained/untrained, no-dopamine, and cleared-eligibility conditions.
+- [x] Run the benchmark on the real MaleCNS snapshot and verify persistence replay.
+- [x] Document measured results and limitations.
+- [x] Commit `feat: validate real-topology associative memory`.
 
 ## Global constraints
 
