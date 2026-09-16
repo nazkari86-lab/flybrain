@@ -158,3 +158,12 @@ def test_perturbation_is_seeded_and_confined_to_declared_condition() -> None:
     )
     for name in first_by_name.keys() - {"hs_left_perturbed"}:
         assert first_by_name[name].stimulus_digest == changed_by_name[name].stimulus_digest
+
+
+def test_short_perturbation_schedule_still_targets_a_valid_step() -> None:
+    graph, registry = sensory_fixture(connected=False)
+    result = run_causal_steering_benchmark(graph, registry, steps=1, seed=7)
+    perturbed = next(
+        condition for condition in result.conditions if condition.name == "hs_left_perturbed"
+    )
+    assert perturbed.stimulus_digest != hashlib.sha256(b"[]").hexdigest()

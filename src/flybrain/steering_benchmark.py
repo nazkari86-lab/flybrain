@@ -394,8 +394,10 @@ def _run_sensory_protocols(
     perturbation_rng = np.random.default_rng(seed)
     perturbation = 0.8 * float(perturbation_rng.uniform(0.9, 1.1))
     timing_bound = max(1, round(steps * 0.1))
-    timing_shift = timing_bound + int(
-        perturbation_rng.integers(-timing_bound, timing_bound + 1)
+    timing_shift = min(
+        steps - 1,
+        timing_bound
+        + int(perturbation_rng.integers(-timing_bound, timing_bound + 1)),
     )
     hs_perturbed = run(
         "hs_left_perturbed",
