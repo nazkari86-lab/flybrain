@@ -92,5 +92,5 @@
 ### Final review
 
 - [x] Inspect every changed file for hidden policy shortcuts, unbounded loops, nondeterminism, and claims stronger than the evidence.
-- [ ] Merge the feature branch into `master` only after the full gate passes.
-- [ ] Re-run the merged `master` gate and retain the artifact and documentation.
+- [x] Merge the feature branch into `master` only after the full gate passes.
+- [x] Re-run the merged `master` gate and retain the artifact and documentation.
