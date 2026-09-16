@@ -1,0 +1,223 @@
+{
+  "registry_version": "male-cns-biological-interface-v1",
+  "dataset_id": "male-cns-v1.0-essential",
+  "populations": [
+    {
+      "name": "visual_all",
+      "role": "sensory",
+      "selector": {
+        "equals": {"superclass": "ol_sensory", "class": "visual"},
+        "expected_count": 6091
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "visual_r1_r6_left",
+      "role": "sensory",
+      "selector": {
+        "equals": {
+          "superclass": "ol_sensory",
+          "class": "visual",
+          "type": "R1-R6",
+          "rootSide": "L"
+        },
+        "expected_count": 1112
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "visual_r1_r6_right",
+      "role": "sensory",
+      "selector": {
+        "equals": {
+          "superclass": "ol_sensory",
+          "class": "visual",
+          "type": "R1-R6",
+          "rootSide": "R"
+        },
+        "expected_count": 2265
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "hs_left",
+      "role": "future_interface",
+      "selector": {
+        "equals": {"superclass": "visual_projection", "somaSide": "L"},
+        "in_values": {"type": ["HSE", "HSN", "HSS", "HST"]},
+        "expected_ids": [10034, 10181, 10419, 11793],
+        "expected_count": 4
+      },
+      "evidence_ids": ["male-cns-annotations", "fujiwara-2018-optic-flow"]
+    },
+    {
+      "name": "hs_right",
+      "role": "future_interface",
+      "selector": {
+        "equals": {"superclass": "visual_projection", "somaSide": "R"},
+        "in_values": {"type": ["HSE", "HSN", "HSS", "HST"]},
+        "expected_ids": [10015, 10016, 10023, 12521],
+        "expected_count": 4
+      },
+      "evidence_ids": ["male-cns-annotations", "fujiwara-2018-optic-flow"]
+    },
+    {
+      "name": "lc16_left",
+      "role": "future_interface",
+      "selector": {
+        "equals": {"superclass": "visual_projection", "type": "LC16", "somaSide": "L"},
+        "expected_count": 88
+      },
+      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+    },
+    {
+      "name": "lc16_right",
+      "role": "future_interface",
+      "selector": {
+        "equals": {"superclass": "visual_projection", "type": "LC16", "somaSide": "R"},
+        "expected_count": 94
+      },
+      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+    },
+    {
+      "name": "olfactory_cb",
+      "role": "sensory",
+      "selector": {
+        "equals": {"superclass": "cb_sensory", "class": "olfactory"},
+        "expected_count": 2639
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "tactile_vnc",
+      "role": "sensory",
+      "selector": {
+        "equals": {"superclass": "vnc_sensory", "class": "mechanosensory_tactile"},
+        "expected_count": 2558
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "proprioceptive_vnc",
+      "role": "sensory",
+      "selector": {
+        "equals": {
+          "superclass": "vnc_sensory",
+          "class": "mechanosensory_proprioceptive"
+        },
+        "expected_count": 1030
+      },
+      "evidence_ids": ["male-cns-annotations"]
+    },
+    {
+      "name": "d_na02_left",
+      "role": "steering",
+      "selector": {
+        "equals": {
+          "superclass": "descending_neuron",
+          "type": "DNa02",
+          "somaSide": "L"
+        },
+        "expected_ids": [523769],
+        "expected_count": 1
+      },
+      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_na02_right",
+      "role": "steering",
+      "selector": {
+        "equals": {
+          "superclass": "descending_neuron",
+          "type": "DNa02",
+          "somaSide": "R"
+        },
+        "expected_ids": [10360],
+        "expected_count": 1
+      },
+      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_left",
+      "role": "steering",
+      "selector": {
+        "equals": {
+          "superclass": "descending_neuron",
+          "type": "DNg13",
+          "somaSide": "L"
+        },
+        "expected_ids": [11074],
+        "expected_count": 1
+      },
+      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_right",
+      "role": "steering",
+      "selector": {
+        "equals": {
+          "superclass": "descending_neuron",
+          "type": "DNg13",
+          "somaSide": "R"
+        },
+        "expected_ids": [512006],
+        "expected_count": 1
+      },
+      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "mdn_left",
+      "role": "retreat",
+      "selector": {
+        "equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "L"},
+        "expected_ids": [11288, 12348],
+        "expected_count": 2
+      },
+      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+    },
+    {
+      "name": "mdn_right",
+      "role": "retreat",
+      "selector": {
+        "equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "R"},
+        "expected_ids": [10763, 11332],
+        "expected_count": 2
+      },
+      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "male-cns-annotations",
+      "kind": "dataset_measurement",
+      "source_url": "https://male-cns.janelia.org/release/",
+      "claim": "The retained MaleCNS source annotation table resolves the declared populations and their exact counts or IDs.",
+      "confidence": "measured"
+    },
+    {
+      "evidence_id": "yang-2024-steering",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/39293446/",
+      "pmid": "39293446",
+      "doi": "10.1016/j.cell.2024.08.033",
+      "claim": "DNa02 and DNg13 activity and unilateral perturbation are associated with ipsiversive steering and distinct stride effects.",
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "mdn-2017-retreat",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/28238656/",
+      "pmid": "28238656",
+      "claim": "MDNs are critical for visually evoked backward walking and directional retreat.",
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "fujiwara-2018-optic-flow",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/30528583/",
+      "pmid": "30528583",
+      "claim": "Horizontal optic-flow pathways influence turning in opposite directions and bilateral signals affect walking velocity.",
+      "confidence": "high"
+    }
+  ]
+}

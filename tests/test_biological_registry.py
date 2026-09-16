@@ -48,6 +48,27 @@ def fixture_payload() -> dict[str, object]:
     return json.loads(FIXTURE_REGISTRY.read_text(encoding="utf-8"))
 
 
+def test_v1_registry_declares_exact_documented_populations() -> None:
+    registry = load_biological_registry(
+        Path("data/registry/biological-interface-registry-v1.json")
+    )
+    by_name = {item.name: item for item in registry.populations}
+
+    assert by_name["d_na02_left"].selector.expected_ids == (523769,)
+    assert by_name["d_na02_right"].selector.expected_ids == (10360,)
+    assert by_name["d_ng13_left"].selector.expected_ids == (11074,)
+    assert by_name["d_ng13_right"].selector.expected_ids == (512006,)
+    assert by_name["mdn_left"].selector.expected_ids == (11288, 12348)
+    assert by_name["mdn_right"].selector.expected_ids == (10763, 11332)
+    assert by_name["visual_all"].selector.expected_count == 6091
+    assert by_name["visual_r1_r6_left"].selector.expected_count == 1112
+    assert by_name["visual_r1_r6_right"].selector.expected_count == 2265
+    assert by_name["hs_left"].selector.expected_ids == (10034, 10181, 10419, 11793)
+    assert by_name["hs_right"].selector.expected_ids == (10015, 10016, 10023, 12521)
+    assert by_name["lc16_left"].selector.expected_count == 88
+    assert by_name["lc16_right"].selector.expected_count == 94
+
+
 def left_dna02(body_id: int = 10) -> dict[str, object]:
     return {
         "bodyId": body_id,
