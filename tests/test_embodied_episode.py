@@ -112,3 +112,21 @@ def test_no_world_contact_emits_no_reward_or_dopamine() -> None:
 
     assert set(result.rewards) == {0.0}
     assert set(result.dopamine) == {0.0}
+
+
+def test_static_plastic_graph_is_integrity_checked() -> None:
+    graph = fixture_graph()
+    learned = EventConnectome(
+        neuron_ids=graph.neuron_ids,
+        cell_types=graph.cell_types,
+        roles=graph.roles,
+        transmitters=graph.transmitters,
+        superclasses=graph.superclasses,
+        outgoing=graph.outgoing.copy(),
+    )
+    learned.outgoing.data[0] *= np.float32(0.9)
+
+    result = run_embodied_episode(graph, config(), world=world(), plastic_graph=learned)
+
+    assert result.graph_unchanged is True
+    assert result.executed_graph_unchanged is True

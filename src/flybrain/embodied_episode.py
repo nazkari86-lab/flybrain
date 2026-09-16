@@ -64,6 +64,7 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
     trace_digest: str
     replay_exact: bool
     graph_unchanged: bool
+    executed_graph_unchanged: bool
     motor_silenced: bool
     learning_applied: bool
     final_plastic_multipliers: tuple[float, ...]
@@ -287,6 +288,7 @@ def run_embodied_episode(
     )
     initial_body = initial_world.body
     graph_digest = _graph_digest(graph)
+    active_graph_digest = _graph_digest(active_graph)
     active_plasticity_params = plasticity_params or PlasticityParameters()
     active_plasticity_params.validate()
     first = _execute(
@@ -308,11 +310,13 @@ def run_embodied_episode(
     )
     replay_exact = first == replay
     graph_unchanged = _graph_digest(graph) == graph_digest
+    executed_graph_unchanged = _graph_digest(active_graph) == active_graph_digest
     passed = bool(
         first.sensory_events
         and len(first.actions) == config.max_steps
         and replay_exact
         and graph_unchanged
+        and executed_graph_unchanged
     )
     return EmbodiedEpisodeResult(
         benchmark="embodied-loop-v1",
@@ -328,6 +332,7 @@ def run_embodied_episode(
         trace_digest=first.digest,
         replay_exact=replay_exact,
         graph_unchanged=graph_unchanged,
+        executed_graph_unchanged=executed_graph_unchanged,
         motor_silenced=silence_motor,
         learning_applied=(
             plastic_edges is not None
