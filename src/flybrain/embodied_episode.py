@@ -8,6 +8,7 @@ import resource
 import sys
 import time
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -52,6 +53,8 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     benchmark: str
+    interface_evidence: Literal["arbitrary-smoke-only"]
+    behavior_claim_allowed: Literal[False]
     snapshot: str
     dataset_id: str
     source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -335,6 +338,8 @@ def run_embodied_episode(
     )
     return EmbodiedEpisodeResult(
         benchmark="embodied-loop-v1",
+        interface_evidence="arbitrary-smoke-only",
+        behavior_claim_allowed=False,
         snapshot=snapshot,
         dataset_id=dataset_id,
         source_manifest_sha256=source_manifest_sha256,

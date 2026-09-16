@@ -10,6 +10,10 @@ from typing import Annotated
 import typer
 
 from flybrain.acquire import acquire_artifact
+from flybrain.biological_registry import (
+    load_biological_registry,
+    resolve_biological_registry,
+)
 from flybrain.bundle import write_bundle
 from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episode
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
@@ -24,6 +28,7 @@ from flybrain.provenance import snapshot_content_sha256
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
 from flybrain.shiu_plastic_experiment import run_shiu_plastic_integration
+from flybrain.steering_benchmark import run_causal_steering_benchmark
 
 app = typer.Typer(help="Reproducible sparse connectome experiments.")
 manifest_app = typer.Typer(help="Validate immutable source declarations.")
@@ -187,6 +192,51 @@ def mb_association_command(
         except OSError:
             state_final.unlink()
             raise
+    typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("biological-steering")
+def biological_steering_command(
+    snapshot: Path,
+    registry: Annotated[Path, typer.Option("--registry")],
+    output: Annotated[Path, typer.Option("--output")],
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 40,
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+) -> None:
+    """Publish a provenance-bound causal visual steering assay."""
+
+    output_final = output.resolve()
+    snapshot_final = snapshot.resolve()
+    registry_final = registry.resolve()
+    if output_final in {snapshot_final, registry_final} or output_final.is_relative_to(
+        snapshot_final
+    ):
+        raise typer.BadParameter(
+            "--output must differ from inputs and be outside snapshot"
+        )
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+
+    declared = load_biological_registry(registry_final)
+    resolved = resolve_biological_registry(declared, snapshot_final)
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot_final))
+    resolved.validate_graph(graph)
+    result = run_causal_steering_benchmark(
+        graph,
+        resolved,
+        steps=steps,
+        seed=seed,
+        snapshot=str(snapshot_final),
+    )
+
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
     typer.echo(result.model_dump_json())
 
 

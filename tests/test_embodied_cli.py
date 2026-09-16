@@ -48,6 +48,8 @@ def test_cli_publishes_embodied_loop_result(tmp_path: Path) -> None:
     assert result.exit_code == 0
     metrics = json.loads(output.read_text(encoding="utf-8"))
     assert metrics["benchmark"] == "embodied-loop-v1"
+    assert metrics["interface_evidence"] == "arbitrary-smoke-only"
+    assert metrics["behavior_claim_allowed"] is False
     assert metrics["replay_exact"] is True
     assert metrics["steps"] == 8
     assert metrics["dataset_id"] == "tiny-v1"
