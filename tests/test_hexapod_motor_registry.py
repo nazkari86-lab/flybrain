@@ -15,6 +15,10 @@ from flybrain.biological_registry import (
 )
 from flybrain.graph import EventConnectome
 
+REAL_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
+RETAINED_MALE_CNS = Path(
+    "/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5"
+)
 LEGS = (
     ("left_fore", "L", "T1", "ProLN"),
     ("right_fore", "R", "T1", "ProLN"),
@@ -29,6 +33,36 @@ JOINT_GROUPS = (
     ("tibia_flexor", ("Ti flexor MN", "Acc. ti flexor MN")),
     ("tibia_extensor", ("Ti extensor MN",)),
 )
+EXPECTED_REAL_NAMES = {
+    *(f"{leg}_{group}" for leg, *_ in LEGS for group, _ in JOINT_GROUPS),
+    *(f"{leg}_proprioception" for leg, *_ in LEGS),
+}
+EXPECTED_PROPRIOCEPTION = {
+    "left_fore_proprioception": (
+        41,
+        "3a4669ac64ec3481e9dc21862e4547504f8bc8c01d948d7b1154661676974384",
+    ),
+    "right_fore_proprioception": (
+        17,
+        "9d4fbd78f11402d05a84dd51786500952ff270f7e63bf84e0f71a297eeed2cdf",
+    ),
+    "left_middle_proprioception": (
+        135,
+        "dad088a688069d5dafdf58695e26942588ce9f9dd1ba59505d80d34ab93daf26",
+    ),
+    "right_middle_proprioception": (
+        140,
+        "553058e46e38d5c165f6298cb2cf4336ddb8bdf3eff7cfcbc53dc6caa6bb0098",
+    ),
+    "left_hind_proprioception": (
+        138,
+        "b104113b764da36fc9c8b26c0818c0acb138b608c0e5588781b6b0367e86dc8a",
+    ),
+    "right_hind_proprioception": (
+        151,
+        "9b18767f018616620618bf06a2d761ae85a58a54393e5a06f83d8f89aa211a3e",
+    ),
+}
 
 
 def fixture_registry_and_rows() -> tuple[BiologicalInterfaceRegistry, list[dict[str, object]]]:
@@ -165,6 +199,56 @@ def test_motor_role_and_exact_soma_neuromere_are_strict() -> None:
                 "evidence_ids": ["fixture"],
             }
         )
+
+
+def test_real_registry_declares_complete_exact_hexapod_interface() -> None:
+    registry = BiologicalInterfaceRegistry.model_validate_json(
+        REAL_REGISTRY.read_text(encoding="utf-8")
+    )
+    by_name = {population.name: population for population in registry.populations}
+
+    assert set(by_name) == EXPECTED_REAL_NAMES
+    assert sum(
+        len(population.selector.expected_ids)
+        for population in registry.populations
+        if population.role == "motor"
+    ) == 148
+    for name, population in by_name.items():
+        if population.role == "motor":
+            assert population.selector.expected_ids
+            assert population.selector.equals["superclass"] == "vnc_motor"
+            assert set(population.selector.equals) >= {
+                "exitNerve",
+                "somaSide",
+                "somaNeuromere",
+                "superclass",
+            }
+        else:
+            count, id_sha256 = EXPECTED_PROPRIOCEPTION[name]
+            assert population.selector.expected_count == count
+            assert population.selector.expected_id_sha256 == id_sha256
+            assert population.selector.equals["rootSide"] in {"L", "R"}
+            assert "somaSide" not in population.selector.equals
+
+
+def test_real_registry_resolves_retained_malecns_snapshot() -> None:
+    if not RETAINED_MALE_CNS.is_dir():
+        pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
+    registry = BiologicalInterfaceRegistry.model_validate_json(
+        REAL_REGISTRY.read_text(encoding="utf-8")
+    )
+
+    resolved = resolve_biological_registry(registry, RETAINED_MALE_CNS)
+
+    assert {population.name for population in resolved.populations} == EXPECTED_REAL_NAMES
+    for population in registry.populations:
+        actual = resolved.population(population.name)
+        if population.role == "motor":
+            assert actual.neuron_ids == population.selector.expected_ids
+        else:
+            expected_count, expected_hash = EXPECTED_PROPRIOCEPTION[population.name]
+            assert len(actual.neuron_ids) == expected_count
+            assert actual.id_sha256 == expected_hash
 
 
 def test_fixture_resolves_24_motor_groups_and_six_root_side_banks(tmp_path: Path) -> None:

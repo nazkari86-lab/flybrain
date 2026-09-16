@@ -390,6 +390,23 @@ def test_registry_rejects_standalone_expected_count_drift(tmp_path: Path) -> Non
         resolve_biological_registry(registry, snapshot)
 
 
+def test_registry_rejects_expected_id_hash_drift_at_same_count(tmp_path: Path) -> None:
+    payload = fixture_payload()
+    populations = payload["populations"]
+    assert isinstance(populations, list)
+    population = populations[0]
+    assert isinstance(population, dict)
+    selector = population["selector"]
+    assert isinstance(selector, dict)
+    selector["expected_ids"] = []
+    selector["expected_id_sha256"] = hashlib.sha256(b"10").hexdigest()
+    registry = BiologicalInterfaceRegistry.model_validate(payload)
+    snapshot = annotation_snapshot(tmp_path, [left_dna02(11)])
+
+    with pytest.raises(ValueError, match="expected ID SHA-256"):
+        resolve_biological_registry(registry, snapshot)
+
+
 def test_registry_rejects_duplicate_source_body_id(tmp_path: Path) -> None:
     snapshot = annotation_snapshot(tmp_path, [left_dna02(), left_dna02()])
 

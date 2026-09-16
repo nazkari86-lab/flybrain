@@ -123,6 +123,7 @@ class AnnotationSelector(BaseModel, frozen=True):
     )
     expected_ids: tuple[int, ...] = ()
     expected_count: int | None = Field(default=None, gt=0)
+    expected_id_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @field_validator("expected_ids", mode="before")
     @classmethod
@@ -214,6 +215,12 @@ class AnnotationSelector(BaseModel, frozen=True):
             and len(self.expected_ids) != self.expected_count
         ):
             raise ValueError("expected IDs and expected count disagree")
+        if self.expected_ids and self.expected_id_sha256 is not None:
+            id_bytes = b"\n".join(
+                str(value).encode("ascii") for value in self.expected_ids
+            )
+            if hashlib.sha256(id_bytes).hexdigest() != self.expected_id_sha256:
+                raise ValueError("expected IDs and expected ID SHA-256 disagree")
         return self
 
 
@@ -381,6 +388,13 @@ def _resolve_population_ids(
             "resolved population expected count differs for "
             f"{declaration.name}: {len(neuron_ids)}"
         )
+    if declaration.selector.expected_id_sha256 is not None:
+        id_bytes = b"\n".join(str(value).encode("ascii") for value in neuron_ids)
+        if hashlib.sha256(id_bytes).hexdigest() != declaration.selector.expected_id_sha256:
+            raise ValueError(
+                "resolved population expected ID SHA-256 differs for "
+                f"{declaration.name}"
+            )
     return neuron_ids
 
 
