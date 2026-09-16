@@ -81,8 +81,21 @@ The first retained snapshot resolves the following descending populations:
 The `superclass=ol_sensory`, `class=visual` selector resolves 6,091 visual sensory neurons in the
 retained snapshot. Left and right input banks are separated by `rootSide`. The source table has no
 non-null `assignedOlHex1` or `assignedOlHex2` values for these neurons, so this phase must not claim
-an ommatidial or retinotopic map. R1-R6 neurons are used for luminance/motion-energy input; R7/R8
-types remain available for later spectral assays but do not receive invented color semantics.
+an ommatidial or retinotopic map. R1-R6 neurons receive luminance and temporal-contrast input only;
+they must not receive a precomputed motion or looming label. R7/R8 types remain available for later
+spectral assays but do not receive invented color semantics.
+
+The same table resolves eight horizontal-system visual projection neurons: bilateral HSE, HSN,
+HSS, and HST cells. It also resolves 182 bilateral LC16 visual projection neurons. HS cells may be
+driven directly only in an explicitly labeled optic-flow feature calibration, and LC16 cells may be
+driven directly only in an explicitly labeled looming feature calibration. These calibrations test
+downstream connectivity while bypassing unmodeled retinal processing; neither is a full
+retina-to-behavior result.
+
+The retained HS IDs are HSN `10181` (L) and `10015` (R), HSE `10034` (L) and `10016` (R), HSS
+`10419` (L) and `10023` (R), and HST `11793` (L) and `12521` (R). The LC16 registry asserts the
+measured count and side selector rather than copying 182 IDs into prose; the resolved artifact
+stores and hashes every exact ID.
 
 Other declared populations are resolved for future interfaces but are not evidence of a working
 behavior: central-brain olfactory sensory neurons use `superclass=cb_sensory`, `class=olfactory`;
@@ -112,26 +125,32 @@ lists, so later annotation changes cannot silently alter an experiment.
 ## Sensory assay
 
 The benchmark adds an observational `RetinalObservation` produced from the planar arena. It contains
-bounded left/right horizontal motion energy and bounded bilateral angular-expansion energy. These
-values are computed from consecutive body-relative angular projections; the observation exposes no
-food label, threat label, target coordinate, desired heading, or action hint.
+bounded left/right luminance, temporal contrast, horizontal motion energy, and bilateral
+angular-expansion energy. These values are computed from consecutive body-relative angular
+projections; the observation exposes no food label, threat label, target coordinate, desired
+heading, or action hint.
 
-Motion energy drives only the corresponding left/right R1-R6 banks using non-negative event rates
-or voltages. Opposite image motion swaps the banks. Looming is represented by increasing bilateral
-angular expansion, not by a hard-coded `threat=true` signal. Because the retained MaleCNS table does
-not provide ommatidial coordinates, this stage is explicitly a hemispheric optic-flow interface,
-not a full compound-eye model.
+Luminance and temporal contrast drive only the corresponding left/right R1-R6 banks using
+non-negative event rates or voltages. Because the retained MaleCNS table does not provide
+ommatidial coordinates, R1-R6 stimulation cannot encode within-eye motion direction and is not
+called optic flow. In separate feature-calibration protocols, opposite horizontal motion swaps the
+left/right HS drive and angular expansion drives LC16. Looming is derived from projected expansion,
+not a hard-coded `threat=true` signal. Direct HS/LC16 drive is recorded as a model boundary that
+bypasses upstream visual processing.
 
 Three protocols remain separate:
 
 1. `dn_calibration` directly stimulates one declared DN population to validate decoder sign and
    causal intervention machinery;
-2. `sensory_open_loop` supplies mirrored optic-flow or looming sequences and measures whether the
-   connectome recruits the declared DNs;
-3. `sensory_closed_loop` lets decoded DN spikes rotate or reverse the body and feeds the resulting
-   retinal observation into the next neural chunk.
+2. `visual_feature_open_loop` supplies mirrored HS optic-flow or LC16 looming sequences and measures
+   whether the downstream connectome recruits the declared DNs;
+3. `photoreceptor_open_loop` supplies only hemispheric R1-R6 luminance/contrast and reports the
+   downstream response without claiming direction-selective vision;
+4. `visual_feature_closed_loop` lets decoded DN spikes rotate or reverse the body and feeds the
+   resulting geometric feature observation into the next neural chunk while explicitly recording
+   the HS/LC16 bypass.
 
-Direct DN calibration is never reported as spontaneous visual steering.
+Direct DN, HS, or LC16 calibration is never reported as spontaneous full-path visual steering.
 
 ## Descending-neuron decoder
 
@@ -182,16 +201,18 @@ The phase passes its infrastructure and causal-calibration gate only if:
    and MDN silence removes retreat;
 4. restoration reproduces the unsilenced trace, identical replay is exact, and graph topology plus
    canonical weights remain unchanged;
-5. optic-flow reversal swaps sensory banks and looming amplitude increases monotonically with
-   projected angular expansion;
+5. optic-flow reversal swaps HS banks, looming amplitude increases monotonically with projected
+   angular expansion, and R1-R6 events contain only luminance/contrast channels;
 6. registry or provenance mismatch fails closed without publishing a partial result.
 
-The real sensory-to-DN and closed-loop outcomes are hypothesis tests, not values the implementation
-may force to pass. Their report must classify each family as positive, null, directionally wrong,
-or underpowered. A positive behavioral claim additionally requires the expected direction in the
-normal condition, loss or reversal under the matching lesion, restoration, exact replay, and the
-same effect direction in holdout arenas. Failure of that stronger gate does not invalidate the
-instrument; it prevents a steering claim and defines the next scientific repair.
+The real feature-to-DN, photoreceptor-to-DN, and closed-loop outcomes are hypothesis tests, not
+values the implementation may force to pass. Their report must classify each family as positive,
+null, directionally wrong, or underpowered. A positive feature-path claim additionally requires the
+expected direction in the normal condition, loss or reversal under the matching lesion,
+restoration, exact replay, and the same effect direction in holdout arenas. Only a positive
+photoreceptor-path result could support a retina-to-behavior claim, and this phase lacks the
+retinotopy needed to claim direction-selective full-path vision. Failure of a stronger gate does not
+invalidate the instrument; it prevents that claim and defines the next scientific repair.
 
 ## Testing and publication
 
@@ -216,4 +237,3 @@ After this phase, the project proceeds in this order:
 3. richer compound-eye geometry and receptor-aware neural dynamics where measured parameters exist;
 4. FlyGym or equivalent whole-body integration and a continual-learning curriculum;
 5. game benchmarks only after the same no-hidden-policy and causal-evidence gates pass.
-
