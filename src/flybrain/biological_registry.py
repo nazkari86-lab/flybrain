@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+from collections.abc import Mapping
 from pathlib import Path
+from types import MappingProxyType
 from typing import Literal, Self
 
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from flybrain.graph import EventConnectome
 from flybrain.provenance import snapshot_content_sha256
@@ -51,6 +62,24 @@ class EvidenceRecord(BaseModel, frozen=True):
     doi: str | None = None
     confidence: Literal["measured", "high", "moderate", "assumption"]
 
+    @field_validator("pmid", mode="before")
+    @classmethod
+    def validate_pmid(cls, value: object) -> object:
+        if value is None:
+            return value
+        if type(value) is not str or re.fullmatch(r"[1-9][0-9]*", value) is None:
+            raise ValueError("PMID must be a nonblank positive decimal identifier")
+        return value
+
+    @field_validator("doi", mode="before")
+    @classmethod
+    def validate_doi(cls, value: object) -> object:
+        if value is None:
+            return value
+        if type(value) is not str or re.fullmatch(r"10\.[0-9]{4,9}/\S+", value) is None:
+            raise ValueError("DOI must be a nonblank DOI identifier")
+        return value
+
     @model_validator(mode="after")
     def validate_evidence_semantics(self) -> Self:
         """Prevent claims from crossing the measured/assumed evidence boundary."""
@@ -69,10 +98,53 @@ class AnnotationSelector(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    equals: dict[str, str]
-    in_values: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    equals: Mapping[str, str]
+    in_values: Mapping[str, tuple[str, ...]] = Field(
+        default_factory=dict,
+        validate_default=True,
+    )
     expected_ids: tuple[int, ...] = ()
     expected_count: int | None = Field(default=None, gt=0)
+
+    @field_validator("expected_ids", mode="before")
+    @classmethod
+    def validate_expected_id_types(cls, value: object) -> object:
+        if not isinstance(value, (list, tuple)) or any(
+            type(item) is not int for item in value
+        ):
+            raise ValueError("expected IDs must contain only integers")
+        return value
+
+    @field_validator("expected_count", mode="before")
+    @classmethod
+    def validate_expected_count_type(cls, value: object) -> object:
+        if value is not None and type(value) is not int:
+            raise ValueError("expected count must be an integer")
+        return value
+
+    @field_validator("equals", mode="after")
+    @classmethod
+    def freeze_equals(cls, value: Mapping[str, str]) -> Mapping[str, str]:
+        return MappingProxyType(dict(value))
+
+    @field_validator("in_values", mode="after")
+    @classmethod
+    def freeze_in_values(
+        cls,
+        value: Mapping[str, tuple[str, ...]],
+    ) -> Mapping[str, tuple[str, ...]]:
+        return MappingProxyType(dict(value))
+
+    @field_serializer("equals")
+    def serialize_equals(self, value: Mapping[str, str]) -> dict[str, str]:
+        return dict(value)
+
+    @field_serializer("in_values")
+    def serialize_in_values(
+        self,
+        value: Mapping[str, tuple[str, ...]],
+    ) -> dict[str, tuple[str, ...]]:
+        return dict(value)
 
     @model_validator(mode="after")
     def validate_selector(self) -> Self:

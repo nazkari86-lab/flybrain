@@ -122,6 +122,40 @@ def test_selector_rejects_unexpected_laterality(column: str) -> None:
         AnnotationSelector(equals={column: "X"})
 
 
+def test_selector_predicate_mappings_are_deeply_immutable() -> None:
+    source_equals = {"type": "DNa02"}
+    source_in_values = {"somaSide": ("L", "R")}
+    selector = AnnotationSelector(
+        equals=source_equals,
+        in_values=source_in_values,
+    )
+    selector_with_default = AnnotationSelector(equals={"type": "DNa02"})
+
+    source_equals["bodyId"] = "10"
+    source_in_values["rootSide"] = ("L",)
+
+    assert dict(selector.equals) == {"type": "DNa02"}
+    assert dict(selector.in_values) == {"somaSide": ("L", "R")}
+    with pytest.raises(TypeError):
+        selector.equals["bodyId"] = "10"
+    with pytest.raises(TypeError):
+        selector.in_values["rootSide"] = ("L",)
+    with pytest.raises(TypeError):
+        selector_with_default.in_values["somaSide"] = ("L",)
+
+
+@pytest.mark.parametrize("value", ["10", 10.0, True])
+def test_selector_rejects_coercive_expected_ids(value: object) -> None:
+    with pytest.raises(ValueError, match=r"expected IDs.*integers"):
+        AnnotationSelector(equals={"type": "DNa02"}, expected_ids=(value,))
+
+
+@pytest.mark.parametrize("value", ["1", 1.0, True])
+def test_selector_rejects_coercive_expected_count(value: object) -> None:
+    with pytest.raises(ValueError, match=r"expected count.*integer"):
+        AnnotationSelector(equals={"type": "DNa02"}, expected_count=value)
+
+
 @pytest.mark.parametrize(
     "record",
     [
@@ -151,6 +185,35 @@ def test_selector_rejects_unexpected_laterality(column: str) -> None:
 def test_evidence_rejects_kind_confidence_contradictions(record: dict[str, object]) -> None:
     with pytest.raises(ValueError, match=r"evidence|confidence|PMID|DOI"):
         EvidenceRecord.model_validate(record)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("pmid", "", "PMID"),
+        ("pmid", "   ", "PMID"),
+        ("pmid", "not-a-pmid", "PMID"),
+        ("doi", "", "DOI"),
+        ("doi", "   ", "DOI"),
+        ("doi", "not-a-doi", "DOI"),
+    ],
+)
+def test_experimental_evidence_rejects_blank_or_malformed_citations(
+    field: str,
+    value: str,
+    message: str,
+) -> None:
+    payload: dict[str, object] = {
+        "evidence_id": "invalid-citation",
+        "kind": "experimental_result",
+        "source_url": "https://example.org/experiment",
+        "claim": "A causal result.",
+        field: value,
+        "confidence": "high",
+    }
+
+    with pytest.raises(ValueError, match=message):
+        EvidenceRecord.model_validate(payload)
 
 
 @pytest.mark.parametrize(
@@ -185,6 +248,23 @@ def test_registry_rejects_expected_id_drift(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="expected IDs"):
         resolve_biological_registry(load_biological_registry(FIXTURE_REGISTRY), snapshot)
+
+
+def test_registry_rejects_standalone_expected_count_drift(tmp_path: Path) -> None:
+    payload = fixture_payload()
+    populations = payload["populations"]
+    assert isinstance(populations, list)
+    population = populations[0]
+    assert isinstance(population, dict)
+    selector = population["selector"]
+    assert isinstance(selector, dict)
+    selector["expected_ids"] = []
+    selector["expected_count"] = 2
+    registry = BiologicalInterfaceRegistry.model_validate(payload)
+    snapshot = annotation_snapshot(tmp_path, [left_dna02()])
+
+    with pytest.raises(ValueError, match="expected count"):
+        resolve_biological_registry(registry, snapshot)
 
 
 def test_registry_rejects_duplicate_source_body_id(tmp_path: Path) -> None:
