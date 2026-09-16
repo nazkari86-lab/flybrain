@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import resource
+import sys
 import time
 from dataclasses import asdict
 from enum import StrEnum
@@ -123,6 +124,17 @@ def _graph_digest(graph: EventConnectome) -> str:
     ):
         digest.update(array.tobytes())
     return digest.hexdigest()
+
+
+def _software_revision() -> str:
+    from flybrain.mb_association import _software_revision as revision
+
+    return revision()
+
+
+def _peak_rss_bytes() -> int:
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return value if sys.platform == "darwin" else value * 1024
 
 
 def _descending_map(registry: ResolvedRegistry) -> DescendingMap:
@@ -839,7 +851,7 @@ def run_causal_steering_benchmark(
         sensory_claims=sensory_claims,
         replay_exact=replay.trace_digest == baseline.trace_digest,
         graph_unchanged=graph_unchanged,
-        software_revision="source",
+        software_revision=_software_revision(),
         runtime_seconds=time.perf_counter() - started,
-        peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        peak_rss_bytes=_peak_rss_bytes(),
     )

@@ -138,6 +138,7 @@ def test_cli_publishes_provenance_bound_biological_result(tmp_path: Path) -> Non
     assert payload["benchmark"] == "biological-steering-v1"
     assert payload["registry"]["populations"]
     assert payload["calibration_passed"] is True
+    assert payload["software_revision"] != "source"
     assert set(payload["sensory_claims"]) == {
         "photoreceptor_response",
         "hs_optic_flow",
