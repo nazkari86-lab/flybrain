@@ -50,6 +50,11 @@ def test_cli_publishes_embodied_loop_result(tmp_path: Path) -> None:
     assert metrics["benchmark"] == "embodied-loop-v1"
     assert metrics["replay_exact"] is True
     assert metrics["steps"] == 8
+    assert metrics["dataset_id"] == "tiny-v1"
+    assert metrics["source_manifest_sha256"] == "a" * 64
+    assert len(metrics["snapshot_content_sha256"]) == 64
+    assert metrics["graph_neurons"] == 3
+    assert metrics["graph_edges"] == 2
 
 
 def test_cli_refuses_occupied_output_and_input_alias(tmp_path: Path) -> None:

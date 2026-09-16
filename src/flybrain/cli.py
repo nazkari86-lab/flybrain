@@ -20,6 +20,7 @@ from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.mb_association import run_mb_association
+from flybrain.provenance import snapshot_content_sha256
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
 from flybrain.shiu_plastic_experiment import run_shiu_plastic_integration
@@ -269,7 +270,23 @@ def embodied_loop_command(
         food=(8.0, 5.0),
         threat=(1.0, 1.0),
     )
-    result = run_embodied_episode(graph, config, world=world)
+    metadata = json.loads((snapshot / "metadata.json").read_text(encoding="utf-8"))
+    source_manifest = metadata.get(
+        "source_manifest_sha256", metadata.get("manifest_sha256")
+    )
+    if not isinstance(metadata.get("dataset_id"), str) or not isinstance(
+        source_manifest, str
+    ):
+        raise typer.BadParameter("snapshot metadata lacks dataset or manifest identity")
+    result = run_embodied_episode(
+        graph,
+        config,
+        world=world,
+        snapshot=str(snapshot_final),
+        dataset_id=metadata["dataset_id"],
+        source_manifest_sha256=source_manifest,
+        snapshot_content_sha256=snapshot_content_sha256(snapshot),
+    )
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
         stage = Path(temporary) / output_final.name
         with stage.open("xb") as stream:

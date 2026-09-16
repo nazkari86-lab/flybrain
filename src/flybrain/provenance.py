@@ -12,6 +12,12 @@ SNAPSHOT_IDENTITY_FILES = (
     "source-annotations.parquet",
     "edges.parquet",
 )
+SNAPSHOT_CONTENT_FILES = (
+    "metadata.json",
+    "neurons.parquet",
+    "edges.parquet",
+    "source-annotations.parquet",
+)
 
 
 class _SnapshotIdentity(BaseModel):
@@ -31,6 +37,26 @@ def snapshot_sha256(snapshot: Path) -> str:
         with (snapshot / name).open("rb") as stream:
             while chunk := stream.read(1024 * 1024):
                 digest.update(chunk)
+    return digest.hexdigest()
+
+
+def snapshot_content_sha256(snapshot: Path) -> str:
+    """Hash every available canonical snapshot component in stable name order."""
+
+    digest = hashlib.sha256()
+    found = 0
+    for name in SNAPSHOT_CONTENT_FILES:
+        path = snapshot / name
+        if not path.is_file():
+            continue
+        found += 1
+        digest.update(name.encode())
+        digest.update(b"\0")
+        with path.open("rb") as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
+    if found < 3:
+        raise ValueError("snapshot requires metadata, neurons, and edges for content identity")
     return digest.hexdigest()
 
 

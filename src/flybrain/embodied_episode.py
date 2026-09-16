@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.embodied_interfaces import (
     ExternalEvent,
@@ -52,6 +52,12 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     benchmark: str
+    snapshot: str
+    dataset_id: str
+    source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot_content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    graph_neurons: int
+    graph_edges: int
     steps: int
     neural_steps: int
     sensory_map: SensoryMap
@@ -270,6 +276,10 @@ def run_embodied_episode(
     plasticity_params: PlasticityParameters | None = None,
     world: ArenaWorld | None = None,
     silence_motor: bool = False,
+    snapshot: str = "unbound",
+    dataset_id: str = "unbound",
+    source_manifest_sha256: str = "0" * 64,
+    snapshot_content_sha256: str = "0" * 64,
 ) -> EmbodiedEpisodeResult:
     """Run a deterministic closed loop and an independent deterministic replay."""
 
@@ -320,6 +330,12 @@ def run_embodied_episode(
     )
     return EmbodiedEpisodeResult(
         benchmark="embodied-loop-v1",
+        snapshot=snapshot,
+        dataset_id=dataset_id,
+        source_manifest_sha256=source_manifest_sha256,
+        snapshot_content_sha256=snapshot_content_sha256,
+        graph_neurons=graph.neuron_count,
+        graph_edges=graph.edge_count,
         steps=config.max_steps,
         neural_steps=config.max_steps * config.chunk_steps,
         sensory_map=config.sensory_map,
