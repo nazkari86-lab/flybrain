@@ -126,3 +126,7 @@ uv run flybrain experiment embodied-loop artifacts/tiny-snapshot \
 
 See `docs/data/embodied-loop-fixture.md`. This validates closed-loop plumbing and replay, not yet
 biologically calibrated food seeking or threat avoidance.
+
+The same runner has also passed a measured 100-step smoke test on the full 166,606-neuron MaleCNS
+snapshot; see `docs/data/male-cns-embodied-loop.md` for exact identities, resource use, the observed
+motor output, and the remaining biological limitations.
