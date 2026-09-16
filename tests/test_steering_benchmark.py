@@ -19,7 +19,7 @@ def calibration_fixture() -> tuple[EventConnectome, ResolvedRegistry]:
         outgoing=csr_array((12, 12), dtype=np.float32),
     )
     names_and_ids = (
-        ("visual_left", (1,)), ("visual_right", (2,)), ("hs_left", (3,)),
+        ("visual_r1_r6_left", (1,)), ("visual_r1_r6_right", (2,)), ("hs_left", (3,)),
         ("hs_right", (4,)), ("lc16_left", (5,)), ("lc16_right", (6,)),
         ("d_na02_left", (10,)), ("d_na02_right", (11,)),
         ("d_ng13_left", (20,)), ("d_ng13_right", (21,)),
@@ -48,6 +48,33 @@ def calibration_fixture() -> tuple[EventConnectome, ResolvedRegistry]:
         populations=populations,
     )
     return graph, registry
+
+
+def sensory_fixture(*, connected: bool) -> tuple[EventConnectome, ResolvedRegistry]:
+    graph, registry = calibration_fixture()
+    if not connected:
+        return graph, registry
+    index = {int(value): position for position, value in enumerate(graph.neuron_ids)}
+    edges = ((3, 10), (4, 11), (5, 30), (6, 31), (1, 10), (2, 11))
+    outgoing = csr_array(
+        (
+            np.full(len(edges), 40.0, dtype=np.float32),
+            (
+                np.array([index[pre] for pre, _ in edges]),
+                np.array([index[post] for _, post in edges]),
+            ),
+        ),
+        shape=graph.outgoing.shape,
+        dtype=np.float32,
+    )
+    return EventConnectome(
+        neuron_ids=graph.neuron_ids,
+        cell_types=graph.cell_types,
+        roles=graph.roles,
+        transmitters=graph.transmitters,
+        superclasses=graph.superclasses,
+        outgoing=outgoing,
+    ), registry
 
 
 def test_dn_calibration_reverses_lesions_restores_and_replays() -> None:
@@ -86,3 +113,48 @@ def test_benchmark_rejects_missing_declared_population() -> None:
 
     with pytest.raises(ValueError, match="absent from graph"):
         run_causal_steering_benchmark(graph, broken, steps=2, seed=1)
+
+
+def test_open_loop_positive_circuit_requires_expected_path() -> None:
+    graph, registry = sensory_fixture(connected=True)
+    result = run_causal_steering_benchmark(graph, registry, steps=40, seed=7)
+    assert result.sensory_claims["hs_optic_flow"].classification == "positive"
+    assert result.sensory_claims["hs_optic_flow"].lesion_effect > 0
+    assert set(result.sensory_claims) == {
+        "photoreceptor_response",
+        "hs_optic_flow",
+        "lc16_looming",
+        "feature_closed_loop",
+    }
+    assert result.sensory_claims["feature_closed_loop"].classification == "positive"
+    by_name = {condition.name: condition for condition in result.conditions}
+    assert by_name["photoreceptor_left"].upstream_visual_processing_bypassed is False
+    assert by_name["hs_left"].upstream_visual_processing_bypassed is True
+
+
+def test_open_loop_null_is_reported_not_forced() -> None:
+    graph, registry = sensory_fixture(connected=False)
+    result = run_causal_steering_benchmark(graph, registry, steps=40, seed=7)
+    assert result.sensory_claims["hs_optic_flow"].classification == "null"
+    assert result.calibration_passed is True
+
+
+def test_perturbation_is_seeded_and_confined_to_declared_condition() -> None:
+    graph, registry = sensory_fixture(connected=True)
+    first = run_causal_steering_benchmark(graph, registry, steps=40, seed=7)
+    replay = run_causal_steering_benchmark(graph, registry, steps=40, seed=7)
+    changed = run_causal_steering_benchmark(graph, registry, steps=40, seed=8)
+    first_by_name = {condition.name: condition for condition in first.conditions}
+    replay_by_name = {condition.name: condition for condition in replay.conditions}
+    changed_by_name = {condition.name: condition for condition in changed.conditions}
+    assert {
+        name: condition.trace_digest for name, condition in first_by_name.items()
+    } == {
+        name: condition.trace_digest for name, condition in replay_by_name.items()
+    }
+    assert (
+        first_by_name["hs_left_perturbed"].stimulus_digest
+        != changed_by_name["hs_left_perturbed"].stimulus_digest
+    )
+    for name in first_by_name.keys() - {"hs_left_perturbed"}:
+        assert first_by_name[name].stimulus_digest == changed_by_name[name].stimulus_digest

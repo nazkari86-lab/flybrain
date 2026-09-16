@@ -11,6 +11,7 @@ from enum import StrEnum
 from typing import Literal
 
 import numpy as np
+from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.biological_registry import ResolvedRegistry
@@ -19,9 +20,21 @@ from flybrain.descending_interface import (
     DescendingMap,
     population_silence_mask,
 )
+from flybrain.embodied_interfaces import ExternalEvent
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.graph import EventConnectome
-from flybrain.shiu import ShiuParameters, simulate_shiu
+from flybrain.retinal_interface import (
+    RetinalObservation,
+    VisualDisc,
+    VisualInterfaceEncoder,
+    VisualInterfaceMap,
+    observe_retina,
+)
+from flybrain.shiu import ShiuParameters, ShiuState, simulate_shiu
+
+MIN_RELEVANT_SPIKES = 1
+MIN_DIRECTIONAL_EFFECT = 1e-6
+MIN_LESION_FRACTION = 0.25
 
 
 class ProtocolName(StrEnum):
@@ -118,6 +131,445 @@ def _descending_map(registry: ResolvedRegistry) -> DescendingMap:
             "d_na02_left", "d_na02_right", "d_ng13_left", "d_ng13_right",
             "mdn_left", "mdn_right",
         ))
+    )
+
+
+def _visual_map(registry: ResolvedRegistry) -> VisualInterfaceMap:
+    return VisualInterfaceMap(
+        left_r1_r6_ids=registry.population("visual_r1_r6_left").neuron_ids,
+        right_r1_r6_ids=registry.population("visual_r1_r6_right").neuron_ids,
+        left_hs_ids=registry.population("hs_left").neuron_ids,
+        right_hs_ids=registry.population("hs_right").neuron_ids,
+        left_lc16_ids=registry.population("lc16_left").neuron_ids,
+        right_lc16_ids=registry.population("lc16_right").neuron_ids,
+    )
+
+
+def _voltage_schedule(
+    graph: EventConnectome,
+    events: tuple[ExternalEvent, ...],
+) -> tuple[
+    dict[int, tuple[NDArray[np.int64], NDArray[np.float32]]],
+    NDArray[np.bool_],
+]:
+    index_by_id = {int(value): index for index, value in enumerate(graph.neuron_ids)}
+    grouped: dict[int, list[tuple[int, float]]] = {}
+    direct_mask = np.zeros(graph.neuron_count, dtype=np.bool_)
+    for event in events:
+        pairs = grouped.setdefault(event.step, [])
+        for neuron_id, voltage in zip(event.neuron_ids, event.voltages, strict=True):
+            if neuron_id not in index_by_id:
+                raise ValueError(f"visual event ID absent from graph: {neuron_id}")
+            index = index_by_id[neuron_id]
+            direct_mask[index] = True
+            pairs.append((index, voltage))
+    schedule = {
+        step: (
+            np.array([index for index, _ in pairs], dtype=np.int64),
+            np.array([voltage for _, voltage in pairs], dtype=np.float32),
+        )
+        for step, pairs in grouped.items()
+    }
+    return schedule, direct_mask
+
+
+def _sensory_condition(
+    graph: EventConnectome,
+    mapping: DescendingMap,
+    name: str,
+    events: tuple[ExternalEvent, ...],
+    silenced: frozenset[str],
+    *,
+    steps: int,
+    seed: int,
+    protocol: ProtocolName,
+    bypassed: bool,
+) -> ConditionResult:
+    voltage_events, refractory_exempt = _voltage_schedule(graph, events)
+    silence_mask = population_silence_mask(graph, mapping, silenced)
+    decoder = DescendingDecoder(mapping)
+    spike_steps: list[tuple[int, tuple[int, ...]]] = []
+    commands: list[tuple[float, float]] = []
+    bodies: list[FlyBody] = []
+    world = ArenaWorld(
+        ArenaConfig(10.0, 10.0, 0.1, 0.2),
+        FlyBody(5.0, 5.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6),
+        food=(1.0, 1.0),
+        threat=(9.0, 9.0),
+    )
+    for batch in simulate_shiu(
+        graph,
+        ShiuParameters(),
+        steps=steps,
+        external_voltage_events=voltage_events,
+        seed=seed,
+        silenced=silence_mask,
+        refractory_exempt=refractory_exempt,
+    ):
+        spikes = tuple(int(value) for value in batch.neuron_ids)
+        activity = decoder.decode(spikes)
+        body = world.step(activity.command).body
+        spike_steps.append((batch.step, spikes))
+        commands.append((activity.command.forward, activity.command.turn))
+        bodies.append(body)
+    populations = mapping.named_populations()
+    counts = {
+        population: sum(
+            neuron_id in spikes
+            for _, spikes in spike_steps
+            for neuron_id in neuron_ids
+        )
+        for population, neuron_ids in populations.items()
+    }
+    stimulus = [asdict(event) for event in events]
+    trace = {
+        "stimulus": stimulus,
+        "spikes": spike_steps,
+        "commands": commands,
+        "bodies": [asdict(body) for body in bodies],
+    }
+    return ConditionResult(
+        name=name,
+        protocol=protocol,
+        stimulus_digest=_digest(stimulus),
+        spike_digest=_digest(spike_steps),
+        command_digest=_digest(commands),
+        trace_digest=_digest(trace),
+        relevant_spike_counts=counts,
+        turn_integral=sum(command[1] for command in commands),
+        reverse_integral=sum(max(0.0, -command[0]) for command in commands),
+        final_body=bodies[-1],
+        silenced_populations=tuple(sorted(silenced)),
+        upstream_visual_processing_bypassed=bypassed,
+    )
+
+
+def _repeat_visual_events(
+    encoder: VisualInterfaceEncoder,
+    observation: RetinalObservation,
+    *,
+    steps: int,
+    feature_calibration: bool,
+    first_step: int = 0,
+) -> tuple[ExternalEvent, ...]:
+    encode = (
+        encoder.encode_feature_calibration
+        if feature_calibration
+        else encoder.encode_photoreceptors
+    )
+    return tuple(
+        event
+        for step in range(first_step, steps)
+        for event in encode(observation, step=step)
+    )
+
+
+def _directional_classification(
+    normal: ConditionResult,
+    mirror: ConditionResult,
+    lesion: ConditionResult,
+    restored: ConditionResult,
+    replay: ConditionResult,
+    holdouts: tuple[ConditionResult, ...],
+    *,
+    relevant_population: str,
+) -> ClaimClassification:
+    relevant_spikes = normal.relevant_spike_counts[relevant_population]
+    effect = normal.turn_integral
+    lesion_effect = effect - lesion.turn_integral
+    denominator = max(abs(effect), MIN_DIRECTIONAL_EFFECT)
+    lesion_fraction = lesion_effect / denominator
+    classification: Literal["positive", "null", "directionally_wrong", "underpowered"]
+    if relevant_spikes == 0:
+        classification = "null"
+        reasons = ("no relevant descending spikes after a fully delivered stimulus",)
+    elif relevant_spikes < MIN_RELEVANT_SPIKES:
+        classification = "underpowered"
+        reasons = ("relevant descending spike count is below the fixed threshold",)
+    elif effect <= MIN_DIRECTIONAL_EFFECT or mirror.turn_integral >= -MIN_DIRECTIONAL_EFFECT:
+        classification = "directionally_wrong"
+        reasons = ("normal and mirrored turn signs do not match the predeclared signs",)
+    elif (
+        lesion_fraction < MIN_LESION_FRACTION
+        or restored.trace_digest != normal.trace_digest
+        or replay.trace_digest != normal.trace_digest
+        or any(item.turn_integral <= MIN_DIRECTIONAL_EFFECT for item in holdouts)
+    ):
+        classification = "null"
+        reasons = ("one or more lesion, restoration, replay, or holdout gates failed",)
+    else:
+        classification = "positive"
+        reasons = ("direction, lesion, restoration, replay, and holdout gates passed",)
+    return ClaimClassification(
+        classification=classification,
+        evidence_kind="simulation_observation",
+        numerator=effect,
+        denominator=denominator,
+        threshold=MIN_DIRECTIONAL_EFFECT,
+        lesion_effect=lesion_effect,
+        upstream_visual_processing_bypassed=True,
+        reasons=reasons,
+    )
+
+
+def _run_sensory_protocols(
+    graph: EventConnectome,
+    registry: ResolvedRegistry,
+    mapping: DescendingMap,
+    *,
+    steps: int,
+    seed: int,
+) -> tuple[tuple[ConditionResult, ...], dict[str, ClaimClassification]]:
+    visual = VisualInterfaceEncoder(_visual_map(registry))
+    left_motion = RetinalObservation(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    right_motion = RetinalObservation(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    body = FlyBody(5.0, 5.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6)
+    holdout_observations = tuple(
+        observe_retina(body, previous, current)
+        for previous, current in (
+            ((VisualDisc(8.0, 5.5, 0.4),), (VisualDisc(6.0, 7.0, 0.4),)),
+            ((VisualDisc(9.0, 6.0, 0.3),), (VisualDisc(6.0, 8.0, 0.3),)),
+        )
+    )
+    holdout_motion = tuple(
+        RetinalObservation(0.0, 0.0, 0.0, 0.0, item.left_motion, 0.0, 0.0)
+        for item in holdout_observations
+    )
+
+    def run(
+        name: str,
+        observation: RetinalObservation,
+        silenced: frozenset[str] = frozenset(),
+        *,
+        feature: bool = True,
+        first_step: int = 0,
+    ) -> ConditionResult:
+        return _sensory_condition(
+            graph,
+            mapping,
+            name,
+            _repeat_visual_events(
+                visual,
+                observation,
+                steps=steps,
+                feature_calibration=feature,
+                first_step=first_step,
+            ),
+            silenced,
+            steps=steps,
+            seed=seed,
+            protocol=(
+                ProtocolName.VISUAL_FEATURE_OPEN_LOOP
+                if feature
+                else ProtocolName.PHOTORECEPTOR_OPEN_LOOP
+            ),
+            bypassed=feature,
+        )
+
+    hs_normal = run("hs_left", left_motion)
+    hs_mirror = run("hs_right_mirrored", right_motion)
+    hs_lesion = run("hs_left_matching_lesion", left_motion, frozenset({"d_na02_left"}))
+    hs_opposite_lesion = run(
+        "hs_left_opposite_lesion", left_motion, frozenset({"d_na02_right"})
+    )
+    hs_bilateral_lesion = run(
+        "hs_left_bilateral_lesion",
+        left_motion,
+        frozenset({"d_na02_left", "d_na02_right"}),
+    )
+    hs_restored = run("hs_left_restored", left_motion)
+    hs_replay = run("hs_left_replay", left_motion)
+    perturbation_rng = np.random.default_rng(seed)
+    perturbation = 0.8 * float(perturbation_rng.uniform(0.9, 1.1))
+    timing_bound = max(1, round(steps * 0.1))
+    timing_shift = timing_bound + int(
+        perturbation_rng.integers(-timing_bound, timing_bound + 1)
+    )
+    hs_perturbed = run(
+        "hs_left_perturbed",
+        RetinalObservation(0.0, 0.0, 0.0, 0.0, perturbation, 0.0, 0.0),
+        first_step=timing_shift,
+    )
+    hs_holdouts = tuple(
+        run(f"hs_left_holdout_{index}", observation)
+        for index, observation in enumerate(holdout_motion, start=1)
+    )
+    looming = RetinalObservation(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+    lc16 = run("lc16_bilateral", looming)
+    lc16_lesion = run(
+        "lc16_bilateral_lesion",
+        looming,
+        frozenset({"mdn_left", "mdn_right"}),
+    )
+    photoreceptor = run(
+        "photoreceptor_left",
+        RetinalObservation(1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0),
+        feature=False,
+    )
+    conditions = (
+        hs_normal,
+        hs_mirror,
+        hs_lesion,
+        hs_opposite_lesion,
+        hs_bilateral_lesion,
+        hs_restored,
+        hs_replay,
+        hs_perturbed,
+        *hs_holdouts,
+        lc16,
+        lc16_lesion,
+        photoreceptor,
+    )
+    hs_claim = _directional_classification(
+        hs_normal,
+        hs_mirror,
+        hs_lesion,
+        hs_restored,
+        hs_replay,
+        hs_holdouts,
+        relevant_population="d_na02_left",
+    )
+    lc16_spikes = lc16.relevant_spike_counts["mdn_left"] + lc16.relevant_spike_counts["mdn_right"]
+    lc16_effect = lc16.reverse_integral
+    lc16_lesion_effect = lc16_effect - lc16_lesion.reverse_integral
+    lc16_claim = ClaimClassification(
+        classification=(
+            "positive"
+            if lc16_spikes >= MIN_RELEVANT_SPIKES
+            and lc16_effect > MIN_DIRECTIONAL_EFFECT
+            and lc16_lesion_effect / max(lc16_effect, MIN_DIRECTIONAL_EFFECT)
+            >= MIN_LESION_FRACTION
+            else "null"
+        ),
+        evidence_kind="simulation_observation",
+        numerator=lc16_effect,
+        denominator=max(lc16_effect, MIN_DIRECTIONAL_EFFECT),
+        threshold=MIN_DIRECTIONAL_EFFECT,
+        lesion_effect=lc16_lesion_effect,
+        upstream_visual_processing_bypassed=True,
+        reasons=("bilateral looming feature path and matching MDN lesion were evaluated",),
+    )
+    photo_spikes = photoreceptor.relevant_spike_counts["d_na02_left"]
+    photo_claim = ClaimClassification(
+        classification="positive" if photo_spikes >= MIN_RELEVANT_SPIKES else "null",
+        evidence_kind="simulation_observation",
+        numerator=float(photo_spikes),
+        denominator=float(max(photo_spikes, 1)),
+        threshold=float(MIN_RELEVANT_SPIKES),
+        lesion_effect=0.0,
+        upstream_visual_processing_bypassed=False,
+        reasons=("R1-R6 received only luminance and contrast channels",),
+    )
+    return conditions, {
+        "photoreceptor_response": photo_claim,
+        "hs_optic_flow": hs_claim,
+        "lc16_looming": lc16_claim,
+    }
+
+
+def _closed_loop_condition(
+    graph: EventConnectome,
+    registry: ResolvedRegistry,
+    mapping: DescendingMap,
+    name: str,
+    silenced: frozenset[str],
+    *,
+    steps: int,
+    seed: int,
+) -> ConditionResult:
+    params = ShiuParameters()
+    chunk_steps = min(params.delay_steps + 1, steps)
+    world_steps = min(2, max(1, steps // chunk_steps))
+    state = ShiuState.initial(graph.neuron_count, params=params, seed=seed)
+    encoder = VisualInterfaceEncoder(_visual_map(registry))
+    decoder = DescendingDecoder(mapping)
+    silence_mask = population_silence_mask(graph, mapping, silenced)
+    world = ArenaWorld(
+        ArenaConfig(10.0, 10.0, 0.1, 0.2),
+        FlyBody(5.0, 5.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6),
+        food=(1.0, 1.0),
+        threat=(9.0, 9.0),
+    )
+    disc_path = tuple(
+        VisualDisc(9.0 - 2.0 * index, 5.5 + 2.0 * index, 0.4)
+        for index in range(world_steps + 1)
+    )
+    all_events: list[ExternalEvent] = []
+    spike_steps: list[tuple[int, tuple[int, ...]]] = []
+    commands: list[tuple[float, float]] = []
+    bodies: list[FlyBody] = []
+    for world_index in range(world_steps):
+        observation = observe_retina(
+            world.body,
+            (disc_path[world_index],),
+            (disc_path[world_index + 1],),
+        )
+        feature_only = RetinalObservation(
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            observation.left_motion,
+            observation.right_motion,
+            observation.looming,
+        )
+        events = tuple(
+            event
+            for neural_step in range(state.step, state.step + chunk_steps)
+            for event in encoder.encode_feature_calibration(
+                feature_only,
+                step=neural_step,
+            )
+        )
+        all_events.extend(events)
+        voltage_events, refractory_exempt = _voltage_schedule(graph, events)
+        chunk_spikes: list[int] = []
+        for batch in simulate_shiu(
+            graph,
+            params,
+            steps=chunk_steps,
+            external_voltage_events=voltage_events,
+            seed=seed,
+            state=state,
+            silenced=silence_mask,
+            refractory_exempt=refractory_exempt,
+        ):
+            spikes = tuple(int(value) for value in batch.neuron_ids)
+            spike_steps.append((batch.step, spikes))
+            chunk_spikes.extend(spikes)
+        activity = decoder.decode(tuple(chunk_spikes))
+        body = world.step(activity.command).body
+        commands.append((activity.command.forward, activity.command.turn))
+        bodies.append(body)
+    populations = mapping.named_populations()
+    counts = {
+        population: sum(
+            neuron_id in spikes
+            for _, spikes in spike_steps
+            for neuron_id in neuron_ids
+        )
+        for population, neuron_ids in populations.items()
+    }
+    stimulus = [asdict(event) for event in all_events]
+    trace = {
+        "stimulus": stimulus,
+        "spikes": spike_steps,
+        "commands": commands,
+        "bodies": [asdict(body) for body in bodies],
+    }
+    return ConditionResult(
+        name=name,
+        protocol=ProtocolName.VISUAL_FEATURE_CLOSED_LOOP,
+        stimulus_digest=_digest(stimulus),
+        spike_digest=_digest(spike_steps),
+        command_digest=_digest(commands),
+        trace_digest=_digest(trace),
+        relevant_spike_counts=counts,
+        turn_integral=sum(command[1] for command in commands),
+        reverse_integral=sum(max(0.0, -command[0]) for command in commands),
+        final_body=bodies[-1],
+        silenced_populations=tuple(sorted(silenced)),
+        upstream_visual_processing_bypassed=True,
     )
 
 
@@ -248,7 +700,7 @@ def run_causal_steering_benchmark(
         ),
         ("d_na02_left_restored", mapping.d_na02_left, frozenset()),
     )
-    conditions = tuple(
+    direct_conditions = tuple(
         _condition(graph, mapping, name, targets, silenced, steps=steps, seed=seed)
         for name, targets, silenced in schedules
     )
@@ -261,11 +713,15 @@ def run_causal_steering_benchmark(
         steps=steps,
         seed=seed,
     )
-    baseline = next(item for item in conditions if item.name == "d_na02_left")
-    restored = next(item for item in conditions if item.name == "d_na02_left_restored")
-    mdn = next(item for item in conditions if item.name == "mdn_bilateral")
-    mdn_silenced = next(item for item in conditions if item.name == "mdn_bilateral_silenced")
-    left_silenced = next(item for item in conditions if item.name == "d_na02_left_silenced")
+    baseline = next(item for item in direct_conditions if item.name == "d_na02_left")
+    restored = next(item for item in direct_conditions if item.name == "d_na02_left_restored")
+    mdn = next(item for item in direct_conditions if item.name == "mdn_bilateral")
+    mdn_silenced = next(
+        item for item in direct_conditions if item.name == "mdn_bilateral_silenced"
+    )
+    left_silenced = next(
+        item for item in direct_conditions if item.name == "d_na02_left_silenced"
+    )
 
     def metric_value(result: ConditionResult, metric: str) -> float:
         if metric == "relevant_spikes":
@@ -298,8 +754,8 @@ def run_causal_steering_benchmark(
         for name, normal, intervention, metric in comparison_inputs
     )
     graph_unchanged = before == _graph_digest(graph)
-    right = next(item for item in conditions if item.name == "d_na02_right")
-    bilateral = next(item for item in conditions if item.name == "d_na02_bilateral")
+    right = next(item for item in direct_conditions if item.name == "d_na02_right")
+    bilateral = next(item for item in direct_conditions if item.name == "d_na02_bilateral")
     calibration_gates = {
         "left_ipsiversive": baseline.turn_integral > 0,
         "right_ipsiversive": right.turn_integral < 0,
@@ -312,6 +768,64 @@ def run_causal_steering_benchmark(
         "graph_unchanged": graph_unchanged,
     }
     calibration_passed = all(calibration_gates.values())
+    sensory_conditions, sensory_claims = _run_sensory_protocols(
+        graph,
+        registry,
+        mapping,
+        steps=steps,
+        seed=seed,
+    )
+    closed_loop = _closed_loop_condition(
+        graph,
+        registry,
+        mapping,
+        "feature_closed_loop",
+        frozenset(),
+        steps=steps,
+        seed=seed,
+    )
+    closed_loop_lesion = _closed_loop_condition(
+        graph,
+        registry,
+        mapping,
+        "feature_closed_loop_lesion",
+        frozenset({"d_na02_left"}),
+        steps=steps,
+        seed=seed,
+    )
+    closed_loop_replay = _closed_loop_condition(
+        graph,
+        registry,
+        mapping,
+        "feature_closed_loop_replay",
+        frozenset(),
+        steps=steps,
+        seed=seed,
+    )
+    closed_effect = closed_loop.turn_integral
+    closed_lesion_effect = closed_effect - closed_loop_lesion.turn_integral
+    sensory_claims["feature_closed_loop"] = ClaimClassification(
+        classification=(
+            "positive"
+            if closed_effect > MIN_DIRECTIONAL_EFFECT
+            and closed_lesion_effect / max(abs(closed_effect), MIN_DIRECTIONAL_EFFECT)
+            >= MIN_LESION_FRACTION
+            and closed_loop.trace_digest == closed_loop_replay.trace_digest
+            else "null"
+        ),
+        evidence_kind="simulation_observation",
+        numerator=closed_effect,
+        denominator=max(abs(closed_effect), MIN_DIRECTIONAL_EFFECT),
+        threshold=MIN_DIRECTIONAL_EFFECT,
+        lesion_effect=closed_lesion_effect,
+        upstream_visual_processing_bypassed=True,
+        reasons=("closed-loop feature-bypass response, lesion, and replay were evaluated",),
+    )
+    conditions = direct_conditions + sensory_conditions + (
+        closed_loop,
+        closed_loop_lesion,
+        closed_loop_replay,
+    )
     return SteeringBenchmarkResult(
         benchmark="biological-steering-v1",
         snapshot=snapshot,
@@ -322,7 +836,7 @@ def run_causal_steering_benchmark(
         comparisons=comparisons,
         calibration_gates=calibration_gates,
         calibration_passed=calibration_passed,
-        sensory_claims={},
+        sensory_claims=sensory_claims,
         replay_exact=replay.trace_digest == baseline.trace_digest,
         graph_unchanged=graph_unchanged,
         software_revision="source",
