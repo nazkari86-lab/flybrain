@@ -115,8 +115,9 @@ behavioral validation.
 
 ## Run the embodied loop fixture
 
-The deterministic planar embodied harness connects world observations to declared sensory neurons,
-decodes motor spikes into bounded body commands, and feeds body state into the next neural step:
+The deterministic planar embodied harness connects world observations to arbitrary fixture neurons,
+decodes motor spikes into bounded body commands, and feeds body state into the next neural step. Its
+artifacts are machine-labeled `arbitrary-smoke-only`, with behavior claims disabled:
 
 ```bash
 uv run flybrain experiment embodied-loop artifacts/tiny-snapshot \
@@ -130,3 +131,25 @@ biologically calibrated food seeking or threat avoidance.
 The same runner has also passed a measured 100-step smoke test on the full 166,606-neuron MaleCNS
 snapshot; see `docs/data/male-cns-embodied-loop.md` for exact identities, resource use, the observed
 motor output, and the remaining biological limitations.
+
+## Run the evidence-bound biological steering assay
+
+The biological steering command resolves exact R1-R6, HS, LC16, DNa02, DNg13, and MDN populations
+from the retained annotation table before loading or executing the graph. It publishes direct-DN,
+open-loop visual, lesion, restoration, replay, holdout, perturbation, and reduced closed-loop
+results atomically:
+
+```bash
+uv run flybrain experiment biological-steering artifacts/male-cns-v1.0-w5 \
+  --registry data/registry/biological-interface-registry-v1.json \
+  --steps 40 \
+  --seed 7 \
+  --output artifacts/biological-steering-malecns-seed7.json
+```
+
+The retained MaleCNS run passed every direct calibration and integrity gate. HS feature-path
+steering was positive under direct HS stimulation, while photoreceptor and LC16-to-MDN outcomes
+were null. Direct HS/LC16 stimulation bypasses upstream visual processing and is not full
+retina-to-behavior evidence. See
+[`docs/data/male-cns-biological-steering.md`](docs/data/male-cns-biological-steering.md) for exact
+hashes, effects, resource use, and limitations.
