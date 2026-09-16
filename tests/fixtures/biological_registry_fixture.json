@@ -1,0 +1,41 @@
+{
+  "registry_version": "fixture-v1",
+  "dataset_id": "fixture-male-cns",
+  "populations": [
+    {
+      "name": "d_na02_left",
+      "role": "steering",
+      "selector": {
+        "equals": {
+          "type": "DNa02",
+          "superclass": "descending_neuron",
+          "somaSide": "L"
+        },
+        "expected_ids": [10],
+        "expected_count": 1
+      },
+      "evidence_ids": [
+        "fixture-annotations",
+        "d-na02-steering"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "fixture-annotations",
+      "kind": "dataset_measurement",
+      "source_url": "https://example.org/fixture-annotations",
+      "claim": "The fixture annotation table identifies exact neuron populations.",
+      "confidence": "measured"
+    },
+    {
+      "evidence_id": "d-na02-steering",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/39293446/",
+      "claim": "DNa02 is implicated in ipsiversive walking steering.",
+      "pmid": "39293446",
+      "doi": "10.1016/j.cell.2024.08.033",
+      "confidence": "high"
+    }
+  ]
+}
