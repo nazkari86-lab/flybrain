@@ -39,6 +39,7 @@ ALLOWED_SELECTOR_COLUMNS = frozenset(
         "class",
         "subclass",
         "somaSide",
+        "somaNeuromere",
         "rootSide",
         "entryNerve",
         "exitNerve",
@@ -132,6 +133,17 @@ class AnnotationSelector(BaseModel, frozen=True):
             raise ValueError("expected IDs must contain only integers")
         return value
 
+    @field_validator("equals", mode="before")
+    @classmethod
+    def validate_exact_predicate_types(cls, value: object) -> object:
+        if (
+            isinstance(value, Mapping)
+            and "somaNeuromere" in value
+            and type(value["somaNeuromere"]) is not str
+        ):
+            raise ValueError("somaNeuromere exact predicate must be a string")
+        return value
+
     @field_validator("expected_count", mode="before")
     @classmethod
     def validate_expected_count_type(cls, value: object) -> object:
@@ -176,6 +188,8 @@ class AnnotationSelector(BaseModel, frozen=True):
         conflicts = sorted(set(self.equals) & set(self.in_values))
         if conflicts:
             raise ValueError(f"conflicting equals/in_values selector columns: {conflicts}")
+        if "somaNeuromere" in self.in_values:
+            raise ValueError("somaNeuromere must use one exact equals predicate")
         for column, values in self.in_values.items():
             if not values:
                 raise ValueError(f"selector predicate has no values: {column}")
@@ -209,7 +223,7 @@ class PopulationDeclaration(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    role: Literal["sensory", "steering", "retreat", "future_interface"]
+    role: Literal["sensory", "steering", "retreat", "motor", "future_interface"]
     selector: AnnotationSelector
     evidence_ids: tuple[str, ...]
 
@@ -399,8 +413,21 @@ def resolve_biological_registry(
     _validated_body_ids(table)
     evidence_by_id = {record.evidence_id: record for record in registry.evidence}
     resolved_populations = []
+    motor_owner: dict[int, str] = {}
     for declaration in registry.populations:
         neuron_ids = _resolve_population_ids(table, declaration)
+        if declaration.role == "motor":
+            overlaps = {
+                neuron_id: motor_owner[neuron_id]
+                for neuron_id in neuron_ids
+                if neuron_id in motor_owner
+            }
+            if overlaps:
+                raise ValueError(
+                    "overlapping motor populations for "
+                    f"{declaration.name}: {sorted(overlaps.items())}"
+                )
+            motor_owner.update(dict.fromkeys(neuron_ids, declaration.name))
         id_bytes = b"\n".join(str(value).encode("ascii") for value in neuron_ids)
         resolved_populations.append(
             ResolvedPopulation(
