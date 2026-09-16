@@ -9,7 +9,7 @@
         "equals": {"superclass": "ol_sensory", "class": "visual"},
         "expected_count": 6091
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "visual_r1_r6_left",
@@ -23,7 +23,7 @@
         },
         "expected_count": 1112
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-hemispheric-r1-r6", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "visual_r1_r6_right",
@@ -37,7 +37,7 @@
         },
         "expected_count": 2265
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-hemispheric-r1-r6", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "hs_left",
@@ -48,7 +48,7 @@
         "expected_ids": [10034, 10181, 10419, 11793],
         "expected_count": 4
       },
-      "evidence_ids": ["male-cns-annotations", "fujiwara-2018-optic-flow"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "busch-2018-optic-flow", "assumption-hs-lc16-calibration", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "hs_right",
@@ -59,25 +59,27 @@
         "expected_ids": [10015, 10016, 10023, 12521],
         "expected_count": 4
       },
-      "evidence_ids": ["male-cns-annotations", "fujiwara-2018-optic-flow"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "busch-2018-optic-flow", "assumption-hs-lc16-calibration", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "lc16_left",
       "role": "future_interface",
       "selector": {
         "equals": {"superclass": "visual_projection", "type": "LC16", "somaSide": "L"},
+        "expected_ids": [20297, 20499, 21172, 23588, 25211, 26053, 28655, 30663, 35230, 37205, 37383, 37805, 39210, 39713, 40005, 40208, 41389, 41751, 42756, 43048, 43289, 44032, 44711, 44805, 45211, 45735, 46761, 47047, 47668, 48008, 48123, 48315, 48674, 49334, 49389, 50508, 50758, 51478, 53087, 53550, 54063, 54467, 54700, 54871, 55045, 55739, 59069, 59928, 60920, 63084, 63710, 64055, 65651, 69580, 70535, 71176, 71311, 72354, 72386, 72918, 73419, 75487, 76249, 80540, 81848, 82522, 83404, 85681, 86896, 89334, 108949, 140524, 143928, 511803, 512475, 516925, 517074, 517448, 518476, 521631, 522372, 531003, 534612, 534785, 539720, 540247, 542313, 546731],
         "expected_count": 88
       },
-      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-hs-lc16-calibration", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "lc16_right",
       "role": "future_interface",
       "selector": {
         "equals": {"superclass": "visual_projection", "type": "LC16", "somaSide": "R"},
+        "expected_ids": [36432, 36931, 37638, 38083, 38101, 38298, 39027, 39417, 41166, 41203, 41262, 41491, 41902, 41918, 42232, 42752, 42993, 43013, 43253, 43370, 43440, 43545, 43600, 43861, 44006, 44434, 44448, 44751, 44897, 45007, 45188, 45482, 45642, 46055, 46932, 46962, 47016, 47082, 47222, 47533, 47715, 48086, 48216, 48393, 49184, 49314, 49445, 49728, 50531, 51143, 51453, 51772, 52322, 52456, 52463, 52495, 52526, 53180, 53482, 53795, 54154, 54372, 54626, 55313, 56225, 56258, 56267, 57192, 57503, 57526, 58546, 58700, 58816, 59070, 59515, 59681, 60108, 60187, 60293, 60356, 60416, 60635, 61630, 61937, 62499, 62698, 62890, 63110, 64770, 64905, 66614, 71290, 84595, 93102],
         "expected_count": 94
       },
-      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-hs-lc16-calibration", "assumption-upstream-visual-bypass"]
     },
     {
       "name": "olfactory_cb",
@@ -86,7 +88,7 @@
         "equals": {"superclass": "cb_sensory", "class": "olfactory"},
         "expected_count": 2639
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
     },
     {
       "name": "tactile_vnc",
@@ -95,7 +97,7 @@
         "equals": {"superclass": "vnc_sensory", "class": "mechanosensory_tactile"},
         "expected_count": 2558
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
     },
     {
       "name": "proprioceptive_vnc",
@@ -107,7 +109,7 @@
         },
         "expected_count": 1030
       },
-      "evidence_ids": ["male-cns-annotations"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
     },
     {
       "name": "d_na02_left",
@@ -121,7 +123,7 @@
         "expected_ids": [523769],
         "expected_count": 1
       },
-      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering", "assumption-decoder-sign-normalization"]
     },
     {
       "name": "d_na02_right",
@@ -135,7 +137,7 @@
         "expected_ids": [10360],
         "expected_count": 1
       },
-      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering", "assumption-decoder-sign-normalization"]
     },
     {
       "name": "d_ng13_left",
@@ -149,7 +151,7 @@
         "expected_ids": [11074],
         "expected_count": 1
       },
-      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering", "assumption-decoder-sign-normalization"]
     },
     {
       "name": "d_ng13_right",
@@ -163,7 +165,7 @@
         "expected_ids": [512006],
         "expected_count": 1
       },
-      "evidence_ids": ["male-cns-annotations", "yang-2024-steering"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering", "assumption-decoder-sign-normalization"]
     },
     {
       "name": "mdn_left",
@@ -173,7 +175,7 @@
         "expected_ids": [11288, 12348],
         "expected_count": 2
       },
-      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat", "assumption-decoder-sign-normalization"]
     },
     {
       "name": "mdn_right",
@@ -183,15 +185,18 @@
         "expected_ids": [10763, 11332],
         "expected_count": 2
       },
-      "evidence_ids": ["male-cns-annotations", "mdn-2017-retreat"]
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat", "assumption-decoder-sign-normalization"]
     }
   ],
   "evidence": [
     {
-      "evidence_id": "male-cns-annotations",
+      "evidence_id": "male-cns-v1.0-body-annotations",
       "kind": "dataset_measurement",
-      "source_url": "https://male-cns.janelia.org/release/",
-      "claim": "The retained MaleCNS source annotation table resolves the declared populations and their exact counts or IDs.",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "MaleCNS v1.0 body annotations are the official source for the retained annotation table; the artifact URL and SHA-256 below bind this declaration to the release file.",
+      "source_artifact_name": "body-annotations",
+      "source_artifact_url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "source_artifact_sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
       "confidence": "measured"
     },
     {
@@ -212,12 +217,40 @@
       "confidence": "high"
     },
     {
-      "evidence_id": "fujiwara-2018-optic-flow",
+      "evidence_id": "busch-2018-optic-flow",
       "kind": "experimental_result",
       "source_url": "https://pubmed.ncbi.nlm.nih.gov/30528583/",
       "pmid": "30528583",
-      "claim": "Horizontal optic-flow pathways influence turning in opposite directions and bilateral signals affect walking velocity.",
+      "claim": "Horizontal optic-flow sensors bidirectionally control walking behavior.",
       "confidence": "high"
+    },
+    {
+      "evidence_id": "assumption-hemispheric-r1-r6",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "The resolver treats the retained rootSide L/R labels of R1-R6 as the two visual hemispheric channels; this is an interface assumption, not a claim that the upstream visual circuit is fully modeled.",
+      "confidence": "assumption"
+    },
+    {
+      "evidence_id": "assumption-decoder-sign-normalization",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "The future steering decoder will use side-aware DNa02/DNg13 spike differences with an explicit sign convention and bounded normalization; the registry does not assert that this decoder is biologically identified.",
+      "confidence": "assumption"
+    },
+    {
+      "evidence_id": "assumption-hs-lc16-calibration",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "HS and LC16 populations are retained as anatomically resolved interfaces whose stimulus gains and calibration remain to be measured in a later benchmark.",
+      "confidence": "assumption"
+    },
+    {
+      "evidence_id": "assumption-upstream-visual-bypass",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "The initial interface may inject bounded visual events at selected annotated populations without claiming a complete photoreceptor-to-projection-neuron model; this bypass is explicit and must be disclosed in benchmark artifacts.",
+      "confidence": "assumption"
     }
   ]
 }

@@ -19,6 +19,27 @@ from flybrain.biological_registry import (
 from flybrain.graph import EventConnectome
 
 FIXTURE_REGISTRY = Path(__file__).parent / "fixtures" / "biological_registry_fixture.json"
+RETAINED_MALE_CNS = Path(
+    "/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5"
+)
+V1_POPULATION_NAMES = {
+    "visual_all",
+    "visual_r1_r6_left",
+    "visual_r1_r6_right",
+    "hs_left",
+    "hs_right",
+    "lc16_left",
+    "lc16_right",
+    "olfactory_cb",
+    "tactile_vnc",
+    "proprioceptive_vnc",
+    "d_na02_left",
+    "d_na02_right",
+    "d_ng13_left",
+    "d_ng13_right",
+    "mdn_left",
+    "mdn_right",
+}
 
 
 def annotation_snapshot(
@@ -67,6 +88,87 @@ def test_v1_registry_declares_exact_documented_populations() -> None:
     assert by_name["hs_right"].selector.expected_ids == (10015, 10016, 10023, 12521)
     assert by_name["lc16_left"].selector.expected_count == 88
     assert by_name["lc16_right"].selector.expected_count == 94
+    assert set(by_name) == V1_POPULATION_NAMES
+
+
+def test_v1_registry_resolves_against_retained_full_snapshot() -> None:
+    if not RETAINED_MALE_CNS.is_dir():
+        pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
+
+    resolved = resolve_biological_registry(
+        load_biological_registry(
+            Path("data/registry/biological-interface-registry-v1.json")
+        ),
+        RETAINED_MALE_CNS,
+    )
+
+    expected_ids = {
+        "d_na02_left": (523769,),
+        "d_na02_right": (10360,),
+        "d_ng13_left": (11074,),
+        "d_ng13_right": (512006,),
+        "mdn_left": (11288, 12348),
+        "mdn_right": (10763, 11332),
+        "hs_left": (10034, 10181, 10419, 11793),
+        "hs_right": (10015, 10016, 10023, 12521),
+    }
+    expected_counts = {
+        "visual_all": 6091,
+        "visual_r1_r6_left": 1112,
+        "visual_r1_r6_right": 2265,
+        "lc16_left": 88,
+        "lc16_right": 94,
+        "olfactory_cb": 2639,
+        "tactile_vnc": 2558,
+        "proprioceptive_vnc": 1030,
+    }
+
+    assert {item.name for item in resolved.populations} == V1_POPULATION_NAMES
+    assert resolved.dataset_id == "male-cns-v1.0-essential"
+    assert resolved.source_manifest_sha256 == (
+        "8406eacdb75db4f1b84cfbf13b281b51628e68941458504312c0f42329fd5122"
+    )
+    for name, ids in expected_ids.items():
+        assert resolved.population(name).neuron_ids == ids
+    for name, count in expected_counts.items():
+        assert len(resolved.population(name).neuron_ids) == count
+
+
+def test_v1_registry_records_are_evidence_complete_and_bound() -> None:
+    registry = load_biological_registry(
+        Path("data/registry/biological-interface-registry-v1.json")
+    )
+    by_id = {record.evidence_id: record for record in registry.evidence}
+    expected_assumptions = {
+        "assumption-hemispheric-r1-r6",
+        "assumption-decoder-sign-normalization",
+        "assumption-hs-lc16-calibration",
+        "assumption-upstream-visual-bypass",
+    }
+    assert expected_assumptions <= set(by_id)
+    assert all(by_id[item].kind == "model_assumption" for item in expected_assumptions)
+    assert all(by_id[item].confidence == "assumption" for item in expected_assumptions)
+    assert "busch-2018-optic-flow" in by_id
+    assert "fujiwara-2018-optic-flow" not in by_id
+
+    official = by_id["male-cns-v1.0-body-annotations"]
+    assert official.source_artifact_name == "body-annotations"
+    assert str(official.source_artifact_url) == (
+        "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/"
+        "flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather"
+    )
+    assert official.source_artifact_sha256 == (
+        "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2"
+    )
+
+    bindings = {item.name: set(item.evidence_ids) for item in registry.populations}
+    assert "assumption-hemispheric-r1-r6" in bindings["visual_r1_r6_left"]
+    assert "assumption-hemispheric-r1-r6" in bindings["visual_r1_r6_right"]
+    assert "assumption-decoder-sign-normalization" in bindings["d_na02_left"]
+    assert "assumption-decoder-sign-normalization" in bindings["d_ng13_right"]
+    assert "assumption-hs-lc16-calibration" in bindings["hs_left"]
+    assert "assumption-hs-lc16-calibration" in bindings["lc16_right"]
+    assert "assumption-upstream-visual-bypass" in bindings["visual_all"]
 
 
 def left_dna02(body_id: int = 10) -> dict[str, object]:

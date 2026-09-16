@@ -61,6 +61,12 @@ class EvidenceRecord(BaseModel, frozen=True):
     pmid: str | None = None
     doi: str | None = None
     confidence: Literal["measured", "high", "moderate", "assumption"]
+    source_artifact_name: str | None = None
+    source_artifact_url: AnyHttpUrl | None = None
+    source_artifact_sha256: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
 
     @field_validator("pmid", mode="before")
     @classmethod
@@ -90,6 +96,17 @@ class EvidenceRecord(BaseModel, frozen=True):
             raise ValueError('model-assumption evidence requires confidence="assumption"')
         if self.kind != "model_assumption" and self.confidence == "assumption":
             raise ValueError("non-assumption evidence cannot use assumption confidence")
+        artifact_fields = (
+            self.source_artifact_name,
+            self.source_artifact_url,
+            self.source_artifact_sha256,
+        )
+        if any(value is not None for value in artifact_fields) and not all(
+            value is not None for value in artifact_fields
+        ):
+            raise ValueError(
+                "source artifact name, URL, and SHA-256 must be supplied together"
+            )
         return self
 
 
