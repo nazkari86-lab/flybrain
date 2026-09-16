@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from flybrain.plasticity import PlasticStateIdentity
-from flybrain.provenance import snapshot_sha256, validate_state_identity
+from flybrain.provenance import (
+    snapshot_content_sha256,
+    snapshot_sha256,
+    validate_state_identity,
+)
 
 
 def minimal_snapshot(root: Path) -> Path:
@@ -46,3 +50,14 @@ def test_validates_plastic_state_against_snapshot_identity(tmp_path: Path) -> No
 
     with pytest.raises(ValueError, match="snapshot identity"):
         validate_state_identity(snapshot, replace(identity, snapshot_sha256="b" * 64))
+
+
+def test_content_digest_requires_each_core_snapshot_file(tmp_path: Path) -> None:
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    (snapshot / "neurons.parquet").write_bytes(b"neurons")
+    (snapshot / "edges.parquet").write_bytes(b"edges")
+    (snapshot / "source-annotations.parquet").write_bytes(b"annotations")
+
+    with pytest.raises(ValueError, match="metadata, neurons, and edges"):
+        snapshot_content_sha256(snapshot)

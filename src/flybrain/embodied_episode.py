@@ -102,7 +102,12 @@ def _peak_rss_bytes() -> int:
 
 def _graph_digest(graph: EventConnectome) -> str:
     digest = hashlib.sha256()
-    for array in (graph.outgoing.data, graph.outgoing.indices, graph.outgoing.indptr):
+    for array in (
+        graph.neuron_ids,
+        graph.outgoing.data,
+        graph.outgoing.indices,
+        graph.outgoing.indptr,
+    ):
         digest.update(array.tobytes())
     return digest.hexdigest()
 

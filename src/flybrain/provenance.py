@@ -43,20 +43,20 @@ def snapshot_sha256(snapshot: Path) -> str:
 def snapshot_content_sha256(snapshot: Path) -> str:
     """Hash every available canonical snapshot component in stable name order."""
 
+    available = {name for name in SNAPSHOT_CONTENT_FILES if (snapshot / name).is_file()}
+    required = {"metadata.json", "neurons.parquet", "edges.parquet"}
+    if not required.issubset(available):
+        raise ValueError("snapshot requires metadata, neurons, and edges for content identity")
     digest = hashlib.sha256()
-    found = 0
     for name in SNAPSHOT_CONTENT_FILES:
-        path = snapshot / name
-        if not path.is_file():
+        if name not in available:
             continue
-        found += 1
+        path = snapshot / name
         digest.update(name.encode())
         digest.update(b"\0")
         with path.open("rb") as stream:
             while chunk := stream.read(1024 * 1024):
                 digest.update(chunk)
-    if found < 3:
-        raise ValueError("snapshot requires metadata, neurons, and edges for content identity")
     return digest.hexdigest()
 
 

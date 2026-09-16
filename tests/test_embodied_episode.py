@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_array
 
-from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episode
+from flybrain.embodied_episode import EmbodiedEpisodeConfig, _graph_digest, run_embodied_episode
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.graph import EventConnectome, SparseConnectome
@@ -130,3 +130,17 @@ def test_static_plastic_graph_is_integrity_checked() -> None:
 
     assert result.graph_unchanged is True
     assert result.executed_graph_unchanged is True
+
+
+def test_graph_integrity_digest_includes_neuron_identity() -> None:
+    graph = fixture_graph()
+    relabeled = EventConnectome(
+        neuron_ids=np.array([10, 20, 30, 40], dtype=np.uint64),
+        cell_types=graph.cell_types,
+        roles=graph.roles,
+        transmitters=graph.transmitters,
+        superclasses=graph.superclasses,
+        outgoing=graph.outgoing.copy(),
+    )
+
+    assert _graph_digest(graph) != _graph_digest(relabeled)
