@@ -21,6 +21,8 @@ from flybrain.embodied_interfaces import (
 )
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody, MotorCommand
 from flybrain.graph import EventConnectome
+from flybrain.plastic_graph import materialize_plastic_event_graph
+from flybrain.plasticity import PlasticEdgeSet, PlasticityParameters
 from flybrain.shiu import ShiuParameters, ShiuState, simulate_shiu
 
 
@@ -51,6 +53,7 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
 
     benchmark: str
     steps: int
+    neural_steps: int
     sensory_map: SensoryMap
     motor_map: MotorMap
     sensory_events: tuple[ExternalEvent, ...]
@@ -62,6 +65,8 @@ class EmbodiedEpisodeResult(BaseModel, frozen=True):
     replay_exact: bool
     graph_unchanged: bool
     motor_silenced: bool
+    learning_applied: bool
+    final_plastic_multipliers: tuple[float, ...]
     passed: bool
     software_revision: str
     runtime_seconds: float
@@ -76,6 +81,7 @@ class _EpisodeTrace:
     dopamine: tuple[float, ...]
     body_trace: tuple[FlyBody, ...]
     spikes: tuple[tuple[int, ...], ...]
+    final_plastic_multipliers: tuple[float, ...]
 
     @property
     def digest(self) -> str:
@@ -110,6 +116,18 @@ def _clone_world(world: ArenaWorld, body: FlyBody) -> ArenaWorld:
     )
 
 
+def _clone_plastic_edges(edges: PlasticEdgeSet | None) -> PlasticEdgeSet | None:
+    if edges is None:
+        return None
+    return PlasticEdgeSet(
+        pre_ids=edges.pre_ids.copy(),
+        post_ids=edges.post_ids.copy(),
+        baseline_weights=edges.baseline_weights.copy(),
+        multipliers=edges.multipliers.copy(),
+        eligibility=edges.eligibility.copy(),
+    )
+
+
 def _validate_ids(graph: EventConnectome, config: EmbodiedEpisodeConfig) -> None:
     available = {int(value) for value in graph.neuron_ids}
     declared = (
@@ -132,6 +150,8 @@ def _execute(
     world: ArenaWorld,
     *,
     silence_motor: bool,
+    plastic_edges: PlasticEdgeSet | None,
+    plasticity_params: PlasticityParameters,
 ) -> _EpisodeTrace:
     params = config.parameters
     index_by_id = {int(neuron_id): index for index, neuron_id in enumerate(graph.neuron_ids)}
@@ -167,6 +187,7 @@ def _execute(
     dopamine: list[float] = []
     body_trace: list[FlyBody] = []
     spikes_trace: list[tuple[int, ...]] = []
+    active_edges = _clone_plastic_edges(plastic_edges)
     for step in range(config.max_steps):
         encoded = encoder.encode(world.observe(), step=step)
         sensory_events.extend(encoded)
@@ -176,14 +197,23 @@ def _execute(
             indices.extend(index_by_id[neuron_id] for neuron_id in event.neuron_ids)
             voltages.extend(event.voltages)
         external = (
-            {step: (np.asarray(indices, dtype=np.int64), np.asarray(voltages, dtype=np.float32))}
+            {
+                state.step + offset: (
+                    np.asarray(indices, dtype=np.int64),
+                    np.asarray(voltages, dtype=np.float32),
+                )
+                for offset in range(config.chunk_steps)
+            }
             if indices
             else {}
         )
+        active_graph = graph
+        if active_edges is not None:
+            active_graph, _ = materialize_plastic_event_graph(graph, active_edges)
         batches = simulate_shiu(
-            graph,
+            active_graph,
             params,
-            steps=1,
+            steps=config.chunk_steps,
             external_voltage_events=external,
             seed=config.seed,
             state=state,
@@ -199,6 +229,19 @@ def _execute(
         reward = float(result.food_contact) - float(result.threat_contact)
         rewards.append(reward)
         dopamine.append(reward)
+        if active_edges is not None:
+            fired = np.asarray(fired_ids, dtype=np.uint64)
+            active_edges.update_eligibility(
+                active_pre_ids=fired,
+                gated_post_ids=fired,
+                dt_ms=config.chunk_steps * params.dt_ms,
+                params=plasticity_params,
+            )
+            if reward != 0.0:
+                active_edges.apply_dopamine(
+                    {int(post_id): reward for post_id in np.unique(active_edges.post_ids)},
+                    plasticity_params,
+                )
     trace = _EpisodeTrace(
         sensory_events=tuple(sensory_events),
         actions=tuple(actions),
@@ -206,6 +249,11 @@ def _execute(
         dopamine=tuple(dopamine),
         body_trace=tuple(body_trace),
         spikes=tuple(spikes_trace),
+        final_plastic_multipliers=(
+            tuple(float(value) for value in active_edges.multipliers)
+            if active_edges is not None
+            else ()
+        ),
     )
     if not all(math.isfinite(value) for value in trace.rewards):
         raise ValueError("episode produced non-finite rewards")
@@ -217,6 +265,8 @@ def run_embodied_episode(
     config: EmbodiedEpisodeConfig,
     *,
     plastic_graph: EventConnectome | None = None,
+    plastic_edges: PlasticEdgeSet | None = None,
+    plasticity_params: PlasticityParameters | None = None,
     world: ArenaWorld | None = None,
     silence_motor: bool = False,
 ) -> EmbodiedEpisodeResult:
@@ -226,6 +276,8 @@ def run_embodied_episode(
     config.validate_episode()
     _validate_ids(graph, config)
     active_graph = plastic_graph or graph
+    if plastic_graph is not None and plastic_edges is not None:
+        raise ValueError("plastic_graph and plastic_edges are mutually exclusive")
     _validate_ids(active_graph, config)
     initial_world = world or ArenaWorld(
         ArenaConfig(10.0, 10.0, 0.1, 0.2),
@@ -235,11 +287,15 @@ def run_embodied_episode(
     )
     initial_body = initial_world.body
     graph_digest = _graph_digest(graph)
+    active_plasticity_params = plasticity_params or PlasticityParameters()
+    active_plasticity_params.validate()
     first = _execute(
         graph=active_graph,
         config=config,
         world=initial_world,
         silence_motor=silence_motor,
+        plastic_edges=plastic_edges,
+        plasticity_params=active_plasticity_params,
     )
     replay_world = _clone_world(initial_world, initial_body)
     replay = _execute(
@@ -247,6 +303,8 @@ def run_embodied_episode(
         config=config,
         world=replay_world,
         silence_motor=silence_motor,
+        plastic_edges=plastic_edges,
+        plasticity_params=active_plasticity_params,
     )
     replay_exact = first == replay
     graph_unchanged = _graph_digest(graph) == graph_digest
@@ -259,6 +317,7 @@ def run_embodied_episode(
     return EmbodiedEpisodeResult(
         benchmark="embodied-loop-v1",
         steps=config.max_steps,
+        neural_steps=config.max_steps * config.chunk_steps,
         sensory_map=config.sensory_map,
         motor_map=config.motor_map,
         sensory_events=first.sensory_events,
@@ -270,6 +329,12 @@ def run_embodied_episode(
         replay_exact=replay_exact,
         graph_unchanged=graph_unchanged,
         motor_silenced=silence_motor,
+        learning_applied=(
+            plastic_edges is not None
+            and first.final_plastic_multipliers
+            != tuple(float(value) for value in plastic_edges.multipliers)
+        ),
+        final_plastic_multipliers=first.final_plastic_multipliers,
         passed=passed,
         software_revision=_software_revision(),
         runtime_seconds=time.perf_counter() - started,

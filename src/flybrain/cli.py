@@ -238,8 +238,9 @@ def embodied_loop_command(
     """Run the deterministic world-to-connectome-to-body feedback loop."""
 
     output_final = output.resolve()
-    if output_final == snapshot.resolve():
-        raise typer.BadParameter("--output must differ from snapshot")
+    snapshot_final = snapshot.resolve()
+    if output_final == snapshot_final or output_final.is_relative_to(snapshot_final):
+        raise typer.BadParameter("--output must be outside snapshot")
     if output_final.exists():
         raise typer.BadParameter(f"output already exists: {output_final}")
     output_final.parent.mkdir(parents=True, exist_ok=True)

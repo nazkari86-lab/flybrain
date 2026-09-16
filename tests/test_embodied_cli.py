@@ -63,3 +63,12 @@ def test_cli_refuses_occupied_output_and_input_alias(tmp_path: Path) -> None:
     assert occupied.exit_code != 0
     assert output.read_text(encoding="utf-8") == "preserve"
     assert aliased.exit_code != 0
+
+
+def test_cli_refuses_output_inside_snapshot(tmp_path: Path) -> None:
+    snapshot_path = snapshot(tmp_path)
+
+    result = invoke(snapshot_path, snapshot_path / "result.json")
+
+    assert result.exit_code != 0
+    assert not (snapshot_path / "result.json").exists()

@@ -72,6 +72,8 @@ class WorldStep:
     """Result of integrating one body step."""
 
     body: FlyBody
+    food_position: tuple[float, float]
+    threat_position: tuple[float, float]
     food_contact: bool
     threat_contact: bool
     wall_contact: bool
@@ -106,6 +108,8 @@ class ArenaWorld:
         for segment in self.wall_segments:
             if len(segment) != 4 or not all(math.isfinite(value) for value in segment):
                 raise ValueError("wall segments must contain four finite coordinates")
+            if segment[0] != segment[2] and segment[1] != segment[3]:
+                raise ValueError("wall segments must be axis-aligned")
 
     @staticmethod
     def _point(point: tuple[float, float], name: str) -> tuple[float, float]:
@@ -139,6 +143,10 @@ class ArenaWorld:
             y = max(0.0, min(self.config.height, y))
             speed = -speed * self.config.wall_restitution
             wall_contact = True
+        x, y, speed, segment_contact = self._resolve_segment_collision(
+            self.body.x, self.body.y, x, y, speed
+        )
+        wall_contact = wall_contact or segment_contact
         next_body = FlyBody(
             x=x,
             y=y,
@@ -152,12 +160,12 @@ class ArenaWorld:
             ),
             leg_contacts=(wall_contact,) * 6,
         )
-        if self.wall_segments:
-            wall_contact = wall_contact or self._segment_contact(next_body.x, next_body.y)
         self.body = next_body
         position = (next_body.x, next_body.y)
         return WorldStep(
             body=next_body,
+            food_position=self.food,
+            threat_position=self.threat,
             food_contact=_distance_sq(position, self.food) <= self.contact_radius**2,
             threat_contact=_distance_sq(position, self.threat) <= self.contact_radius**2,
             wall_contact=wall_contact,
@@ -169,10 +177,48 @@ class ArenaWorld:
         position = (self.body.x, self.body.y)
         return WorldStep(
             body=self.body,
+            food_position=self.food,
+            threat_position=self.threat,
             food_contact=_distance_sq(position, self.food) <= self.contact_radius**2,
             threat_contact=_distance_sq(position, self.threat) <= self.contact_radius**2,
-            wall_contact=self._segment_contact(*position),
+            wall_contact=(
+                any(self.body.leg_contacts)
+                or self.body.x in (0.0, self.config.width)
+                or self.body.y in (0.0, self.config.height)
+                or self._segment_contact(*position)
+            ),
         )
+
+    def _resolve_segment_collision(
+        self,
+        old_x: float,
+        old_y: float,
+        new_x: float,
+        new_y: float,
+        speed: float,
+    ) -> tuple[float, float, float, bool]:
+        contact = False
+        radius = self.contact_radius
+        for x1, y1, x2, y2 in self.wall_segments:
+            if x1 == x2 and min(y1, y2) - radius <= new_y <= max(y1, y2) + radius:
+                if old_x <= x1 - radius and new_x >= x1 - radius:
+                    new_x = x1 - radius
+                    speed = -speed * self.config.wall_restitution
+                    contact = True
+                elif old_x >= x1 + radius and new_x <= x1 + radius:
+                    new_x = x1 + radius
+                    speed = -speed * self.config.wall_restitution
+                    contact = True
+            elif y1 == y2 and min(x1, x2) - radius <= new_x <= max(x1, x2) + radius:
+                if old_y <= y1 - radius and new_y >= y1 - radius:
+                    new_y = y1 - radius
+                    speed = -speed * self.config.wall_restitution
+                    contact = True
+                elif old_y >= y1 + radius and new_y <= y1 + radius:
+                    new_y = y1 + radius
+                    speed = -speed * self.config.wall_restitution
+                    contact = True
+        return new_x, new_y, speed, contact
 
     def _segment_contact(self, x: float, y: float) -> bool:
         for x1, y1, x2, y2 in self.wall_segments:

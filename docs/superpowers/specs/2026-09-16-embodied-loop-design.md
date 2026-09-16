@@ -27,7 +27,7 @@ command so causal audits can distinguish model output from world integration.
 ## Architecture
 
 `ArenaWorld` owns immutable arena objects and mutable `FlyBody`; `SensoryEncoder` observes the
-world and emits `ExternalEvent`s; `simulate_embodied_episode` advances Shiu dynamics in bounded
+world and emits `ExternalEvent`s; `run_embodied_episode` advances Shiu dynamics in bounded
 chunks; `MotorDecoder` converts emitted spikes into a command; the world integrates the command;
 the next chunk observes the resulting body state. Reward is an observation of the world outcome,
 not a direct action instruction: food contact gives positive dopamine and threat contact gives

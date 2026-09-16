@@ -33,11 +33,11 @@
 - `ArenaWorld(config, body, food, threat, wall_segments)` with `step(command) -> WorldStep`
 - `WorldStep(body, food_contact: bool, threat_contact: bool, wall_contact: bool)`
 
-- [ ] Write failing tests for bounded integration, collision, contact rewards, and invalid commands.
-- [ ] Run `pytest tests/test_embodied_world.py -q`; confirm missing module failure.
-- [ ] Implement finite validation, semi-implicit Euler integration, heading normalization, energy drain, and deterministic wall collision.
-- [ ] Run focused tests and then `ruff check src/flybrain/embodied_world.py tests/test_embodied_world.py`.
-- [ ] Commit `feat: add deterministic embodied world`.
+- [x] Write failing tests for bounded integration, collision, contact rewards, and invalid commands.
+- [x] Run `pytest tests/test_embodied_world.py -q`; confirm missing module failure.
+- [x] Implement finite validation, semi-implicit Euler integration, heading normalization, energy drain, and deterministic wall collision.
+- [x] Run focused tests and then `ruff check src/flybrain/embodied_world.py tests/test_embodied_world.py`.
+- [x] Commit `feat: add deterministic embodied world`.
 
 ### Task 2: Sensory encoders and motor decoder
 
@@ -52,11 +52,11 @@
 - `MotorMap(left_ids: tuple[int, ...], right_ids: tuple[int, ...], forward_ids: tuple[int, ...])`
 - `MotorDecoder.decode(spikes: tuple[int, ...]) -> MotorCommand`
 
-- [ ] Write failing tests proving world observations create deterministic sensory events and motor spikes create commands.
-- [ ] Run focused tests and confirm the missing interface module failure.
-- [ ] Implement quantized, bounded encoders and spike-count motor voting with an explicit versioned map.
-- [ ] Run focused tests, Ruff, and mypy.
-- [ ] Commit `feat: add embodied sensory motor interfaces`.
+- [x] Write failing tests proving world observations create deterministic sensory events and motor spikes create commands.
+- [x] Run focused tests and confirm the missing interface module failure.
+- [x] Implement quantized, bounded encoders and spike-count motor voting with an explicit versioned map.
+- [x] Run focused tests, Ruff, and mypy.
+- [x] Commit `feat: add embodied sensory motor interfaces`.
 
 ### Task 3: Closed-loop episode runner
 
@@ -69,11 +69,11 @@
 - `EmbodiedEpisodeResult(passed: bool, replay_exact: bool, graph_unchanged: bool, steps: int, sensory_events: tuple[ExternalEvent, ...], actions: tuple[MotorCommand, ...], rewards: tuple[float, ...], body_trace: tuple[FlyBody, ...], ...)`
 - `run_embodied_episode(graph, config, *, plastic_graph=None, world=None) -> EmbodiedEpisodeResult`
 
-- [ ] Write failing fixture tests for closed-loop causality, replay, graph immutability, and motor silencing.
-- [ ] Run focused tests and confirm missing runner failure.
-- [ ] Implement bounded chunked Shiu calls, output-spike decoding, world stepping, contact-based dopamine, and trace digests.
-- [ ] Run focused tests and verify replay is exact.
-- [ ] Commit `feat: close embodied sensory motor loop`.
+- [x] Write failing fixture tests for closed-loop causality, replay, graph immutability, and motor silencing.
+- [x] Run focused tests and confirm missing runner failure.
+- [x] Implement bounded chunked Shiu calls, output-spike decoding, world stepping, contact-based dopamine, and trace digests.
+- [x] Run focused tests and verify replay is exact.
+- [x] Commit `feat: close embodied sensory motor loop`.
 
 ### Task 4: CLI, artifact, and full verification
 
@@ -83,14 +83,14 @@
 - Create: `docs/data/embodied-loop-fixture.md`
 - Modify: `README.md`
 
-- [ ] Write failing atomic CLI tests for `experiment embodied-loop SNAPSHOT --output RESULT`.
-- [ ] Implement staged fsync/no-overwrite publication and fixture configuration.
-- [ ] Run the fixture CLI and save a machine-readable artifact under `artifacts/`.
-- [ ] Run full pytest, Ruff, mypy, and diff checks.
-- [ ] Commit `feat: expose embodied loop experiment`.
+- [x] Write failing atomic CLI tests for `experiment embodied-loop SNAPSHOT --output RESULT`.
+- [x] Implement staged fsync/no-overwrite publication and fixture configuration.
+- [x] Run the fixture CLI and save a machine-readable artifact under `artifacts/`.
+- [x] Run full pytest, Ruff, mypy, and diff checks.
+- [x] Commit `feat: expose embodied loop experiment`.
 
 ### Final review
 
-- [ ] Inspect every changed file for hidden policy shortcuts, unbounded loops, nondeterminism, and claims stronger than the evidence.
+- [x] Inspect every changed file for hidden policy shortcuts, unbounded loops, nondeterminism, and claims stronger than the evidence.
 - [ ] Merge the feature branch into `master` only after the full gate passes.
 - [ ] Re-run the merged `master` gate and retain the artifact and documentation.

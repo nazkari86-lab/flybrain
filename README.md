@@ -119,7 +119,7 @@ The deterministic planar embodied harness connects world observations to declare
 decodes motor spikes into bounded body commands, and feeds body state into the next neural step:
 
 ```bash
-uv run flybrain experiment embodied-loop artifacts/embodied-fixture-snapshot \
+uv run flybrain experiment embodied-loop artifacts/tiny-snapshot \
   --max-steps 8 \
   --output artifacts/embodied-loop-fixture.json
 ```

@@ -29,3 +29,7 @@ motor causality and body motion.
 The world is a research harness, not a validated fly body. Food and threat contact currently
 produce observable reward signals, but calibration of sensory tuning, motor populations, muscles,
 proprioception, and learned food-seeking remains a later scientific benchmark.
+
+During each body interval, the current sensory observation is held for every configured neural
+step. Reward is forwarded to a copied plastic overlay when one is supplied; the input overlay is
+left unchanged and the result records the learned multipliers for explicit persistence.

@@ -87,11 +87,10 @@ class SensoryEncoder:
         body = world_step.body
         diagonal = math.hypot(self.arena_width, self.arena_height)
         visual = max(0.0, min(1.0, 1.0 - math.hypot(body.x, body.y) / diagonal))
-        odor = (
-            1.0
-            if world_step.food_contact
-            else max(0.0, min(1.0, 1.0 / (1.0 + math.hypot(body.x, body.y))))
+        food_distance = math.hypot(
+            body.x - world_step.food_position[0], body.y - world_step.food_position[1]
         )
+        odor = 1.0 if world_step.food_contact else max(0.0, min(1.0, 1.0 / (1.0 + food_distance)))
         touch = (
             1.0
             if world_step.food_contact or world_step.threat_contact or world_step.wall_contact

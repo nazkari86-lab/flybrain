@@ -5,6 +5,7 @@ from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episod
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.graph import EventConnectome, SparseConnectome
+from flybrain.plasticity import PlasticEdgeSet
 
 
 def fixture_graph() -> EventConnectome:
@@ -67,3 +68,47 @@ def test_silencing_motor_population_removes_world_action() -> None:
     assert any(command.forward > 0 for command in active.actions)
     assert all(command.forward == 0 and command.turn == 0 for command in silenced.actions)
     assert active.body_trace[-1].x > silenced.body_trace[-1].x
+
+
+def test_chunk_steps_control_neural_time_per_world_step() -> None:
+    fast = config().model_copy(update={"max_steps": 2, "chunk_steps": 20})
+    slow = config().model_copy(update={"max_steps": 2, "chunk_steps": 1})
+
+    fast_result = run_embodied_episode(fixture_graph(), fast, world=world())
+    slow_result = run_embodied_episode(fixture_graph(), slow, world=world())
+
+    assert fast_result.neural_steps == 40
+    assert slow_result.neural_steps == 2
+    assert any(command.forward > 0 for command in fast_result.actions)
+    assert all(command.forward == 0 for command in slow_result.actions)
+
+
+def test_world_reward_updates_a_copied_plastic_overlay() -> None:
+    edges = PlasticEdgeSet.create(
+        pre_ids=np.array([1], dtype=np.uint64),
+        post_ids=np.array([3], dtype=np.uint64),
+        baseline_weights=np.array([40.0], dtype=np.float32),
+    )
+    learned_config = config().model_copy(update={"max_steps": 2, "chunk_steps": 20})
+
+    result = run_embodied_episode(
+        fixture_graph(), learned_config, world=world(), plastic_edges=edges
+    )
+
+    assert result.learning_applied is True
+    assert result.final_plastic_multipliers[0] < 1.0
+    assert edges.multipliers.tolist() == [1.0]
+
+
+def test_no_world_contact_emits_no_reward_or_dopamine() -> None:
+    distant = ArenaWorld(
+        ArenaConfig(10.0, 10.0, 0.1, 0.2),
+        FlyBody(1.0, 1.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6),
+        food=(8.0, 8.0),
+        threat=(9.0, 9.0),
+    )
+
+    result = run_embodied_episode(fixture_graph(), config(), world=distant)
+
+    assert set(result.rewards) == {0.0}
+    assert set(result.dopamine) == {0.0}
