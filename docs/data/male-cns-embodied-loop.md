@@ -15,9 +15,9 @@ Measured on 2026-09-16 with the complete retained MaleCNS v1.0 graph and seed 7.
 
 The run passed deterministic replay and both canonical/executed graph-integrity gates. One of the
 100 decoded commands was non-zero. The body moved from `x=5.0` to `x=5.001875`; final forward
-speed was `0.01875`, and energy was `0.9999875`. Runtime was 0.334 seconds and peak RSS was
-1,020,657,664 bytes on this host. The committed software revision recorded by the artifact is
-`25a6f601adcbea7293799698b501fd3748796a3e`.
+speed was `0.01875`, and energy was `0.9999875`. Runtime was 0.324 seconds and peak RSS was
+1,029,062,656 bytes on this host. The software revision recorded by the retained artifact is
+`976d496e7e42d6396395d64f517929d15f4341b2`.
 
 The machine-readable result is `artifacts/embodied-malecns-final-seed7.json` in the local
 artifact store. Its full traces include sensory events, actions, rewards, dopamine, and body state.
