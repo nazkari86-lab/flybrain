@@ -13,13 +13,20 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from flybrain.descending_interface import DescendingMap, population_silence_mask
 from flybrain.embodied_interfaces import ExternalEvent
 from flybrain.graph import EventConnectome
-from flybrain.hexapod_body import HexapodBody, HexapodParameters, ReferenceHexapod
+from flybrain.hexapod_body import (
+    HexapodBody,
+    HexapodParameters,
+    LegName,
+    ReferenceHexapod,
+)
 from flybrain.hexapod_motor import (
     HexapodMotorDecoder,
     HexapodMotorMap,
+    MotorGroup,
     motor_population_silence_mask,
 )
 from flybrain.proprioceptive_interface import (
+    ProprioceptiveBank,
     ProprioceptiveCalibration,
     ProprioceptiveEncoder,
     ProprioceptiveMap,
@@ -43,7 +50,7 @@ _MIRROR_DN = {
     "mdn_left": "mdn_right",
     "mdn_right": "mdn_left",
 }
-_MIRROR_LEG = {
+_MIRROR_LEG: dict[LegName, LegName] = {
     "left_fore": "right_fore",
     "left_middle": "right_middle",
     "left_hind": "right_hind",
@@ -191,6 +198,8 @@ class ClosedLoopConditionResult(BaseModel, frozen=True):
     neural_chunk_steps: int = Field(gt=0)
     neural_state_steps: tuple[int, ...]
     proprioceptive_event_steps: tuple[int, ...]
+    proprioceptive_input_mapping: dict[str, str]
+    motor_output_mapping: dict[str, str]
     proprioceptive_spikes: int = Field(ge=0)
     motor_spikes: int = Field(ge=0)
     neural_joint_motion_rad: float = Field(ge=0.0)
@@ -787,6 +796,58 @@ def _bodies_close(left: HexapodBody, right: HexapodBody) -> bool:
     return close(left_values, right_values)
 
 
+def _mirror_interfaces(
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+    *,
+    mirrored: bool,
+) -> tuple[ProprioceptiveMap, HexapodMotorMap, dict[str, str], dict[str, str]]:
+    """Transform only exact left/right interface populations around a fixed graph."""
+
+    if not mirrored:
+        return (
+            proprio,
+            motor,
+            {bank.leg: bank.name for bank in proprio.banks},
+            {group.name: group.name for group in motor.groups},
+        )
+    banks = []
+    proprio_mapping: dict[str, str] = {}
+    for bank in proprio.banks:
+        source = proprio.bank(_MIRROR_LEG[bank.leg])
+        banks.append(
+            ProprioceptiveBank(
+                name=bank.name,
+                leg=bank.leg,
+                neuron_ids=source.neuron_ids,
+            )
+        )
+        proprio_mapping[bank.leg] = source.name
+    groups = []
+    motor_mapping: dict[str, str] = {}
+    for group in motor.groups:
+        source_name = (
+            f"{_MIRROR_LEG[group.leg]}_{group.joint}_{group.direction}"
+        )
+        motor_source = motor.group(source_name)
+        groups.append(
+            MotorGroup(
+                name=group.name,
+                leg=group.leg,
+                joint=group.joint,
+                direction=group.direction,
+                neuron_ids=motor_source.neuron_ids,
+            )
+        )
+        motor_mapping[group.name] = motor_source.name
+    return (
+        ProprioceptiveMap(banks=tuple(banks)),
+        HexapodMotorMap(groups=tuple(groups)),
+        proprio_mapping,
+        motor_mapping,
+    )
+
+
 def _run_closed_loop_condition(
     graph: EventConnectome,
     proprio: ProprioceptiveMap,
@@ -800,29 +861,35 @@ def _run_closed_loop_condition(
     calibration: ProprioceptiveCalibration,
     proprio_silenced: bool,
     motor_silenced: bool,
+    interface_mirrored: bool,
 ) -> ClosedLoopConditionResult:
+    execution_proprio, execution_motor, proprio_mapping, motor_mapping = (
+        _mirror_interfaces(proprio, motor, mirrored=interface_mirrored)
+    )
     simulator = ReferenceHexapod(body_parameters)
     initial_body = simulator.observe()
-    encoder = ProprioceptiveEncoder(proprio, calibration)
-    decoder = HexapodMotorDecoder(motor)
+    encoder = ProprioceptiveEncoder(execution_proprio, calibration)
+    decoder = HexapodMotorDecoder(execution_motor)
     state = ShiuState.initial(graph.neuron_count, params=params, seed=seed)
     chunk_steps = round(body_parameters.dt_s * 1000.0 / params.dt_ms)
     if chunk_steps < 1:
         raise ValueError("body step is shorter than one Shiu integration step")
-    proprio_names = frozenset(bank.name for bank in proprio.banks)
+    proprio_names = frozenset(bank.name for bank in execution_proprio.banks)
     proprio_mask = _population_mask(
         graph,
-        {bank.name: bank.neuron_ids for bank in proprio.banks},
+        {bank.name: bank.neuron_ids for bank in execution_proprio.banks},
         proprio_names if proprio_silenced else frozenset(),
     )
-    motor_names = frozenset(motor.named_populations()) if motor_silenced else frozenset()
-    motor_mask = motor_population_silence_mask(graph, motor, motor_names)
+    motor_names = (
+        frozenset(execution_motor.named_populations()) if motor_silenced else frozenset()
+    )
+    motor_mask = motor_population_silence_mask(graph, execution_motor, motor_names)
     silence_mask = np.logical_or(proprio_mask, motor_mask)
     motor_ids = {
-        neuron_id for group in motor.groups for neuron_id in group.neuron_ids
+        neuron_id for group in execution_motor.groups for neuron_id in group.neuron_ids
     }
     proprio_ids = {
-        neuron_id for bank in proprio.banks for neuron_id in bank.neuron_ids
+        neuron_id for bank in execution_proprio.banks for neuron_id in bank.neuron_ids
     }
     neural_state_steps: list[int] = []
     event_steps: list[int] = []
@@ -894,6 +961,8 @@ def _run_closed_loop_condition(
         neural_chunk_steps=chunk_steps,
         neural_state_steps=tuple(neural_state_steps),
         proprioceptive_event_steps=tuple(event_steps),
+        proprioceptive_input_mapping=proprio_mapping,
+        motor_output_mapping=motor_mapping,
         proprioceptive_spikes=total_proprio_spikes,
         motor_spikes=total_motor_spikes,
         neural_joint_motion_rad=neural_joint_motion,
@@ -941,6 +1010,7 @@ def run_closed_loop_hexapod_protocol(
         *,
         proprio_silenced: bool = False,
         motor_silenced: bool = False,
+        interface_mirrored: bool = False,
     ) -> ClosedLoopConditionResult:
         return _run_closed_loop_condition(
             graph,
@@ -954,6 +1024,7 @@ def run_closed_loop_hexapod_protocol(
             calibration=sensory_calibration,
             proprio_silenced=proprio_silenced,
             motor_silenced=motor_silenced,
+            interface_mirrored=interface_mirrored,
         )
 
     normal = run("normal")
@@ -961,7 +1032,7 @@ def run_closed_loop_hexapod_protocol(
     proprio_lesion = run("proprio_lesion", proprio_silenced=True)
     restored = run("restored")
     replay = run("replay")
-    mirror = run("mirror")
+    mirror = run("mirror", interface_mirrored=True)
     conditions = (
         normal,
         motor_lesion,

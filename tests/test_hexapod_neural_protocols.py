@@ -332,6 +332,22 @@ def test_closed_loop_lesions_restore_and_replay_exactly() -> None:
     assert result.mirror_exact
     assert result.replay_exact
     assert result.mirror_exact
+    assert by_name["normal"].proprioceptive_input_mapping == {
+        "left_fore": "left_fore_proprioception",
+        "right_fore": "right_fore_proprioception",
+        "left_middle": "left_middle_proprioception",
+        "right_middle": "right_middle_proprioception",
+        "left_hind": "left_hind_proprioception",
+        "right_hind": "right_hind_proprioception",
+    }
+    assert by_name["mirror"].proprioceptive_input_mapping == {
+        "left_fore": "right_fore_proprioception",
+        "right_fore": "left_fore_proprioception",
+        "left_middle": "right_middle_proprioception",
+        "right_middle": "left_middle_proprioception",
+        "left_hind": "right_hind_proprioception",
+        "right_hind": "left_hind_proprioception",
+    }
 
 
 def test_closed_loop_contract_has_no_target_reward_or_desired_action() -> None:
