@@ -153,3 +153,24 @@ were null. Direct HS/LC16 stimulation bypasses upstream visual processing and is
 retina-to-behavior evidence. See
 [`docs/data/male-cns-biological-steering.md`](docs/data/male-cns-biological-steering.md) for exact
 hashes, effects, resource use, and limitations.
+
+## Run the evidence-bound hexapod motor assay
+
+The hexapod command resolves 24 exact flexor/extensor motor populations, six proprioceptive banks,
+and six descending populations from one registry. It publishes direct motor calibration,
+phase-gait calibration, DN-to-motor, proprio-to-motor, and stateful neural-body feedback as
+separate result families; it never turns direct calibration into a sensory or locomotion claim.
+
+```bash
+uv run flybrain experiment hexapod-motor artifacts/male-cns-v1.0-w5 \
+  --registry data/registry/hexapod-motor-registry-v1.json \
+  --steps 90 \
+  --seed 7 \
+  --output artifacts/hexapod-motor-malecns-seed7.json
+```
+
+The retained 90-step run calibrated all 24 direct antagonist groups, but phase-gait and all six
+DN-to-motor paths were null. Two of six proprioceptive banks passed, and the full feedback loop
+was directionally wrong under its explicit mirrored-interface control. These are recorded without
+retuning in [docs/data/male-cns-hexapod-motor.md](docs/data/male-cns-hexapod-motor.md). The assay
+is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
