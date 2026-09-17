@@ -1,9 +1,16 @@
 from pathlib import Path
 
+import numpy as np
 import pytest
+from scipy.sparse import csr_array
 
 from flybrain.biological_registry import load_biological_registry, resolve_biological_registry
-from flybrain.plastic_edge_registry import resolve_plastic_edge_manifests
+from flybrain.graph import EventConnectome
+from flybrain.plastic_edge_binding import bind_manifest_to_graph
+from flybrain.plastic_edge_registry import (
+    ResolvedPlasticEdgeManifest,
+    resolve_plastic_edge_manifests,
+)
 
 REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
 RETAINED_MALE_CNS = Path(
@@ -32,3 +39,32 @@ def test_resolves_only_exact_signed_plastic_and_modulatory_edges() -> None:
     assert by_name["dan_to_mbon"].edge_count == 1_408
     assert by_name["dan_to_mbon"].contact_count == 36_583
     assert by_name["dan_to_mbon"].sign == 0
+
+
+def test_binds_only_declared_manifest_pairs_to_canonical_csr_indices() -> None:
+    graph = EventConnectome(
+        neuron_ids=np.array([10, 20, 30], dtype=np.uint64),
+        cell_types=("kc", "mbon", "other"),
+        roles=("learning_kc", "learning_mbon", "interneuron"),
+        transmitters=("acetylcholine",) * 3,
+        superclasses=("central",) * 3,
+        outgoing=csr_array(
+            (np.array([4.0, 9.0], dtype=np.float32), ([0, 0], [1, 2])), shape=(3, 3)
+        ),
+    )
+    manifest = ResolvedPlasticEdgeManifest(
+        name="kc_to_mbon",
+        sign=1,
+        edge_count=1,
+        contact_count=4,
+        pre_count=1,
+        post_count=1,
+        edge_sha256="a" * 64,
+        edge_pairs=((10, 20),),
+    )
+
+    binding = bind_manifest_to_graph(graph, manifest)
+
+    assert binding.overlay.edge_indices.tolist() == [0]
+    assert binding.pre_ids.tolist() == [10]
+    assert binding.post_ids.tolist() == [20]

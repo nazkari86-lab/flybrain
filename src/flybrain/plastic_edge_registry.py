@@ -24,6 +24,7 @@ class ResolvedPlasticEdgeManifest(BaseModel, frozen=True):
     pre_count: int = Field(gt=0)
     post_count: int = Field(gt=0)
     edge_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    edge_pairs: tuple[tuple[int, int], ...]
 
 
 def _edge_digest(rows: list[tuple[int, int, int, int]]) -> str:
@@ -91,6 +92,7 @@ def resolve_plastic_edge_manifests(
                 pre_count=pre_count,
                 post_count=post_count,
                 edge_sha256=digest,
+                edge_pairs=tuple((pre_id, post_id) for pre_id, post_id, _, _ in rows),
             )
         )
     return tuple(results)
