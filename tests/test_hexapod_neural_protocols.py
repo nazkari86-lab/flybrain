@@ -1,11 +1,13 @@
 import numpy as np
 from scipy.sparse import csr_array
 
+from flybrain import hexapod_neural_protocols as neural_protocols
 from flybrain.descending_interface import DescendingMap
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_body import LEG_NAMES
 from flybrain.hexapod_motor import HexapodMotorMap, MotorGroup
 from flybrain.hexapod_neural_protocols import run_dn_to_motor_protocols
+from flybrain.proprioceptive_interface import ProprioceptiveBank, ProprioceptiveMap
 
 
 def fixture(*, connected: bool) -> tuple[EventConnectome, DescendingMap, HexapodMotorMap]:
@@ -54,6 +56,67 @@ def fixture(*, connected: bool) -> tuple[EventConnectome, DescendingMap, Hexapod
         outgoing=outgoing,
     )
     return graph, descending, motor
+
+
+def proprio_fixture(
+    *, connected: bool
+) -> tuple[EventConnectome, ProprioceptiveMap, HexapodMotorMap]:
+    banks = tuple(
+        ProprioceptiveBank(
+            name=f"{leg}_proprioception",
+            leg=leg,
+            neuron_ids=(10 + index,),
+        )
+        for index, leg in enumerate(LEG_NAMES)
+    )
+    proprio = ProprioceptiveMap(banks=banks)
+    groups = []
+    next_id = 100
+    for leg in LEG_NAMES:
+        for joint in ("trochanter", "tibia"):
+            for direction in ("flexor", "extensor"):
+                groups.append(
+                    MotorGroup(
+                        name=f"{leg}_{joint}_{direction}",
+                        leg=leg,
+                        joint=joint,
+                        direction=direction,
+                        neuron_ids=(next_id,),
+                    )
+                )
+                next_id += 1
+    motor = HexapodMotorMap(groups=tuple(groups))
+    ids = np.array(
+        [
+            *(bank.neuron_ids[0] for bank in banks),
+            *(group.neuron_ids[0] for group in groups),
+        ],
+        dtype=np.uint64,
+    )
+    index_by_id = {int(value): position for position, value in enumerate(ids)}
+    rows = []
+    columns = []
+    values = []
+    if connected:
+        for bank, leg in zip(banks, LEG_NAMES, strict=True):
+            group = motor.group(f"{leg}_trochanter_flexor")
+            rows.append(index_by_id[bank.neuron_ids[0]])
+            columns.append(index_by_id[group.neuron_ids[0]])
+            values.append(120.0)
+    outgoing = csr_array(
+        (np.array(values, dtype=np.float32), (rows, columns)),
+        shape=(len(ids), len(ids)),
+        dtype=np.float32,
+    )
+    graph = EventConnectome(
+        neuron_ids=ids,
+        cell_types=("fixture",) * len(ids),
+        roles=("fixture",) * len(ids),
+        transmitters=("acetylcholine",) * len(ids),
+        superclasses=("fixture",) * len(ids),
+        outgoing=outgoing,
+    )
+    return graph, proprio, motor
 
 
 def test_connected_dn_to_motor_paths_are_positive_and_causal() -> None:
@@ -131,3 +194,94 @@ def test_protocol_never_reports_direct_body_motion() -> None:
 
     forbidden = {"forward", "turn", "thrust", "yaw", "body", "joint_motion"}
     assert forbidden.isdisjoint(type(result.conditions[0]).model_fields)
+
+
+def test_connected_proprio_to_motor_paths_are_positive_and_causal() -> None:
+    graph, proprio, motor = proprio_fixture(connected=True)
+
+    result = neural_protocols.run_proprio_to_motor_protocols(
+        graph,
+        proprio,
+        motor,
+        steps=90,
+        seed=8,
+    )
+
+    assert all(claim.classification == "positive" for claim in result.claims.values())
+    by_name = {condition.name: condition for condition in result.conditions}
+    normal = by_name["left_fore_proprioception:normal"]
+    assert normal.event_target_ids == (10,)
+    assert normal.input_spikes_by_bank == {
+        "left_fore_proprioception": normal.input_spikes,
+        "right_fore_proprioception": 0,
+        "left_middle_proprioception": 0,
+        "right_middle_proprioception": 0,
+        "left_hind_proprioception": 0,
+        "right_hind_proprioception": 0,
+    }
+    assert normal.motor_spikes > 0
+    assert by_name["left_fore_proprioception:side_lesion"].motor_spikes == 0
+    assert by_name["left_fore_proprioception:motor_lesion"].motor_spikes == 0
+    assert by_name["left_fore_proprioception:restored"].trace_digest == normal.trace_digest
+    assert by_name["left_fore_proprioception:replay"].trace_digest == normal.trace_digest
+    assert result.replay_exact
+    assert result.graph_unchanged
+
+
+def test_zero_edge_proprio_to_motor_paths_remain_null() -> None:
+    graph, proprio, motor = proprio_fixture(connected=False)
+
+    result = neural_protocols.run_proprio_to_motor_protocols(
+        graph,
+        proprio,
+        motor,
+        steps=90,
+        seed=8,
+    )
+
+    assert all(claim.classification == "null" for claim in result.claims.values())
+    assert all(
+        condition.motor_spikes == 0
+        for condition in result.conditions
+        if condition.name.endswith(":normal")
+    )
+
+
+def test_proprio_mirror_uses_only_homologous_bank() -> None:
+    graph, proprio, motor = proprio_fixture(connected=True)
+    result = neural_protocols.run_proprio_to_motor_protocols(
+        graph,
+        proprio,
+        motor,
+        steps=90,
+        seed=8,
+    )
+    by_name = {condition.name: condition for condition in result.conditions}
+
+    left = by_name["left_middle_proprioception:normal"]
+    mirror = by_name["left_middle_proprioception:mirror"]
+
+    assert left.input_bank == "left_middle_proprioception"
+    assert mirror.input_bank == "right_middle_proprioception"
+    assert mirror.event_target_ids == (13,)
+    assert left.motor_spikes == mirror.motor_spikes
+
+
+def test_proprio_protocol_exposes_no_privileged_state_or_body_command() -> None:
+    forbidden = {
+        "position",
+        "target",
+        "food",
+        "threat",
+        "reward",
+        "desired_action",
+        "forward",
+        "turn",
+        "thrust",
+        "yaw",
+        "body",
+    }
+
+    assert forbidden.isdisjoint(
+        neural_protocols.ProprioceptiveConditionResult.model_fields
+    )

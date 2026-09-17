@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from flybrain.descending_interface import DescendingMap, population_silence_mask
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_motor import HexapodMotorMap, motor_population_silence_mask
+from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.shiu import ShiuParameters, simulate_shiu
 
 DN_NAMES = (
@@ -30,6 +31,14 @@ _MIRROR_DN = {
     "d_ng13_right": "d_ng13_left",
     "mdn_left": "mdn_right",
     "mdn_right": "mdn_left",
+}
+_MIRROR_LEG = {
+    "left_fore": "right_fore",
+    "left_middle": "right_middle",
+    "left_hind": "right_hind",
+    "right_fore": "left_fore",
+    "right_middle": "left_middle",
+    "right_hind": "left_hind",
 }
 
 
@@ -101,6 +110,60 @@ class DNMotorProtocolResult(BaseModel, frozen=True):
     graph_edges: int
     conditions: tuple[NeuralConditionResult, ...]
     claims: dict[str, NeuralClaimClassification]
+    replay_exact: bool
+    graph_unchanged: bool
+
+
+class ProprioceptiveConditionResult(BaseModel, frozen=True):
+    """Open-loop proprioceptive condition without world or body-command fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    protocol: Literal["proprio_to_motor_open_loop"] = "proprio_to_motor_open_loop"
+    input_bank: str
+    event_target_ids: tuple[int, ...]
+    silenced_banks: tuple[str, ...]
+    motor_silenced: bool
+    event_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    spike_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    input_spikes: int = Field(ge=0)
+    input_spikes_by_bank: dict[str, int]
+    motor_spikes: int = Field(ge=0)
+    motor_spikes_by_population: dict[str, int]
+
+
+class ProprioceptiveClaimClassification(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    classification: Literal["positive", "null", "directionally_wrong", "underpowered"]
+    evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    motor_spikes: int = Field(ge=0)
+    threshold: int = Field(gt=0)
+    sensory_lesion_fraction: float
+    motor_lesion_fraction: float
+    reasons: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_finite(self) -> Self:
+        if not math.isfinite(self.sensory_lesion_fraction) or not math.isfinite(
+            self.motor_lesion_fraction
+        ):
+            raise ValueError("proprioceptive lesion fractions must be finite")
+        return self
+
+
+class ProprioMotorProtocolResult(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["proprio-to-motor-open-loop-v1"] = (
+        "proprio-to-motor-open-loop-v1"
+    )
+    graph_neurons: int
+    graph_edges: int
+    conditions: tuple[ProprioceptiveConditionResult, ...]
+    claims: dict[str, ProprioceptiveClaimClassification]
     replay_exact: bool
     graph_unchanged: bool
 
@@ -360,6 +423,254 @@ def run_dn_to_motor_protocols(
         for name in DN_NAMES
     )
     return DNMotorProtocolResult(
+        graph_neurons=graph.neuron_count,
+        graph_edges=graph.edge_count,
+        conditions=tuple(conditions),
+        claims=claims,
+        replay_exact=replay_exact,
+        graph_unchanged=_graph_digest(graph) == before_digest,
+    )
+
+
+def _validate_proprio_interfaces(
+    graph: EventConnectome,
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+) -> None:
+    proprio.validate_graph(graph)
+    motor.validate_graph(graph)
+    proprio_ids = {
+        neuron_id for bank in proprio.banks for neuron_id in bank.neuron_ids
+    }
+    motor_ids = {
+        neuron_id for group in motor.groups for neuron_id in group.neuron_ids
+    }
+    overlap = sorted(proprio_ids & motor_ids)
+    if overlap:
+        raise ValueError(f"proprioceptive and motor populations overlap: {overlap}")
+
+
+def _population_mask(
+    graph: EventConnectome,
+    populations: dict[str, tuple[int, ...]],
+    selected: frozenset[str],
+) -> np.ndarray:
+    unknown = sorted(selected - populations.keys())
+    if unknown:
+        raise ValueError(f"unknown populations: {unknown}")
+    selected_ids = {
+        neuron_id for name in selected for neuron_id in populations[name]
+    }
+    return np.isin(graph.neuron_ids, tuple(selected_ids))
+
+
+def _run_proprio_condition(
+    graph: EventConnectome,
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+    *,
+    name: str,
+    input_bank: str,
+    silenced_banks: frozenset[str],
+    silence_all_motor: bool,
+    steps: int,
+    seed: int,
+    params: ShiuParameters,
+    interval_steps: int,
+    amplitude_mv: float,
+) -> ProprioceptiveConditionResult:
+    bank_populations = {bank.name: bank.neuron_ids for bank in proprio.banks}
+    input_ids = bank_populations[input_bank]
+    events = _voltage_events(
+        graph,
+        input_ids,
+        steps=steps,
+        interval_steps=interval_steps,
+        amplitude_mv=amplitude_mv,
+    )
+    proprio_mask = _population_mask(graph, bank_populations, silenced_banks)
+    motor_names = (
+        frozenset(motor.named_populations()) if silence_all_motor else frozenset()
+    )
+    motor_mask = motor_population_silence_mask(graph, motor, motor_names)
+    silence_mask = np.logical_or(proprio_mask, motor_mask)
+    motor_populations = motor.named_populations()
+    input_sets = {key: set(value) for key, value in bank_populations.items()}
+    motor_sets = {key: set(value) for key, value in motor_populations.items()}
+    input_counts = dict.fromkeys(bank_populations, 0)
+    motor_counts = dict.fromkeys(motor_populations, 0)
+    spike_trace: list[tuple[int, tuple[int, ...]]] = []
+    for batch in simulate_shiu(
+        graph,
+        params,
+        steps=steps,
+        external_voltage_events=events,
+        seed=seed,
+        silenced=silence_mask,
+    ):
+        spikes = tuple(int(value) for value in batch.neuron_ids)
+        spike_trace.append((batch.step, spikes))
+        for population, selected in input_sets.items():
+            input_counts[population] += sum(value in selected for value in spikes)
+        for population, selected in motor_sets.items():
+            motor_counts[population] += sum(value in selected for value in spikes)
+    event_payload = {
+        step: (indices.tolist(), amplitudes.tolist())
+        for step, (indices, amplitudes) in sorted(events.items())
+    }
+    return ProprioceptiveConditionResult(
+        name=name,
+        input_bank=input_bank,
+        event_target_ids=input_ids,
+        silenced_banks=tuple(sorted(silenced_banks)),
+        motor_silenced=silence_all_motor,
+        event_digest=_digest(event_payload),
+        spike_digest=_digest(spike_trace),
+        trace_digest=_digest({"events": event_payload, "spikes": spike_trace}),
+        input_spikes=input_counts[input_bank],
+        input_spikes_by_bank=input_counts,
+        motor_spikes=sum(motor_counts.values()),
+        motor_spikes_by_population=motor_counts,
+    )
+
+
+def _classify_proprio(
+    normal: ProprioceptiveConditionResult,
+    sensory_lesion: ProprioceptiveConditionResult,
+    motor_lesion: ProprioceptiveConditionResult,
+    restored: ProprioceptiveConditionResult,
+    replay: ProprioceptiveConditionResult,
+    mirror: ProprioceptiveConditionResult,
+    *,
+    minimum_motor_spikes: int,
+    minimum_lesion_fraction: float,
+) -> ProprioceptiveClaimClassification:
+    sensory_fraction = _lesion_fraction(
+        normal.motor_spikes, sensory_lesion.motor_spikes
+    )
+    motor_fraction = _lesion_fraction(normal.motor_spikes, motor_lesion.motor_spikes)
+    if normal.input_spikes == 0:
+        classification: Literal[
+            "positive", "null", "directionally_wrong", "underpowered"
+        ] = "underpowered"
+        reasons = ("driven proprioceptive bank emitted no spikes",)
+    elif normal.motor_spikes < minimum_motor_spikes:
+        classification = "null"
+        reasons = ("no sufficient motor recruitment through the canonical graph",)
+    elif mirror.motor_spikes < minimum_motor_spikes:
+        classification = "directionally_wrong"
+        reasons = ("homologous mirrored bank failed to recruit motor neurons",)
+    elif (
+        sensory_fraction < minimum_lesion_fraction
+        or motor_fraction < minimum_lesion_fraction
+    ):
+        classification = "null"
+        reasons = ("sensory or motor lesion effect is below threshold",)
+    elif (
+        restored.trace_digest != normal.trace_digest
+        or replay.trace_digest != normal.trace_digest
+    ):
+        classification = "null"
+        reasons = ("restoration or exact replay failed",)
+    else:
+        classification = "positive"
+        reasons = (
+            "canonical recruitment, lesions, mirror, restoration, and replay passed",
+        )
+    return ProprioceptiveClaimClassification(
+        classification=classification,
+        motor_spikes=normal.motor_spikes,
+        threshold=minimum_motor_spikes,
+        sensory_lesion_fraction=sensory_fraction,
+        motor_lesion_fraction=motor_fraction,
+        reasons=reasons,
+    )
+
+
+def run_proprio_to_motor_protocols(
+    graph: EventConnectome,
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+    *,
+    steps: int,
+    seed: int,
+    params: ShiuParameters | None = None,
+    drive_interval_steps: int = 25,
+    drive_amplitude_mv: float = 10.0,
+    minimum_motor_spikes: int = 1,
+    minimum_lesion_fraction: float = 0.9,
+) -> ProprioMotorProtocolResult:
+    """Measure exact proprioceptive-bank recruitment of motor populations."""
+
+    if type(steps) is not int or steps <= 0:
+        raise ValueError("proprio-to-motor steps must be a positive integer")
+    if type(seed) is not int or seed < 0:
+        raise ValueError("proprio-to-motor seed must be a non-negative integer")
+    if type(minimum_motor_spikes) is not int or minimum_motor_spikes <= 0:
+        raise ValueError("minimum motor spikes must be a positive integer")
+    if (
+        not math.isfinite(minimum_lesion_fraction)
+        or not 0.0 <= minimum_lesion_fraction <= 1.0
+    ):
+        raise ValueError("minimum lesion fraction must lie in [0, 1]")
+    _validate_proprio_interfaces(graph, proprio, motor)
+    shiu_params = params or ShiuParameters()
+    before_digest = _graph_digest(graph)
+    conditions: list[ProprioceptiveConditionResult] = []
+    claims: dict[str, ProprioceptiveClaimClassification] = {}
+
+    def run(
+        condition_name: str,
+        input_name: str,
+        *,
+        silenced_banks: frozenset[str] = frozenset(),
+        silence_all_motor: bool = False,
+    ) -> ProprioceptiveConditionResult:
+        return _run_proprio_condition(
+            graph,
+            proprio,
+            motor,
+            name=condition_name,
+            input_bank=input_name,
+            silenced_banks=silenced_banks,
+            silence_all_motor=silence_all_motor,
+            steps=steps,
+            seed=seed,
+            params=shiu_params,
+            interval_steps=drive_interval_steps,
+            amplitude_mv=drive_amplitude_mv,
+        )
+
+    for bank in proprio.banks:
+        name = bank.name
+        normal = run(f"{name}:normal", name)
+        sensory_lesion = run(
+            f"{name}:side_lesion", name, silenced_banks=frozenset({name})
+        )
+        motor_lesion = run(f"{name}:motor_lesion", name, silence_all_motor=True)
+        restored = run(f"{name}:restored", name)
+        replay = run(f"{name}:replay", name)
+        mirror_name = f"{_MIRROR_LEG[bank.leg]}_proprioception"
+        mirror = run(f"{name}:mirror", mirror_name)
+        conditions.extend(
+            (normal, sensory_lesion, motor_lesion, restored, replay, mirror)
+        )
+        claims[name] = _classify_proprio(
+            normal,
+            sensory_lesion,
+            motor_lesion,
+            restored,
+            replay,
+            mirror,
+            minimum_motor_spikes=minimum_motor_spikes,
+            minimum_lesion_fraction=minimum_lesion_fraction,
+        )
+    replay_exact = all(
+        next(item for item in conditions if item.name == f"{name}:replay").trace_digest
+        == next(item for item in conditions if item.name == f"{name}:normal").trace_digest
+        for name in claims
+    )
+    return ProprioMotorProtocolResult(
         graph_neurons=graph.neuron_count,
         graph_edges=graph.edge_count,
         conditions=tuple(conditions),
