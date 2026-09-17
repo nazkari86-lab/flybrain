@@ -11,10 +11,21 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from flybrain.descending_interface import DescendingMap, population_silence_mask
+from flybrain.embodied_interfaces import ExternalEvent
 from flybrain.graph import EventConnectome
-from flybrain.hexapod_motor import HexapodMotorMap, motor_population_silence_mask
-from flybrain.proprioceptive_interface import ProprioceptiveMap
-from flybrain.shiu import ShiuParameters, simulate_shiu
+from flybrain.hexapod_body import HexapodBody, HexapodParameters, ReferenceHexapod
+from flybrain.hexapod_motor import (
+    HexapodMotorDecoder,
+    HexapodMotorMap,
+    motor_population_silence_mask,
+)
+from flybrain.proprioceptive_interface import (
+    ProprioceptiveCalibration,
+    ProprioceptiveEncoder,
+    ProprioceptiveMap,
+    observe_proprioception,
+)
+from flybrain.shiu import ShiuParameters, ShiuState, simulate_shiu
 
 DN_NAMES = (
     "d_na02_left",
@@ -166,6 +177,58 @@ class ProprioMotorProtocolResult(BaseModel, frozen=True):
     claims: dict[str, ProprioceptiveClaimClassification]
     replay_exact: bool
     graph_unchanged: bool
+
+
+class ClosedLoopConditionResult(BaseModel, frozen=True):
+    """Stateful neural-body condition using proprioception as its only feedback."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    protocol: Literal["closed_loop_hexapod"] = "closed_loop_hexapod"
+    proprio_silenced: bool
+    motor_silenced: bool
+    neural_chunk_steps: int = Field(gt=0)
+    neural_state_steps: tuple[int, ...]
+    proprioceptive_event_steps: tuple[int, ...]
+    proprioceptive_spikes: int = Field(ge=0)
+    motor_spikes: int = Field(ge=0)
+    neural_joint_motion_rad: float = Field(ge=0.0)
+    final_body: HexapodBody
+    trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ClosedLoopClaimClassification(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    classification: Literal["positive", "null", "directionally_wrong", "underpowered"]
+    evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    proprioceptive_spikes: int = Field(ge=0)
+    motor_spikes: int = Field(ge=0)
+    motor_threshold: int = Field(gt=0)
+    proprio_lesion_fraction: float
+    motor_lesion_fraction: float
+    reasons: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_finite(self) -> Self:
+        if not math.isfinite(self.proprio_lesion_fraction) or not math.isfinite(
+            self.motor_lesion_fraction
+        ):
+            raise ValueError("closed-loop lesion fractions must be finite")
+        return self
+
+
+class ClosedLoopHexapodResult(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["closed-loop-hexapod-v1"] = "closed-loop-hexapod-v1"
+    conditions: tuple[ClosedLoopConditionResult, ...]
+    claim: ClosedLoopClaimClassification
+    replay_exact: bool
+    mirror_exact: bool
+    graph_unchanged: bool
+    sparse_storage_unchanged: bool
 
 
 def _validate_interfaces(
@@ -677,4 +740,287 @@ def run_proprio_to_motor_protocols(
         claims=claims,
         replay_exact=replay_exact,
         graph_unchanged=_graph_digest(graph) == before_digest,
+    )
+
+
+def _external_event_schedule(
+    graph: EventConnectome,
+    events: tuple[ExternalEvent, ...],
+) -> dict[int, tuple[np.ndarray, np.ndarray]]:
+    index_by_id = {int(value): index for index, value in enumerate(graph.neuron_ids)}
+    grouped: dict[int, list[tuple[int, float]]] = {}
+    for event in events:
+        pairs = grouped.setdefault(event.step, [])
+        for neuron_id, voltage in zip(
+            event.neuron_ids, event.voltages, strict=True
+        ):
+            if neuron_id not in index_by_id:
+                raise ValueError(f"proprioceptive event ID absent from graph: {neuron_id}")
+            pairs.append((index_by_id[neuron_id], voltage))
+    return {
+        event_step: (
+            np.array([index for index, _ in pairs], dtype=np.int64),
+            np.array([voltage for _, voltage in pairs], dtype=np.float32),
+        )
+        for event_step, pairs in grouped.items()
+    }
+
+
+def _bodies_close(left: HexapodBody, right: HexapodBody) -> bool:
+    left_values = left.model_dump(mode="json")
+    right_values = right.model_dump(mode="json")
+    for body_values in (left_values, right_values):
+        for leg in body_values["legs"]:
+            leg.pop("phase")
+
+    def close(a: object, b: object) -> bool:
+        if isinstance(a, float) and isinstance(b, float):
+            return math.isclose(a, b, rel_tol=1e-12, abs_tol=1e-12)
+        if isinstance(a, list) and isinstance(b, list):
+            return len(a) == len(b) and all(
+                close(x, y) for x, y in zip(a, b, strict=True)
+            )
+        if isinstance(a, dict) and isinstance(b, dict):
+            return a.keys() == b.keys() and all(close(a[key], b[key]) for key in a)
+        return a == b
+
+    return close(left_values, right_values)
+
+
+def _run_closed_loop_condition(
+    graph: EventConnectome,
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+    *,
+    name: str,
+    body_steps: int,
+    seed: int,
+    params: ShiuParameters,
+    body_parameters: HexapodParameters,
+    calibration: ProprioceptiveCalibration,
+    proprio_silenced: bool,
+    motor_silenced: bool,
+) -> ClosedLoopConditionResult:
+    simulator = ReferenceHexapod(body_parameters)
+    initial_body = simulator.observe()
+    encoder = ProprioceptiveEncoder(proprio, calibration)
+    decoder = HexapodMotorDecoder(motor)
+    state = ShiuState.initial(graph.neuron_count, params=params, seed=seed)
+    chunk_steps = round(body_parameters.dt_s * 1000.0 / params.dt_ms)
+    if chunk_steps < 1:
+        raise ValueError("body step is shorter than one Shiu integration step")
+    proprio_names = frozenset(bank.name for bank in proprio.banks)
+    proprio_mask = _population_mask(
+        graph,
+        {bank.name: bank.neuron_ids for bank in proprio.banks},
+        proprio_names if proprio_silenced else frozenset(),
+    )
+    motor_names = frozenset(motor.named_populations()) if motor_silenced else frozenset()
+    motor_mask = motor_population_silence_mask(graph, motor, motor_names)
+    silence_mask = np.logical_or(proprio_mask, motor_mask)
+    motor_ids = {
+        neuron_id for group in motor.groups for neuron_id in group.neuron_ids
+    }
+    proprio_ids = {
+        neuron_id for bank in proprio.banks for neuron_id in bank.neuron_ids
+    }
+    neural_state_steps: list[int] = []
+    event_steps: list[int] = []
+    trace: list[object] = []
+    total_motor_spikes = 0
+    total_proprio_spikes = 0
+    for _ in range(body_steps):
+        body = simulator.observe()
+        observation = observe_proprioception(body, body_parameters, calibration)
+        events = encoder.encode(observation, step=state.step)
+        event_steps.append(state.step)
+        schedule = _external_event_schedule(graph, events)
+        chunk_spikes: list[int] = []
+        neural_trace: list[tuple[int, tuple[int, ...]]] = []
+        for batch in simulate_shiu(
+            graph,
+            params,
+            steps=chunk_steps,
+            external_voltage_events=schedule,
+            state=state,
+            silenced=silence_mask,
+        ):
+            spikes = tuple(int(value) for value in batch.neuron_ids)
+            neural_trace.append((batch.step, spikes))
+            selected = [value for value in spikes if value in motor_ids]
+            chunk_spikes.extend(selected)
+            total_motor_spikes += len(selected)
+            total_proprio_spikes += sum(value in proprio_ids for value in spikes)
+        neural_state_steps.append(state.step)
+        phases = (
+            body.legs[0].phase,
+            body.legs[1].phase,
+            body.legs[2].phase,
+            body.legs[3].phase,
+            body.legs[4].phase,
+            body.legs[5].phase,
+        )
+        activation = decoder.decode(
+            tuple(chunk_spikes),
+            window_s=body_parameters.dt_s,
+            leg_phases=phases,
+        )
+        next_body = simulator.step(activation.torques)
+        trace.append(
+            {
+                "events": [
+                    {
+                        "step": event.step,
+                        "ids": event.neuron_ids,
+                        "voltages": event.voltages,
+                        "channel": event.channel,
+                    }
+                    for event in events
+                ],
+                "spikes": neural_trace,
+                "body": next_body.model_dump(mode="json"),
+            }
+        )
+    final_body = simulator.observe()
+    neural_joint_motion = sum(
+        abs(final.joint_angles_rad[joint] - initial.joint_angles_rad[joint])
+        for initial, final in zip(initial_body.legs, final_body.legs, strict=True)
+        for joint in (1, 2)
+    )
+    return ClosedLoopConditionResult(
+        name=name,
+        proprio_silenced=proprio_silenced,
+        motor_silenced=motor_silenced,
+        neural_chunk_steps=chunk_steps,
+        neural_state_steps=tuple(neural_state_steps),
+        proprioceptive_event_steps=tuple(event_steps),
+        proprioceptive_spikes=total_proprio_spikes,
+        motor_spikes=total_motor_spikes,
+        neural_joint_motion_rad=neural_joint_motion,
+        final_body=final_body,
+        trace_digest=_digest(trace),
+    )
+
+
+def run_closed_loop_hexapod_protocol(
+    graph: EventConnectome,
+    proprio: ProprioceptiveMap,
+    motor: HexapodMotorMap,
+    *,
+    body_steps: int,
+    seed: int,
+    params: ShiuParameters | None = None,
+    body_parameters: HexapodParameters | None = None,
+    calibration: ProprioceptiveCalibration | None = None,
+    minimum_motor_spikes: int = 1,
+    minimum_lesion_fraction: float = 0.9,
+) -> ClosedLoopHexapodResult:
+    """Run a stateful sparse neural-body-proprioceptive feedback loop."""
+
+    if type(body_steps) is not int or body_steps <= 0:
+        raise ValueError("closed-loop body steps must be a positive integer")
+    if type(seed) is not int or seed < 0:
+        raise ValueError("closed-loop seed must be a non-negative integer")
+    if type(minimum_motor_spikes) is not int or minimum_motor_spikes <= 0:
+        raise ValueError("minimum motor spikes must be a positive integer")
+    if (
+        not math.isfinite(minimum_lesion_fraction)
+        or not 0.0 <= minimum_lesion_fraction <= 1.0
+    ):
+        raise ValueError("minimum lesion fraction must lie in [0, 1]")
+    _validate_proprio_interfaces(graph, proprio, motor)
+    shiu_params = params or ShiuParameters()
+    shiu_params.validate()
+    body_config = body_parameters or HexapodParameters()
+    sensory_calibration = calibration or ProprioceptiveCalibration()
+    before_digest = _graph_digest(graph)
+    before_storage = graph.storage_items
+
+    def run(
+        name: str,
+        *,
+        proprio_silenced: bool = False,
+        motor_silenced: bool = False,
+    ) -> ClosedLoopConditionResult:
+        return _run_closed_loop_condition(
+            graph,
+            proprio,
+            motor,
+            name=name,
+            body_steps=body_steps,
+            seed=seed,
+            params=shiu_params,
+            body_parameters=body_config,
+            calibration=sensory_calibration,
+            proprio_silenced=proprio_silenced,
+            motor_silenced=motor_silenced,
+        )
+
+    normal = run("normal")
+    motor_lesion = run("motor_lesion", motor_silenced=True)
+    proprio_lesion = run("proprio_lesion", proprio_silenced=True)
+    restored = run("restored")
+    replay = run("replay")
+    mirror = run("mirror")
+    conditions = (
+        normal,
+        motor_lesion,
+        proprio_lesion,
+        restored,
+        replay,
+        mirror,
+    )
+    proprio_fraction = _lesion_fraction(
+        normal.motor_spikes, proprio_lesion.motor_spikes
+    )
+    motor_fraction = _lesion_fraction(normal.motor_spikes, motor_lesion.motor_spikes)
+    replay_exact = (
+        restored.trace_digest == normal.trace_digest
+        and replay.trace_digest == normal.trace_digest
+    )
+    mirror_exact = _bodies_close(mirror.final_body.mirror(), normal.final_body)
+    if normal.proprioceptive_spikes == 0:
+        classification: Literal[
+            "positive", "null", "directionally_wrong", "underpowered"
+        ] = "underpowered"
+        reasons = ("proprioceptive banks emitted no spikes",)
+    elif normal.motor_spikes < minimum_motor_spikes:
+        classification = "null"
+        reasons = ("no sufficient closed-loop motor recruitment",)
+    elif normal.neural_joint_motion_rad == 0.0:
+        classification = "null"
+        reasons = ("motor spikes caused no neurally driven joint motion",)
+    elif not mirror_exact:
+        classification = "directionally_wrong"
+        reasons = ("homologous mirror mechanics failed",)
+    elif (
+        proprio_fraction < minimum_lesion_fraction
+        or motor_fraction < minimum_lesion_fraction
+    ):
+        classification = "null"
+        reasons = ("proprioceptive or motor lesion effect is below threshold",)
+    elif not replay_exact:
+        classification = "null"
+        reasons = ("restoration or exact replay failed",)
+    else:
+        classification = "positive"
+        reasons = (
+            "stateful feedback, lesions, motion, mirror, restoration, and replay passed",
+        )
+    claim = ClosedLoopClaimClassification(
+        classification=classification,
+        proprioceptive_spikes=normal.proprioceptive_spikes,
+        motor_spikes=normal.motor_spikes,
+        motor_threshold=minimum_motor_spikes,
+        proprio_lesion_fraction=proprio_fraction,
+        motor_lesion_fraction=motor_fraction,
+        reasons=reasons,
+    )
+    return ClosedLoopHexapodResult(
+        conditions=conditions,
+        claim=claim,
+        replay_exact=replay_exact,
+        mirror_exact=mirror_exact,
+        graph_unchanged=_graph_digest(graph) == before_digest,
+        sparse_storage_unchanged=graph.storage_items == before_storage,
     )
