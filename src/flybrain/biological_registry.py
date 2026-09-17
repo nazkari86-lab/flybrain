@@ -246,6 +246,23 @@ class PopulationDeclaration(BaseModel, frozen=True):
     evidence_ids: tuple[str, ...]
 
 
+class PlasticEdgeManifestDeclaration(BaseModel, frozen=True):
+    """Immutable sparse edge set eligible for a declared learning operation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    pre_populations: tuple[str, ...] = Field(min_length=1)
+    post_populations: tuple[str, ...] = Field(min_length=1)
+    sign: Literal[-1, 0, 1]
+    expected_edge_count: int = Field(gt=0)
+    expected_contact_count: int = Field(gt=0)
+    expected_pre_count: int = Field(gt=0)
+    expected_post_count: int = Field(gt=0)
+    expected_edge_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+
+
 class BiologicalInterfaceRegistry(BaseModel, frozen=True):
     """Versioned declarations and their complete typed evidence catalog."""
 
@@ -254,6 +271,7 @@ class BiologicalInterfaceRegistry(BaseModel, frozen=True):
     registry_version: str
     dataset_id: str
     populations: tuple[PopulationDeclaration, ...]
+    plastic_edge_manifests: tuple[PlasticEdgeManifestDeclaration, ...] = ()
     evidence: tuple[EvidenceRecord, ...]
 
     @model_validator(mode="after")
@@ -276,6 +294,24 @@ class BiologicalInterfaceRegistry(BaseModel, frozen=True):
             if absent:
                 raise ValueError(
                     f"absent evidence reference for population {population.name}: {absent}"
+                )
+        manifests = tuple(item.name for item in self.plastic_edge_manifests)
+        if len(manifests) != len(set(manifests)):
+            raise ValueError("duplicate plastic edge manifest name")
+        declared_populations = set(names)
+        for manifest in self.plastic_edge_manifests:
+            referenced = set(manifest.pre_populations) | set(manifest.post_populations)
+            absent_populations = sorted(referenced - declared_populations)
+            if absent_populations:
+                raise ValueError(
+                    "absent population reference for plastic edge manifest "
+                    f"{manifest.name}: {absent_populations}"
+                )
+            absent_evidence = sorted(set(manifest.evidence_ids) - available)
+            if absent_evidence:
+                raise ValueError(
+                    "absent evidence reference for plastic edge manifest "
+                    f"{manifest.name}: {absent_evidence}"
                 )
         return self
 
