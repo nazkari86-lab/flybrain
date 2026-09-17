@@ -151,6 +151,36 @@
       "name": "right_hind_proprioception", "role": "sensory",
       "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "MetaLN", "rootSide": "R"}, "expected_count": 151, "expected_id_sha256": "9b18767f018616620618bf06a2d761ae85a58a54393e5a06f83d8f89aa211a3e"},
       "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "d_na02_left", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNa02", "somaSide": "L"}, "expected_ids": [523769], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_na02_right", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNa02", "somaSide": "R"}, "expected_ids": [10360], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_left", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNg13", "somaSide": "L"}, "expected_ids": [11074], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_right", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNg13", "somaSide": "R"}, "expected_ids": [512006], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "mdn_left", "role": "retreat",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "L"}, "expected_ids": [11288, 12348], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat"]
+    },
+    {
+      "name": "mdn_right", "role": "retreat",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "R"}, "expected_ids": [10763, 11332], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat"]
     }
   ],
   "evidence": [
@@ -177,6 +207,23 @@
       "source_url": "https://male-cns.janelia.org/download/",
       "claim": "Entry nerve and root side define six leg-specific proprioceptive banks; receptor transfer functions and event calibration remain explicit model assumptions.",
       "confidence": "assumption"
+    },
+    {
+      "evidence_id": "yang-2024-steering",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/39293446/",
+      "pmid": "39293446",
+      "doi": "10.1016/j.cell.2024.08.033",
+      "claim": "DNa02 and DNg13 activity and unilateral perturbation are associated with ipsiversive steering and distinct stride effects.",
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "mdn-2017-retreat",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/28238656/",
+      "pmid": "28238656",
+      "claim": "MDNs are critical for visually evoked backward walking and directional retreat.",
+      "confidence": "high"
     }
   ]
 }

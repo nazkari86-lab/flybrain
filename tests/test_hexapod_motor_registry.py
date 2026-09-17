@@ -36,6 +36,20 @@ JOINT_GROUPS = (
 EXPECTED_REAL_NAMES = {
     *(f"{leg}_{group}" for leg, *_ in LEGS for group, _ in JOINT_GROUPS),
     *(f"{leg}_proprioception" for leg, *_ in LEGS),
+    "d_na02_left",
+    "d_na02_right",
+    "d_ng13_left",
+    "d_ng13_right",
+    "mdn_left",
+    "mdn_right",
+}
+EXPECTED_DESCENDING = {
+    "d_na02_left": (523769,),
+    "d_na02_right": (10360,),
+    "d_ng13_left": (11074,),
+    "d_ng13_right": (512006,),
+    "mdn_left": (11288, 12348),
+    "mdn_right": (10763, 11332),
 }
 EXPECTED_PROPRIOCEPTION = {
     "left_fore_proprioception": (
@@ -223,12 +237,15 @@ def test_real_registry_declares_complete_exact_hexapod_interface() -> None:
                 "somaNeuromere",
                 "superclass",
             }
-        else:
+        elif population.role == "sensory":
             count, id_sha256 = EXPECTED_PROPRIOCEPTION[name]
             assert population.selector.expected_count == count
             assert population.selector.expected_id_sha256 == id_sha256
             assert population.selector.equals["rootSide"] in {"L", "R"}
             assert "somaSide" not in population.selector.equals
+        else:
+            assert population.selector.expected_ids == EXPECTED_DESCENDING[name]
+            assert population.selector.equals["superclass"] == "descending_neuron"
 
 
 def test_real_registry_resolves_retained_malecns_snapshot() -> None:
@@ -245,10 +262,12 @@ def test_real_registry_resolves_retained_malecns_snapshot() -> None:
         actual = resolved.population(population.name)
         if population.role == "motor":
             assert actual.neuron_ids == population.selector.expected_ids
-        else:
+        elif population.role == "sensory":
             expected_count, expected_hash = EXPECTED_PROPRIOCEPTION[population.name]
             assert len(actual.neuron_ids) == expected_count
             assert actual.id_sha256 == expected_hash
+        else:
+            assert actual.neuron_ids == EXPECTED_DESCENDING[population.name]
 
 
 def test_fixture_resolves_24_motor_groups_and_six_root_side_banks(tmp_path: Path) -> None:

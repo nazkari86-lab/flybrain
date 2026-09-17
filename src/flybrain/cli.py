@@ -15,15 +15,27 @@ from flybrain.biological_registry import (
     resolve_biological_registry,
 )
 from flybrain.bundle import write_bundle
+from flybrain.descending_interface import DescendingMap
 from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episode
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.experiment import ExperimentConfig, run_experiment
 from flybrain.graph import EventConnectome, SparseConnectome
+from flybrain.hexapod_benchmark import (
+    HexapodBenchmarkThresholds,
+    run_hexapod_benchmark,
+)
+from flybrain.hexapod_motor import HexapodMotorMap
+from flybrain.hexapod_neural_protocols import (
+    run_closed_loop_hexapod_protocol,
+    run_dn_to_motor_protocols,
+    run_proprio_to_motor_protocols,
+)
 from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.mb_association import run_mb_association
+from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.provenance import snapshot_content_sha256
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
@@ -238,6 +250,96 @@ def biological_steering_command(
             os.fsync(stream.fileno())
         os.link(stage, output_final)
     typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("hexapod-motor")
+def hexapod_motor_command(
+    snapshot: Path,
+    registry: Annotated[Path, typer.Option("--registry")],
+    output: Annotated[Path, typer.Option("--output")],
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 40,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+) -> None:
+    """Publish provenance-bound direct, neural, and closed-loop hexapod assays."""
+
+    output_final = output.resolve()
+    snapshot_final = snapshot.resolve()
+    registry_final = registry.resolve()
+    if output_final in {snapshot_final, registry_final} or output_final.is_relative_to(
+        snapshot_final
+    ):
+        raise typer.BadParameter(
+            "--output must differ from inputs and be outside snapshot"
+        )
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+
+    declared = load_biological_registry(registry_final)
+    resolved = resolve_biological_registry(declared, snapshot_final)
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot_final))
+    resolved.validate_graph(graph)
+    motor = HexapodMotorMap.from_registry(resolved)
+    proprio = ProprioceptiveMap.from_registry(resolved)
+    descending = DescendingMap(
+        *(resolved.population(name).neuron_ids for name in (
+            "d_na02_left",
+            "d_na02_right",
+            "d_ng13_left",
+            "d_ng13_right",
+            "mdn_left",
+            "mdn_right",
+        ))
+    )
+    direct = run_hexapod_benchmark(
+        graph,
+        motor,
+        steps=steps,
+        thresholds=HexapodBenchmarkThresholds(),
+    )
+    dn = run_dn_to_motor_protocols(
+        graph,
+        descending,
+        motor,
+        steps=steps,
+        seed=seed,
+    )
+    proprio_result = run_proprio_to_motor_protocols(
+        graph,
+        proprio,
+        motor,
+        steps=steps,
+        seed=seed,
+    )
+    closed_loop = run_closed_loop_hexapod_protocol(
+        graph,
+        proprio,
+        motor,
+        body_steps=steps,
+        seed=seed,
+    )
+    payload = {
+        "assay": "hexapod-motor-v1",
+        "snapshot": str(snapshot_final),
+        "steps": steps,
+        "seed": seed,
+        "registry": resolved.model_dump(mode="json"),
+        "families": {
+            "direct_motor_and_gait": direct.model_dump(mode="json"),
+            "dn_to_motor": dn.model_dump(mode="json"),
+            "proprio_to_motor": proprio_result.model_dump(mode="json"),
+            "closed_loop": closed_loop.model_dump(mode="json"),
+        },
+    }
+    serialized = json.dumps(payload, ensure_ascii=True, sort_keys=True)
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((json.dumps(payload, indent=2, sort_keys=True) + "\n").encode())
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(serialized)
 
 
 @experiment_app.command("shiu-plastic")
