@@ -230,7 +230,18 @@ class PopulationDeclaration(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    role: Literal["sensory", "steering", "retreat", "motor", "future_interface"]
+    role: Literal[
+        "sensory",
+        "steering",
+        "retreat",
+        "motor",
+        "future_interface",
+        "learning_kc",
+        "learning_mbon",
+        "dan_appetitive",
+        "dan_aversive",
+        "dan_unassigned",
+    ]
     selector: AnnotationSelector
     evidence_ids: tuple[str, ...]
 

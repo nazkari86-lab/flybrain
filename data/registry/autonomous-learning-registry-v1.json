@@ -1,0 +1,86 @@
+{
+  "registry_version": "male-cns-autonomous-learning-v1",
+  "dataset_id": "male-cns-v1.0-essential",
+  "populations": [
+    {
+      "name": "kenyon_cells",
+      "role": "learning_kc",
+      "selector": {
+        "equals": {"class": "Kenyon_Cell"},
+        "expected_count": 4064,
+        "expected_id_sha256": "50be316bdb907707ca51ea4baf2cba65f5fdbcf010f3bc38defef0fcfca6cc9d"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
+    },
+    {
+      "name": "mbons",
+      "role": "learning_mbon",
+      "selector": {
+        "equals": {"class": "MBON"},
+        "expected_count": 97,
+        "expected_id_sha256": "7c62a4af692408193e754422ec0bd803a25e63c94e3ce3850bba913ccfb45201"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
+    },
+    {
+      "name": "dan_appetitive_pam",
+      "role": "dan_appetitive",
+      "selector": {
+        "equals": {"class": "DAN"},
+        "in_values": {
+          "type": [
+            "PAM01", "PAM02", "PAM03", "PAM04", "PAM05", "PAM06", "PAM07", "PAM08",
+            "PAM09", "PAM10", "PAM11", "PAM12", "PAM13", "PAM14", "PAM15"
+          ]
+        },
+        "expected_count": 316,
+        "expected_id_sha256": "bc3ddf578aa2cdf2ddcdfb3f31f1075f9692a8987a83b2d9f225b5da07e7e771"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "aso-2014-dan-valence"]
+    },
+    {
+      "name": "dan_aversive_ppl1",
+      "role": "dan_aversive",
+      "selector": {
+        "equals": {"class": "DAN"},
+        "in_values": {
+          "type": ["PPL101", "PPL102", "PPL103", "PPL104", "PPL105", "PPL106", "PPL107", "PPL108"]
+        },
+        "expected_count": 16,
+        "expected_id_sha256": "5428773d97d1e5b865eff234d72f52c90f8e58a6cdf4dd2d1a0a5c98df5e4726"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "aso-2014-dan-valence"]
+    },
+    {
+      "name": "dan_unassigned_ppl2",
+      "role": "dan_unassigned",
+      "selector": {
+        "equals": {"class": "DAN"},
+        "in_values": {"type": ["PPL201", "PPL202", "PPL203", "PPL204"]},
+        "expected_count": 8,
+        "expected_id_sha256": "b2fe1b20b9783153b67c8e94a34517e98811fc12fe597dd10a9314d8de6349a2"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "aso-2014-dan-valence"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "male-cns-v1.0-body-annotations",
+      "kind": "dataset_measurement",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "MaleCNS v1.0 body annotations identify exact Kenyon cell, MBON, and DAN populations by class and type.",
+      "source_artifact_name": "body-annotations",
+      "source_artifact_url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "source_artifact_sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "confidence": "measured"
+    },
+    {
+      "evidence_id": "aso-2014-dan-valence",
+      "kind": "experimental_result",
+      "source_url": "https://elifesciences.org/articles/04577",
+      "doi": "10.7554/eLife.04577",
+      "claim": "Distinct PAM and PPL1 dopaminergic populations innervating mushroom-body compartments support appetitive and aversive associative-learning pathways; PPL2 valence is not assigned by this registry.",
+      "confidence": "high"
+    }
+  ]
+}
