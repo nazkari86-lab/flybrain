@@ -51,9 +51,7 @@ def test_real_malecns_hexapod_motor_assay(tmp_path: Path) -> None:
     )
     assert families["closed_loop"]["claim"]["classification"] in valid
     assert all(
-        
-            families[name]["graph_unchanged"] is True
-            for name in ("dn_to_motor", "proprio_to_motor", "closed_loop")
-        
+        families[name]["graph_unchanged"] is True
+        for name in ("dn_to_motor", "proprio_to_motor", "closed_loop")
     )
     assert families["closed_loop"]["sparse_storage_unchanged"] is True
