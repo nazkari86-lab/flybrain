@@ -6,6 +6,8 @@ import math
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from flybrain.biological_registry import ResolvedRegistry
+
 
 class AnonymousContact(BaseModel, frozen=True):
     """Bounded physical-contact features, deliberately without world-object identity."""
@@ -38,6 +40,24 @@ class ReinforcementInterface(BaseModel, frozen=True):
 
     appetitive_dan_ids: tuple[int, ...]
     aversive_dan_ids: tuple[int, ...]
+
+    @classmethod
+    def from_resolved_registry(cls, registry: ResolvedRegistry) -> ReinforcementInterface:
+        """Bind only exact registry roles; unassigned DAN types cannot enter this interface."""
+
+        by_role = {
+            role: tuple(
+                neuron_id
+                for population in registry.populations
+                if population.role == role
+                for neuron_id in population.neuron_ids
+            )
+            for role in ("dan_appetitive", "dan_aversive")
+        }
+        return cls(
+            appetitive_dan_ids=tuple(sorted(by_role["dan_appetitive"])),
+            aversive_dan_ids=tuple(sorted(by_role["dan_aversive"])),
+        )
 
     @model_validator(mode="after")
     def validate_dan_populations(self) -> ReinforcementInterface:
