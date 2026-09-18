@@ -38,3 +38,20 @@ def test_overlay_accepts_only_bounded_finite_multipliers_and_resets_exactly() ->
         overlay.set_multipliers(np.array([0.1, 1.0], dtype=np.float32), minimum=0.2, maximum=1.5)
     with pytest.raises(ValueError, match="finite"):
         overlay.set_multipliers(np.array([np.nan, 1.0], dtype=np.float32), minimum=0.2, maximum=1.5)
+    with pytest.raises(ValueError, match="finite"):
+        overlay.set_multipliers(
+            np.array([1.0, 1.0], dtype=np.float32), minimum=0.2, maximum=float("inf")
+        )
+
+
+def test_overlay_copy_keeps_an_independent_sparse_state() -> None:
+    overlay = PlasticWeightOverlay.create(
+        edge_indices=np.array([0], dtype=np.int64), canonical_edge_count=2
+    )
+    overlay.set_multipliers(np.array([0.5], dtype=np.float32), minimum=0.2, maximum=1.0)
+
+    copied = overlay.copy()
+    overlay.reset()
+
+    assert copied.multipliers.tolist() == [0.5]
+    assert copied.edge_indices.tolist() == [0]

@@ -57,6 +57,8 @@ def test_paired_contact_changes_only_the_sparse_overlay_and_replays_exactly() ->
     )
 
     assert result.classification == "plasticity_calibration"
+    assert result.evidence_kind == "simulation_observation"
+    assert result.autonomous_behavior_claim_allowed is False
     assert result.replay_exact is True
     assert result.graph_unchanged is True
     assert result.final_multipliers[0] < 1.0

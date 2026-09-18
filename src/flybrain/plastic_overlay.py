@@ -62,6 +62,8 @@ class PlasticWeightOverlay:
             raise ValueError("plastic multiplier shape differs from edge manifest")
         if not np.all(np.isfinite(values)):
             raise ValueError("plastic multipliers must be finite")
+        if not np.isfinite(minimum) or not np.isfinite(maximum):
+            raise ValueError("plastic multiplier bounds must be finite")
         if minimum > 1.0 or maximum < 1.0 or minimum > maximum:
             raise ValueError("plastic multiplier bounds must contain one")
         if np.any(values < minimum) or np.any(values > maximum):
@@ -72,6 +74,15 @@ class PlasticWeightOverlay:
         """Restore the exact unlearned multiplier state."""
 
         self.multipliers.fill(1.0)
+
+    def copy(self) -> PlasticWeightOverlay:
+        """Clone sparse mutable state without aliasing either array."""
+
+        return PlasticWeightOverlay(
+            edge_indices=self.edge_indices.copy(),
+            multipliers=self.multipliers.copy(),
+            canonical_edge_count=self.canonical_edge_count,
+        )
 
     def digest(self) -> str:
         """Return a deterministic identity of sparse locations and mutable values."""

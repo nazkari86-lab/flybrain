@@ -63,6 +63,8 @@ class AssociativeCalibrationResult(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     classification: Literal["plasticity_calibration", "null"]
+    evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    autonomous_behavior_claim_allowed: Literal[False] = False
     schedule_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     replay_exact: bool
@@ -98,19 +100,8 @@ def _graph_digest(graph: EventConnectome) -> str:
 
 
 def _clone_binding(binding: PlasticEdgeBinding) -> PlasticEdgeBinding:
-    from flybrain.plastic_overlay import PlasticWeightOverlay
-
-    overlay = PlasticWeightOverlay.create(
-        edge_indices=binding.overlay.edge_indices,
-        canonical_edge_count=binding.overlay.canonical_edge_count,
-    )
-    overlay.set_multipliers(
-        binding.overlay.multipliers,
-        minimum=0.0,
-        maximum=float("inf"),
-    )
     return PlasticEdgeBinding(
-        overlay=overlay,
+        overlay=binding.overlay.copy(),
         pre_ids=binding.pre_ids.copy(),
         post_ids=binding.post_ids.copy(),
     )
