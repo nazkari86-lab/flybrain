@@ -23,3 +23,10 @@ def test_retained_assay_binds_anatomy_learning_body_and_controls() -> None:
     assert result.paired_training.graph_unchanged is True
     assert result.motor_lesion.motor_spikes == 0
     assert result.no_contact_preserves_overlay is True
+    assert result.learning_probe.replay_exact is True
+    assert result.learning_probe.graph_unchanged is True
+    assert result.learning_probe.classification == "motor_difference"
+    assert (
+        result.learning_probe.baseline_probe_motor_spikes
+        > result.learning_probe.learned_probe_motor_spikes
+    )

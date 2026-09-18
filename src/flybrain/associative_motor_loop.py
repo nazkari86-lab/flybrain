@@ -49,6 +49,23 @@ class AssociativeMotorCalibrationResult(BaseModel, frozen=True):
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class AssociativeMotorLearningProbeResult(BaseModel, frozen=True):
+    """Training/probe calibration that attributes a probe only to persistent weights."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    autonomous_behavior_claim_allowed: Literal[False] = False
+    classification: Literal["motor_difference", "null", "underpowered"]
+    replay_exact: bool
+    graph_unchanged: bool
+    training_final_multipliers: tuple[float, ...]
+    baseline_probe_motor_spikes: int = Field(ge=0)
+    learned_probe_motor_spikes: int = Field(ge=0)
+    probe_motor_spike_difference: int
+    trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 @dataclass(frozen=True)
 class _LoopTrace:
     motor_spikes: int
@@ -254,4 +271,104 @@ def run_associative_motor_calibration(
         proprioceptive_events=first.proprioceptive_events,
         final_multipliers=first.final_multipliers,
         trace_digest=first.digest,
+    )
+
+
+def run_associative_motor_learning_probe(
+    graph: EventConnectome,
+    binding: PlasticEdgeBinding,
+    *,
+    learning: AssociativeCalibrationConfig,
+    motor: HexapodMotorMap,
+    proprio: ProprioceptiveMap,
+    training_schedule: ConditioningSchedule,
+    probe_schedule: ConditioningSchedule,
+    reinforcement: ReinforcementInterface,
+    body_parameters: HexapodParameters,
+    proprioceptive_calibration: ProprioceptiveCalibration | None = None,
+    motor_silenced: bool = False,
+) -> AssociativeMotorLearningProbeResult:
+    """Compare an odor-only probe before/after training with reset dynamic state.
+
+    The graph, body, and Shiu state restart for each probe. Only the learned sparse
+    KC-to-MBON multipliers persist into the learned condition.
+    """
+
+    if any(
+        event.appetitive_contact_intensity or event.aversive_contact_intensity
+        for event in probe_schedule.events
+    ):
+        raise ValueError("learning probe must not contain a contact signal")
+    before = _graph_digest(graph)
+    active_calibration = proprioceptive_calibration or ProprioceptiveCalibration()
+
+    def sequence() -> tuple[_LoopTrace, _LoopTrace, _LoopTrace]:
+        trained_binding = _clone_binding(binding)
+        training = _run(
+            graph,
+            trained_binding,
+            learning=learning,
+            motor=motor,
+            proprio=proprio,
+            schedule=training_schedule,
+            reinforcement=reinforcement,
+            body_parameters=body_parameters,
+            proprioceptive_calibration=active_calibration,
+            motor_silenced=motor_silenced,
+        )
+        learned_probe = _run(
+            graph,
+            trained_binding,
+            learning=learning,
+            motor=motor,
+            proprio=proprio,
+            schedule=probe_schedule,
+            reinforcement=reinforcement,
+            body_parameters=body_parameters,
+            proprioceptive_calibration=active_calibration,
+            motor_silenced=motor_silenced,
+        )
+        baseline_probe = _run(
+            graph,
+            _clone_binding(binding),
+            learning=learning,
+            motor=motor,
+            proprio=proprio,
+            schedule=probe_schedule,
+            reinforcement=reinforcement,
+            body_parameters=body_parameters,
+            proprioceptive_calibration=active_calibration,
+            motor_silenced=motor_silenced,
+        )
+        return training, learned_probe, baseline_probe
+
+    first_training, first_learned, first_baseline = sequence()
+    replay_training, replay_learned, replay_baseline = sequence()
+    difference = first_learned.motor_spikes - first_baseline.motor_spikes
+    if first_baseline.motor_spikes == 0 and first_learned.motor_spikes == 0:
+        classification: Literal["motor_difference", "null", "underpowered"] = (
+            "underpowered"
+        )
+    elif difference == 0:
+        classification = "null"
+    else:
+        classification = "motor_difference"
+    trace_payload = (
+        first_training.digest,
+        first_learned.digest,
+        first_baseline.digest,
+    )
+    return AssociativeMotorLearningProbeResult(
+        classification=classification,
+        replay_exact=(
+            first_training == replay_training
+            and first_learned == replay_learned
+            and first_baseline == replay_baseline
+        ),
+        graph_unchanged=_graph_digest(graph) == before,
+        training_final_multipliers=first_training.final_multipliers,
+        baseline_probe_motor_spikes=first_baseline.motor_spikes,
+        learned_probe_motor_spikes=first_learned.motor_spikes,
+        probe_motor_spike_difference=difference,
+        trace_digest=hashlib.sha256(repr(trace_payload).encode("utf-8")).hexdigest(),
     )

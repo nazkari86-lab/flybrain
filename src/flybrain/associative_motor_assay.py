@@ -9,7 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.associative_motor_loop import (
     AssociativeMotorCalibrationResult,
+    AssociativeMotorLearningProbeResult,
     run_associative_motor_calibration,
+    run_associative_motor_learning_probe,
 )
 from flybrain.associative_motor_pathway import (
     MbonMotorPathwayAudit,
@@ -52,6 +54,7 @@ class RetainedAssociativeMotorAssayResult(BaseModel, frozen=True):
     paired_training: AssociativeMotorCalibrationResult
     motor_lesion: AssociativeMotorCalibrationResult
     no_contact: AssociativeMotorCalibrationResult
+    learning_probe: AssociativeMotorLearningProbeResult
     no_contact_preserves_overlay: bool
     paired_associative_change_detected: bool
 
@@ -75,12 +78,15 @@ def run_retained_associative_motor_assay(
     snapshot: Path,
     *,
     body_steps: int = 1,
+    probe_body_steps: int = 5,
     seed: int = 7,
 ) -> RetainedAssociativeMotorAssayResult:
     """Run paired, motor-lesion, and no-contact controls on one exact snapshot."""
 
     if type(body_steps) is not int or body_steps <= 0:
         raise ValueError("body_steps must be a positive integer")
+    if type(probe_body_steps) is not int or probe_body_steps <= 0:
+        raise ValueError("probe_body_steps must be a positive integer")
     if type(seed) is not int or seed < 0:
         raise ValueError("seed must be a non-negative integer")
     learning_registry = load_biological_registry(LEARNING_REGISTRY)
@@ -141,6 +147,20 @@ def run_retained_associative_motor_assay(
     paired_training = run(paired_schedule)
     motor_lesion = run(paired_schedule, motor_silenced=True)
     no_contact = run(_no_contact_schedule(seed=seed, body_steps=body_steps))
+    learning_probe = run_associative_motor_learning_probe(
+        graph,
+        binding,
+        learning=learning,
+        motor=motor,
+        proprio=proprio,
+        training_schedule=paired_schedule,
+        probe_schedule=_no_contact_schedule(
+            seed=seed,
+            body_steps=probe_body_steps,
+        ),
+        reinforcement=reinforcement,
+        body_parameters=body_parameters,
+    )
     no_contact_preserves_overlay = all(
         value == 1.0 for value in no_contact.final_multipliers
     )
@@ -156,6 +176,7 @@ def run_retained_associative_motor_assay(
         paired_training=paired_training,
         motor_lesion=motor_lesion,
         no_contact=no_contact,
+        learning_probe=learning_probe,
         no_contact_preserves_overlay=no_contact_preserves_overlay,
         paired_associative_change_detected=(
             paired_training.final_multipliers != no_contact.final_multipliers

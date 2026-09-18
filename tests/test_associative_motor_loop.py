@@ -1,12 +1,16 @@
 import numpy as np
 from scipy.sparse import csr_array
 
-from flybrain.associative_motor_loop import run_associative_motor_calibration
+from flybrain.associative_motor_loop import (
+    run_associative_motor_calibration,
+    run_associative_motor_learning_probe,
+)
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
 from flybrain.conditioning_world import ConditioningEvent, ConditioningSchedule
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_body import HexapodParameters
 from flybrain.hexapod_motor import CANONICAL_MOTOR_GROUPS, HexapodMotorMap, MotorGroup
+from flybrain.mushroom_body_learning import MushroomBodyLearningParameters
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
 from flybrain.plastic_overlay import PlasticWeightOverlay
 from flybrain.proprioceptive_interface import ProprioceptiveBank, ProprioceptiveMap
@@ -177,3 +181,63 @@ def test_no_contact_leaves_plastic_overlay_at_unity() -> None:
     )
 
     assert result.final_multipliers == (1.0,)
+
+
+def test_learning_probe_isolates_persistent_sparse_weight_effect() -> None:
+    result = run_associative_motor_learning_probe(
+        graph(),
+        binding(),
+        learning=AssociativeCalibrationConfig(
+            cue_ids=(10,),
+            mbon_ids=(20,),
+            dan_to_mbon_pairs=((30, 20),),
+            input_mode="sensory_path",
+            sensory_input_ids=(1,),
+            neural_chunk_steps=20,
+            shiu_parameters=ShiuParameters(
+                dt_ms=0.5,
+                refractory_ms=2.0,
+                synaptic_delay_ms=1.0,
+            ),
+            learning_parameters=MushroomBodyLearningParameters(
+                learning_rate=0.8,
+                minimum_multiplier=0.2,
+            ),
+        ),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        training_schedule=ConditioningSchedule.create(
+            seed=7,
+            steps=2,
+            appetitive_pair_steps=(0,),
+        ),
+        probe_schedule=ConditioningSchedule(
+            seed=7,
+            events=(
+                ConditioningEvent(
+                    step=0,
+                    odor_intensity=1.0,
+                    appetitive_contact_intensity=0.0,
+                    aversive_contact_intensity=0.0,
+                ),
+                ConditioningEvent(
+                    step=1,
+                    odor_intensity=0.0,
+                    appetitive_contact_intensity=0.0,
+                    aversive_contact_intensity=0.0,
+                ),
+            ),
+        ),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert result.evidence_kind == "simulation_observation"
+    assert result.autonomous_behavior_claim_allowed is False
+    assert result.replay_exact is True
+    assert result.graph_unchanged is True
+    assert abs(result.training_final_multipliers[0] - 0.2) < 1e-6
+    assert result.baseline_probe_motor_spikes > result.learned_probe_motor_spikes
+    assert result.classification == "motor_difference"
