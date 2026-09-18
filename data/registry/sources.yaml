@@ -34,7 +34,8 @@ sources:
         url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-points-male-cns-v1.0-minconf-0.5.feather
       - name: syn-partners
         bytes: 6777179098
-        priority: deferred-storage-budget
+        sha256: 959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07
+        priority: acquired-verified
         url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather
       - name: tbar-neurotransmitters
         bytes: 2651680218

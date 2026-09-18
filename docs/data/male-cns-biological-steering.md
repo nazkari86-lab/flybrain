@@ -87,6 +87,15 @@ two-hop intermediates. Therefore neither per-T-bar means nor raw body prediction
 to overwrite the consensus transmitter labels, edge signs, contacts, or synaptic gains. The
 new `tbar_neurotransmitters.py` audit preserves this distinction explicitly.
 
+The independently verified `syn-partners-male-cns-v1.0-minconf-0.5.feather` product
+(`6,777,179,098` bytes; SHA-256
+`959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07`) makes an exact
+coordinate join possible. A focused audit of the six natural-ORN-active KC-to-motor-pathway-MBON
+edges found all 68 of 68 declared contacts in the partner export and matched each to one T-bar
+prediction. The raw contact means still ranked dopamine above acetylcholine on every audited edge.
+This confirms at contact resolution that raw prediction probabilities are not an admissible
+replacement for the release consensus in the current simulator.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.

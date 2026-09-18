@@ -59,6 +59,27 @@ class BodyNeurotransmitterAudit:
     bodies: tuple[BodyTransmitterSummary, ...]
 
 
+@dataclass(frozen=True)
+class ContactTransmitterSummary:
+    """Raw T-bar probabilities joined to one exact anatomical edge's contacts."""
+
+    pre_id: int
+    post_id: int
+    contact_count: int
+    matched_tbar_count: int
+    mean_probabilities: dict[str, float]
+
+
+@dataclass(frozen=True)
+class ContactTransmitterAudit:
+    """Contact-level measurement; it does not change any neuron-level consensus."""
+
+    partner_contact_rows: int
+    matched_contact_rows: int
+    unmatched_contact_rows: int
+    edges: tuple[ContactTransmitterSummary, ...]
+
+
 def audit_tbar_neurotransmitters(
     source: Path,
     *,
@@ -187,4 +208,122 @@ def audit_body_neurotransmitters(
             item.consensus_transmitter != item.predicted_transmitter for item in summaries
         ),
         bodies=summaries,
+    )
+
+
+def audit_contact_transmitters(
+    tbar_source: Path,
+    partner_source: Path,
+    *,
+    edge_pairs: tuple[tuple[int, int], ...],
+) -> ContactTransmitterAudit:
+    """Join raw T-bar predictions to declared contacts by exact pre coordinates.
+
+    Contact coordinate matching is a measurement of raw prediction uncertainty.
+    It must not overwrite the official body-level ``consensus_nt`` label.
+    """
+
+    declared = tuple(sorted(set(edge_pairs)))
+    if not declared or any(
+        type(pre_id) is not int or type(post_id) is not int or pre_id <= 0 or post_id <= 0
+        for pre_id, post_id in declared
+    ):
+        raise ValueError("edge_pairs must contain positive integer endpoints")
+    if len(declared) != len(edge_pairs):
+        raise ValueError("edge_pairs must be unique")
+    declared_set = frozenset(declared)
+    pre_values = pa.array(sorted({pre_id for pre_id, _ in declared}), type=pa.uint64())
+    contact_coordinates: dict[tuple[int, int], list[tuple[int, int, int]]] = {
+        pair: [] for pair in declared
+    }
+
+    with pa.memory_map(str(partner_source), "r") as mapped:
+        reader = ipc.open_file(mapped)
+        required = {"x_pre", "y_pre", "z_pre", "body_pre", "body_post"}
+        missing = sorted(required - set(reader.schema.names))
+        if missing:
+            raise ValueError(f"partner source missing columns: {missing}")
+        for index in range(reader.num_record_batches):
+            batch = reader.get_batch(index)
+            selected = batch.filter(
+                pc.is_in(batch.column("body_pre"), value_set=pre_values)
+            )
+            for pre_id, post_id, x, y, z in zip(
+                selected.column("body_pre").to_pylist(),
+                selected.column("body_post").to_pylist(),
+                selected.column("x_pre").to_pylist(),
+                selected.column("y_pre").to_pylist(),
+                selected.column("z_pre").to_pylist(),
+                strict=True,
+            ):
+                pair = (int(pre_id), int(post_id))
+                if pair in declared_set:
+                    contact_coordinates[pair].append((int(x), int(y), int(z)))
+
+    pairs_by_coordinate: dict[tuple[int, int, int], list[tuple[int, int]]] = {}
+    for pair, coordinates in contact_coordinates.items():
+        for coordinate in coordinates:
+            pairs_by_coordinate.setdefault(coordinate, []).append(pair)
+    probability_totals: dict[tuple[int, int], dict[str, float]] = {}
+    matched_counts = dict.fromkeys(declared, 0)
+
+    with pa.memory_map(str(tbar_source), "r") as mapped:
+        reader = ipc.open_file(mapped)
+        required = {"x", "y", "z"}
+        missing = sorted(required - set(reader.schema.names))
+        if missing:
+            raise ValueError(f"T-bar source missing columns: {missing}")
+        transmitters = tuple(
+            name.removeprefix("nt_").removesuffix("_prob")
+            for name in reader.schema.names
+            if name.startswith("nt_") and name.endswith("_prob")
+        )
+        if not transmitters:
+            raise ValueError("T-bar source requires at least one nt_*_prob column")
+        probability_totals = {
+            pair: dict.fromkeys(transmitters, 0.0) for pair in declared
+        }
+        for index in range(reader.num_record_batches):
+            batch = reader.get_batch(index)
+            values = {
+                transmitter: batch.column(f"nt_{transmitter}_prob").to_pylist()
+                for transmitter in transmitters
+            }
+            for row_index, (x, y, z) in enumerate(
+                zip(
+                    batch.column("x").to_pylist(),
+                    batch.column("y").to_pylist(),
+                    batch.column("z").to_pylist(),
+                    strict=True,
+                )
+            ):
+                for pair in pairs_by_coordinate.get((int(x), int(y), int(z)), ()):
+                    matched_counts[pair] += 1
+                    for transmitter in transmitters:
+                        probability_totals[pair][transmitter] += float(
+                            values[transmitter][row_index]
+                        )
+
+    summaries = tuple(
+        ContactTransmitterSummary(
+            pre_id=pair[0],
+            post_id=pair[1],
+            contact_count=len(contact_coordinates[pair]),
+            matched_tbar_count=matched_counts[pair],
+            mean_probabilities={
+                transmitter: total / matched_counts[pair]
+                for transmitter, total in probability_totals[pair].items()
+            }
+            if matched_counts[pair]
+            else {},
+        )
+        for pair in declared
+    )
+    contact_rows = sum(item.contact_count for item in summaries)
+    matched_rows = sum(item.matched_tbar_count for item in summaries)
+    return ContactTransmitterAudit(
+        partner_contact_rows=contact_rows,
+        matched_contact_rows=matched_rows,
+        unmatched_contact_rows=contact_rows - matched_rows,
+        edges=summaries,
     )

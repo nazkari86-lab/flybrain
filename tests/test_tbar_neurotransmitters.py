@@ -6,6 +6,7 @@ import pytest
 
 from flybrain.tbar_neurotransmitters import (
     audit_body_neurotransmitters,
+    audit_contact_transmitters,
     audit_tbar_neurotransmitters,
 )
 
@@ -66,3 +67,53 @@ def test_body_audit_retains_official_consensus_over_raw_prediction(tmp_path: Pat
     assert audit.bodies[0].consensus_transmitter == "acetylcholine"
     assert audit.bodies[0].predicted_transmitter == "dopamine"
     assert audit.bodies[0].prediction_confidence == pytest.approx(0.6)
+
+
+def test_contact_audit_joins_tbars_to_exact_presynaptic_contacts(tmp_path: Path) -> None:
+    tbars = tmp_path / "tbars.feather"
+    partners = tmp_path / "partners.feather"
+    feather.write_feather(
+        pa.table(
+            {
+                "x": [1, 2, 3],
+                "y": [1, 2, 3],
+                "z": [1, 2, 3],
+                "body": [7, 7, 9],
+                "nt_acetylcholine_prob": [0.8, 0.4, 0.1],
+                "nt_dopamine_prob": [0.2, 0.6, 0.9],
+            }
+        ),
+        tbars,
+        chunksize=1,
+    )
+    feather.write_feather(
+        pa.table(
+            {
+                "x_pre": [1, 2, 3, 99],
+                "y_pre": [1, 2, 3, 99],
+                "z_pre": [1, 2, 3, 99],
+                "body_pre": [7, 7, 9, 7],
+                "body_post": [20, 20, 20, 20],
+            }
+        ),
+        partners,
+        chunksize=1,
+    )
+
+    audit = audit_contact_transmitters(
+        tbars,
+        partners,
+        edge_pairs=((7, 20), (9, 20)),
+    )
+
+    assert audit.partner_contact_rows == 4
+    assert audit.matched_contact_rows == 3
+    assert audit.unmatched_contact_rows == 1
+    assert [(item.pre_id, item.post_id, item.contact_count) for item in audit.edges] == [
+        (7, 20, 3),
+        (9, 20, 1),
+    ]
+    assert audit.edges[0].matched_tbar_count == 2
+    assert audit.edges[0].mean_probabilities == pytest.approx(
+        {"acetylcholine": 0.6, "dopamine": 0.4}
+    )
