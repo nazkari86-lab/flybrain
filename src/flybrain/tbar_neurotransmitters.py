@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.compute as pc
+import pyarrow.feather as feather
 import pyarrow.ipc as ipc
 
 
@@ -36,6 +37,26 @@ class TbarNeurotransmitterAudit:
     matched_tbar_rows: int
     missing_body_ids: tuple[int, ...]
     bodies: tuple[TbarBodyTransmitterSummary, ...]
+
+
+@dataclass(frozen=True)
+class BodyTransmitterSummary:
+    """One official body-level prediction and its release consensus label."""
+
+    body_id: int
+    consensus_transmitter: str
+    predicted_transmitter: str
+    prediction_confidence: float
+
+
+@dataclass(frozen=True)
+class BodyNeurotransmitterAudit:
+    """Exact-ID audit of the official aggregate MaleCNS transmitter product."""
+
+    source_body_rows: int
+    missing_body_ids: tuple[int, ...]
+    consensus_prediction_disagreements: int
+    bodies: tuple[BodyTransmitterSummary, ...]
 
 
 def audit_tbar_neurotransmitters(
@@ -110,5 +131,60 @@ def audit_tbar_neurotransmitters(
         source_tbar_rows=source_rows,
         matched_tbar_rows=matched_rows,
         missing_body_ids=tuple(body_id for body_id in requested if not counts[body_id]),
+        bodies=summaries,
+    )
+
+
+def audit_body_neurotransmitters(
+    source: Path,
+    *,
+    body_ids: tuple[int, ...],
+) -> BodyNeurotransmitterAudit:
+    """Read Janelia's official aggregation without substituting raw T-bar means.
+
+    ``consensus_nt`` remains the release's authoritative neuron-level label;
+    ``predicted_nt`` is retained solely to expose disagreement and uncertainty.
+    """
+
+    requested = tuple(sorted(set(body_ids)))
+    if not requested:
+        raise ValueError("body_ids must not be empty")
+    table = feather.read_table(str(source), memory_map=True)
+    required = {
+        "body",
+        "predicted_nt",
+        "predicted_nt_confidence",
+        "consensus_nt",
+    }
+    missing_columns = sorted(required - set(table.column_names))
+    if missing_columns:
+        raise ValueError(f"body transmitter source missing columns: {missing_columns}")
+    selected = table.filter(
+        pc.is_in(table.column("body"), value_set=pa.array(requested, type=pa.uint64()))
+    )
+    records = {
+        int(body): BodyTransmitterSummary(
+            body_id=int(body),
+            consensus_transmitter=str(consensus),
+            predicted_transmitter=str(predicted),
+            prediction_confidence=float(confidence),
+        )
+        for body, predicted, confidence, consensus in zip(
+            selected.column("body").to_pylist(),
+            selected.column("predicted_nt").to_pylist(),
+            selected.column("predicted_nt_confidence").to_pylist(),
+            selected.column("consensus_nt").to_pylist(),
+            strict=True,
+        )
+    }
+    if len(records) != selected.num_rows:
+        raise ValueError("body transmitter source has duplicate body IDs")
+    summaries = tuple(records[body_id] for body_id in requested if body_id in records)
+    return BodyNeurotransmitterAudit(
+        source_body_rows=table.num_rows,
+        missing_body_ids=tuple(body_id for body_id in requested if body_id not in records),
+        consensus_prediction_disagreements=sum(
+            item.consensus_transmitter != item.predicted_transmitter for item in summaries
+        ),
         bodies=summaries,
     )

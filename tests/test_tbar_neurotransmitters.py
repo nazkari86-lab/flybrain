@@ -4,7 +4,10 @@ import pyarrow as pa
 import pyarrow.feather as feather
 import pytest
 
-from flybrain.tbar_neurotransmitters import audit_tbar_neurotransmitters
+from flybrain.tbar_neurotransmitters import (
+    audit_body_neurotransmitters,
+    audit_tbar_neurotransmitters,
+)
 
 
 def test_audit_aggregates_only_requested_presynaptic_bodies(tmp_path: Path) -> None:
@@ -38,3 +41,28 @@ def test_audit_aggregates_only_requested_presynaptic_bodies(tmp_path: Path) -> N
         "gaba": 0.15,
     })
     assert audit.bodies[1].dominant_transmitter == "gaba"
+
+
+def test_body_audit_retains_official_consensus_over_raw_prediction(tmp_path: Path) -> None:
+    source = tmp_path / "body-neurotransmitters.feather"
+    feather.write_feather(
+        pa.table(
+            {
+                "body": [7, 9],
+                "predicted_nt": ["dopamine", "gaba"],
+                "predicted_nt_confidence": [0.6, 0.9],
+                "consensus_nt": ["acetylcholine", "gaba"],
+            }
+        ),
+        source,
+    )
+
+    audit = audit_body_neurotransmitters(source, body_ids=(7, 9, 42))
+
+    assert audit.source_body_rows == 2
+    assert audit.missing_body_ids == (42,)
+    assert audit.consensus_prediction_disagreements == 1
+    assert audit.bodies[0].body_id == 7
+    assert audit.bodies[0].consensus_transmitter == "acetylcholine"
+    assert audit.bodies[0].predicted_transmitter == "dopamine"
+    assert audit.bodies[0].prediction_confidence == pytest.approx(0.6)

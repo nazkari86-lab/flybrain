@@ -75,6 +75,18 @@ checked all required lesion/restoration/replay/holdout condition names, required
 positive denominators, and recomputed the result SHA-256. A source scan found no dense
 `neuron_count x neuron_count` allocation in the runtime or tests; the canonical graph remains CSR.
 
+## T-bar neurotransmitter uncertainty audit
+
+The official `tbar-neurotransmitters-male-cns-v1.0.feather` product was acquired with its
+published byte count (`2,651,680,218`) and MD5 checksum; its local SHA-256 is
+`bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d`.
+The distinct official body-level product records both raw `predicted_nt` and the release
+`consensus_nt`. On the learning-to-motor audit population, raw predictions disagree with the
+release consensus for all 4,064 KC bodies, but for only 2 of 97 MBON bodies and 1 of 10 retained
+two-hop intermediates. Therefore neither per-T-bar means nor raw body predictions are permitted
+to overwrite the consensus transmitter labels, edge signs, contacts, or synaptic gains. The
+new `tbar_neurotransmitters.py` audit preserves this distinction explicitly.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.
