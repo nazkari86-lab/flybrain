@@ -10,6 +10,7 @@ from flybrain.autonomous_learning_benchmark import (
 from flybrain.conditioning_world import ConditioningSchedule
 from flybrain.graph import EventConnectome
 from flybrain.mushroom_body_learning import MushroomBodyLearningParameters
+from flybrain.olfactory_interface import OlfactoryReceptorMap
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
 from flybrain.plastic_edge_registry import ResolvedPlasticEdgeManifest
 from flybrain.plastic_overlay import PlasticWeightOverlay
@@ -43,7 +44,7 @@ def calibration_binding() -> PlasticEdgeBinding:
 def sensory_calibration_graph() -> EventConnectome:
     return EventConnectome(
         neuron_ids=np.array([1, 10, 20, 30], dtype=np.uint64),
-        cell_types=("olfactory", "Kenyon_Cell", "MBON", "DAN"),
+        cell_types=("ORN_DA1", "Kenyon_Cell", "MBON", "DAN"),
         roles=("learning_olfactory", "learning_kc", "learning_mbon", "dan_appetitive"),
         transmitters=("acetylcholine", "acetylcholine", "acetylcholine", "dopamine"),
         superclasses=("central",) * 4,
@@ -112,6 +113,34 @@ def test_transmitter_gain_profile_is_explicit_and_validated() -> None:
             dan_to_mbon_pairs=((30, 20),),
             presynaptic_transmitter_multipliers={"acetylcholine": -1.0},
         )
+
+
+def test_manifest_config_resolves_a_declared_orn_channel_pattern() -> None:
+    receptor_map = OlfactoryReceptorMap.from_graph(
+        sensory_calibration_graph(), olfactory_neuron_ids=(1,)
+    )
+    dan_manifest = ResolvedPlasticEdgeManifest(
+        name="dan_to_mbon",
+        sign=0,
+        edge_count=1,
+        contact_count=1,
+        pre_count=1,
+        post_count=1,
+        edge_sha256="a" * 64,
+        edge_pairs=((30, 20),),
+    )
+    config = AssociativeCalibrationConfig.from_manifest(
+        sensory_calibration_binding(),
+        dan_manifest,
+        ReinforcementInterface(appetitive_dan_ids=(30,), aversive_dan_ids=(31,)),
+        valence="appetitive",
+        olfactory_receptor_map=receptor_map,
+        olfactory_channel_types=("ORN_DA1",),
+    )
+
+    assert config.input_mode == "sensory_path"
+    assert config.sensory_input_ids == (1,)
+    assert config.sensory_channel_types == ("ORN_DA1",)
 
 
 def test_unpaired_contact_has_no_learning_effect() -> None:

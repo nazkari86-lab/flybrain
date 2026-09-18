@@ -15,6 +15,7 @@ from flybrain.mushroom_body_learning import (
     MushroomBodyLearning,
     MushroomBodyLearningParameters,
 )
+from flybrain.olfactory_interface import OlfactoryReceptorMap
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
 from flybrain.plastic_edge_registry import ResolvedPlasticEdgeManifest
 from flybrain.reinforcement_interface import AnonymousContact, ReinforcementInterface
@@ -31,6 +32,7 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
     dan_to_mbon_pairs: tuple[tuple[int, int], ...]
     input_mode: Literal["direct_kc", "sensory_path"] = "direct_kc"
     sensory_input_ids: tuple[int, ...] = ()
+    sensory_channel_types: tuple[str, ...] = ()
     neural_chunk_steps: int = Field(default=20, gt=0)
     cue_voltage_mv: float = Field(default=100.0, gt=0.0)
     shiu_parameters: ShiuParameters = ShiuParameters()
@@ -48,6 +50,8 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
         *,
         valence: Literal["appetitive", "aversive"],
         sensory_input_ids: tuple[int, ...] = (),
+        olfactory_receptor_map: OlfactoryReceptorMap | None = None,
+        olfactory_channel_types: tuple[str, ...] = (),
         neural_chunk_steps: int = 20,
         cue_voltage_mv: float = 100.0,
         shiu_parameters: ShiuParameters | None = None,
@@ -71,12 +75,22 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
         )
         if not routes:
             raise ValueError("no declared DAN-to-MBON routes for requested valence")
+        if sensory_input_ids and olfactory_receptor_map is not None:
+            raise ValueError("declare either sensory IDs or an ORN receptor map, not both")
+        resolved_sensory_ids = (
+            olfactory_receptor_map.channel_ids(olfactory_channel_types)
+            if olfactory_receptor_map is not None
+            else sensory_input_ids
+        )
         return cls(
             cue_ids=tuple(sorted(set(int(value) for value in binding.pre_ids))),
             mbon_ids=mbon_ids,
             dan_to_mbon_pairs=routes,
-            input_mode="sensory_path" if sensory_input_ids else "direct_kc",
-            sensory_input_ids=sensory_input_ids,
+            input_mode="sensory_path" if resolved_sensory_ids else "direct_kc",
+            sensory_input_ids=resolved_sensory_ids,
+            sensory_channel_types=(
+                olfactory_channel_types if olfactory_receptor_map is not None else ()
+            ),
             neural_chunk_steps=neural_chunk_steps,
             cue_voltage_mv=cue_voltage_mv,
             shiu_parameters=shiu_parameters or ShiuParameters(),
@@ -97,6 +111,8 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
             raise ValueError("DAN-to-MBON routes must be nonempty")
         if self.input_mode == "direct_kc" and self.sensory_input_ids:
             raise ValueError("direct KC calibration cannot declare sensory input IDs")
+        if self.input_mode == "direct_kc" and self.sensory_channel_types:
+            raise ValueError("direct KC calibration cannot declare ORN channels")
         if self.input_mode == "sensory_path":
             if not self.sensory_input_ids or any(
                 type(neuron_id) is not int or neuron_id <= 0
@@ -107,6 +123,11 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
                 raise ValueError("sensory input IDs must be unique and sorted")
             if set(self.sensory_input_ids) & set(self.cue_ids):
                 raise ValueError("sensory input IDs must not bypass into declared KC IDs")
+            if self.sensory_channel_types and (
+                len(set(self.sensory_channel_types)) != len(self.sensory_channel_types)
+                or any(not item.startswith("ORN_") for item in self.sensory_channel_types)
+            ):
+                raise ValueError("sensory channels must be unique ORN cell types")
         if any(
             type(dan_id) is not int
             or type(mbon_id) is not int
