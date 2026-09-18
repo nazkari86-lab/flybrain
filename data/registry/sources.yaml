@@ -38,7 +38,8 @@ sources:
         url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather
       - name: tbar-neurotransmitters
         bytes: 2651680218
-        priority: deferred-storage-budget
+        sha256: bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d
+        priority: acquired-verified
         url: https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/tbar-neurotransmitters-male-cns-v1.0.feather
   - dataset_id: flywire-fafb-v783
     authority: FlyWire Consortium
