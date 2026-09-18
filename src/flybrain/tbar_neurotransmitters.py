@@ -269,7 +269,7 @@ def audit_contact_transmitters(
 
     with pa.memory_map(str(tbar_source), "r") as mapped:
         reader = ipc.open_file(mapped)
-        required = {"x", "y", "z"}
+        required = {"x", "y", "z", "body"}
         missing = sorted(required - set(reader.schema.names))
         if missing:
             raise ValueError(f"T-bar source missing columns: {missing}")
@@ -289,15 +289,18 @@ def audit_contact_transmitters(
                 transmitter: batch.column(f"nt_{transmitter}_prob").to_pylist()
                 for transmitter in transmitters
             }
-            for row_index, (x, y, z) in enumerate(
+            for row_index, (x, y, z, body) in enumerate(
                 zip(
                     batch.column("x").to_pylist(),
                     batch.column("y").to_pylist(),
                     batch.column("z").to_pylist(),
+                    batch.column("body").to_pylist(),
                     strict=True,
                 )
             ):
                 for pair in pairs_by_coordinate.get((int(x), int(y), int(z)), ()):
+                    if pair[0] != int(body):
+                        continue
                     matched_counts[pair] += 1
                     for transmitter in transmitters:
                         probability_totals[pair][transmitter] += float(

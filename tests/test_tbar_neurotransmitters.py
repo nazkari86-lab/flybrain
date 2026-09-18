@@ -75,12 +75,12 @@ def test_contact_audit_joins_tbars_to_exact_presynaptic_contacts(tmp_path: Path)
     feather.write_feather(
         pa.table(
             {
-                "x": [1, 2, 3],
-                "y": [1, 2, 3],
-                "z": [1, 2, 3],
-                "body": [7, 7, 9],
-                "nt_acetylcholine_prob": [0.8, 0.4, 0.1],
-                "nt_dopamine_prob": [0.2, 0.6, 0.9],
+                "x": [1, 2, 3, 1],
+                "y": [1, 2, 3, 1],
+                "z": [1, 2, 3, 1],
+                "body": [7, 7, 9, 999],
+                "nt_acetylcholine_prob": [0.8, 0.4, 0.1, 0.0],
+                "nt_dopamine_prob": [0.2, 0.6, 0.9, 1.0],
             }
         ),
         tbars,
