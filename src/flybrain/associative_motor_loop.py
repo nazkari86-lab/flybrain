@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal, cast
 
 import numpy as np
@@ -31,7 +31,7 @@ from flybrain.proprioceptive_interface import (
     observe_proprioception,
 )
 from flybrain.reinforcement_interface import AnonymousContact, ReinforcementInterface
-from flybrain.shiu import ShiuState, simulate_shiu
+from flybrain.shiu import ShiuState, poisson_voltage_events, simulate_shiu
 
 
 class AssociativeMotorCalibrationResult(BaseModel, frozen=True):
@@ -44,6 +44,7 @@ class AssociativeMotorCalibrationResult(BaseModel, frozen=True):
     replay_exact: bool
     graph_unchanged: bool
     motor_spikes: int = Field(ge=0)
+    sensory_voltage_events: int = Field(ge=0)
     proprioceptive_events: int = Field(ge=0)
     final_multipliers: tuple[float, ...]
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -69,6 +70,7 @@ class AssociativeMotorLearningProbeResult(BaseModel, frozen=True):
 @dataclass(frozen=True)
 class _LoopTrace:
     motor_spikes: int
+    sensory_voltage_events: int
     proprioceptive_events: int
     final_multipliers: tuple[float, ...]
     body_digest: str
@@ -158,8 +160,11 @@ def _run(
         motor_mask,
         proprio_mask if proprioceptive_silenced else np.zeros_like(proprio_mask),
     )
-    source_indices = np.asarray([index_by_id[item] for item in source_ids], dtype=np.int64)
+    source_indices = np.asarray(
+        [index_by_id[item] for item in source_ids], dtype=np.int64
+    )
     motor_spikes = 0
+    sensory_voltage_events = 0
     proprioceptive_events = 0
     body_trace = []
     for event in schedule.events:
@@ -177,24 +182,46 @@ def _run(
             )
         )
         proprioceptive_events += len(proprio_events)
-        indices: list[int] = []
-        voltages: list[float] = []
-        if event.odor_intensity:
-            indices.extend(source_indices.tolist())
-            voltages.extend([learning.cue_voltage_mv * event.odor_intensity] * source_indices.size)
-        for proprio_event in proprio_events:
-            indices.extend(index_by_id[item] for item in proprio_event.neuron_ids)
-            voltages.extend(proprio_event.voltages)
-        external = (
-            {
-                state.step: (
-                    np.asarray(indices, dtype=np.int64),
-                    np.asarray(voltages, dtype=np.float32),
+        scheduled: dict[int, list[tuple[int, float]]] = {}
+        if event.odor_intensity and learning.input_mode == "sensory_path":
+            sensory_params = replace(
+                learning.shiu_parameters,
+                poisson_rate_hz=(
+                    learning.shiu_parameters.poisson_rate_hz * event.odor_intensity
+                ),
+            )
+            for relative_step, (indices, voltages) in poisson_voltage_events(
+                source_indices,
+                steps=chunk_steps,
+                params=sensory_params,
+                seed=schedule.seed + state.step,
+            ).items():
+                target = scheduled.setdefault(state.step + relative_step, [])
+                target.extend(zip(indices.tolist(), voltages.tolist(), strict=True))
+                sensory_voltage_events += int(indices.size)
+        elif event.odor_intensity:
+            scheduled[state.step] = list(
+                zip(
+                    source_indices.tolist(),
+                    [learning.cue_voltage_mv * event.odor_intensity] * source_indices.size,
+                    strict=True,
                 )
-            }
-            if indices
-            else {}
-        )
+            )
+        for proprio_event in proprio_events:
+            scheduled.setdefault(state.step, []).extend(
+                zip(
+                    (index_by_id[item] for item in proprio_event.neuron_ids),
+                    proprio_event.voltages,
+                    strict=True,
+                )
+            )
+        external = {
+            step: (
+                np.asarray([index for index, _ in pairs], dtype=np.int64),
+                np.asarray([voltage for _, voltage in pairs], dtype=np.float32),
+            )
+            for step, pairs in scheduled.items()
+        }
         batches = tuple(
             simulate_shiu(
                 _effective_graph(graph, binding),
@@ -234,6 +261,7 @@ def _run(
         body_trace.append(body.step(activation.torques).model_dump(mode="json"))
     return _LoopTrace(
         motor_spikes=motor_spikes,
+        sensory_voltage_events=sensory_voltage_events,
         proprioceptive_events=proprioceptive_events,
         final_multipliers=tuple(float(value) for value in binding.overlay.multipliers),
         body_digest=hashlib.sha256(repr(body_trace).encode("utf-8")).hexdigest(),
@@ -288,6 +316,7 @@ def run_associative_motor_calibration(
         replay_exact=first == replay,
         graph_unchanged=_graph_digest(graph) == before,
         motor_spikes=first.motor_spikes,
+        sensory_voltage_events=first.sensory_voltage_events,
         proprioceptive_events=first.proprioceptive_events,
         final_multipliers=first.final_multipliers,
         trace_digest=first.digest,

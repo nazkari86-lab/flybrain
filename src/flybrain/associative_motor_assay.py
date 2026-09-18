@@ -161,6 +161,7 @@ def run_retained_associative_motor_assay(
         stimulus_voltage_mv=learning.cue_voltage_mv,
         window_steps=learning.neural_chunk_steps,
         recovery_windows=10,
+        stimulus_mode="source_poisson",
         seed=seed,
     )
     paired_schedule = ConditioningSchedule.create(

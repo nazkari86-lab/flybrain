@@ -9,7 +9,12 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 from flybrain.graph import EventConnectome
-from flybrain.shiu import ShiuParameters, ShiuState, simulate_shiu
+from flybrain.shiu import (
+    ShiuParameters,
+    ShiuState,
+    poisson_voltage_events,
+    simulate_shiu,
+)
 
 
 class PerturbationRecoveryAudit(BaseModel, frozen=True):
@@ -18,7 +23,9 @@ class PerturbationRecoveryAudit(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    stimulus_mode: Literal["direct_voltage", "source_poisson"]
     classification: Literal["recovered", "persistent_activity", "underpowered"]
+    stimulus_voltage_events: int = Field(ge=0)
     window_spikes: tuple[int, ...]
     tail_to_initial_fraction: float = Field(ge=0.0)
     replay_exact: bool
@@ -59,6 +66,7 @@ def audit_perturbation_recovery(
     stimulus_voltage_mv: float,
     window_steps: int,
     recovery_windows: int,
+    stimulus_mode: Literal["direct_voltage", "source_poisson"] = "direct_voltage",
     maximum_tail_fraction: float = 0.1,
     seed: int = 7,
 ) -> PerturbationRecoveryAudit:
@@ -81,12 +89,25 @@ def audit_perturbation_recovery(
     observed_mask = np.zeros(graph.neuron_count, dtype=np.bool_)
     observed_mask[observed_indices] = True
     total_steps = window_steps * (recovery_windows + 1)
-    event = {
-        0: (
+    event = (
+        {
+            0: (
+                stimulus_indices,
+                np.full(
+                    stimulus_indices.size,
+                    stimulus_voltage_mv,
+                    dtype=np.float32,
+                ),
+            )
+        }
+        if stimulus_mode == "direct_voltage"
+        else poisson_voltage_events(
             stimulus_indices,
-            np.full(stimulus_indices.size, stimulus_voltage_mv, dtype=np.float32),
+            steps=window_steps,
+            params=params,
+            seed=seed,
         )
-    }
+    )
 
     def run() -> tuple[tuple[int, ...], str]:
         state = ShiuState.initial(graph.neuron_count, params=params, seed=seed)
@@ -124,7 +145,9 @@ def audit_perturbation_recovery(
     else:
         classification = "recovered"
     return PerturbationRecoveryAudit(
+        stimulus_mode=stimulus_mode,
         classification=classification,
+        stimulus_voltage_events=sum(int(indices.size) for indices, _ in event.values()),
         window_spikes=first_counts,
         tail_to_initial_fraction=0.0 if not np.isfinite(fraction) else fraction,
         replay_exact=first_counts == replay_counts and first_digest == replay_digest,

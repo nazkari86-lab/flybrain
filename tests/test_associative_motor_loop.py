@@ -99,8 +99,9 @@ def test_associative_motor_loop_closes_neural_motor_body_proprioception_and_repl
     assert result.replay_exact is True
     assert result.graph_unchanged is True
     assert result.motor_spikes > 0
+    assert 0 < result.sensory_voltage_events < 20
     assert result.proprioceptive_events == 12
-    assert result.final_multipliers[0] < 1.0
+    assert result.final_multipliers == (1.0,)
 
 
 def test_motor_lesion_removes_only_motor_spikes_from_closed_loop() -> None:
@@ -109,8 +110,7 @@ def test_motor_lesion_removes_only_motor_spikes_from_closed_loop() -> None:
             cue_ids=(10,),
             mbon_ids=(20,),
             dan_to_mbon_pairs=((30, 20),),
-            input_mode="sensory_path",
-            sensory_input_ids=(1,),
+            input_mode="direct_kc",
             neural_chunk_steps=20,
             shiu_parameters=ShiuParameters(
                 dt_ms=0.5,
@@ -255,8 +255,7 @@ def test_learning_probe_isolates_persistent_sparse_weight_effect() -> None:
             cue_ids=(10,),
             mbon_ids=(20,),
             dan_to_mbon_pairs=((30, 20),),
-            input_mode="sensory_path",
-            sensory_input_ids=(1,),
+            input_mode="direct_kc",
             neural_chunk_steps=20,
             shiu_parameters=ShiuParameters(
                 dt_ms=0.5,
