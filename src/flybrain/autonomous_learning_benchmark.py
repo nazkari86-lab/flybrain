@@ -29,6 +29,8 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
     cue_ids: tuple[int, ...]
     mbon_ids: tuple[int, ...]
     dan_to_mbon_pairs: tuple[tuple[int, int], ...]
+    input_mode: Literal["direct_kc", "sensory_path"] = "direct_kc"
+    sensory_input_ids: tuple[int, ...] = ()
     neural_chunk_steps: int = Field(default=20, gt=0)
     cue_voltage_mv: float = Field(default=100.0, gt=0.0)
     shiu_parameters: ShiuParameters = ShiuParameters()
@@ -44,6 +46,7 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
         reinforcement: ReinforcementInterface,
         *,
         valence: Literal["appetitive", "aversive"],
+        sensory_input_ids: tuple[int, ...] = (),
         neural_chunk_steps: int = 20,
         cue_voltage_mv: float = 100.0,
         shiu_parameters: ShiuParameters | None = None,
@@ -70,6 +73,8 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
             cue_ids=tuple(sorted(set(int(value) for value in binding.pre_ids))),
             mbon_ids=mbon_ids,
             dan_to_mbon_pairs=routes,
+            input_mode="sensory_path" if sensory_input_ids else "direct_kc",
+            sensory_input_ids=sensory_input_ids,
             neural_chunk_steps=neural_chunk_steps,
             cue_voltage_mv=cue_voltage_mv,
             shiu_parameters=shiu_parameters or ShiuParameters(),
@@ -85,6 +90,18 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
                 raise ValueError(f"{name} IDs must be unique and sorted")
         if not self.dan_to_mbon_pairs:
             raise ValueError("DAN-to-MBON routes must be nonempty")
+        if self.input_mode == "direct_kc" and self.sensory_input_ids:
+            raise ValueError("direct KC calibration cannot declare sensory input IDs")
+        if self.input_mode == "sensory_path":
+            if not self.sensory_input_ids or any(
+                type(neuron_id) is not int or neuron_id <= 0
+                for neuron_id in self.sensory_input_ids
+            ):
+                raise ValueError("sensory-path calibration requires positive input IDs")
+            if tuple(sorted(set(self.sensory_input_ids))) != self.sensory_input_ids:
+                raise ValueError("sensory input IDs must be unique and sorted")
+            if set(self.sensory_input_ids) & set(self.cue_ids):
+                raise ValueError("sensory input IDs must not bypass into declared KC IDs")
         if any(
             type(dan_id) is not int
             or type(mbon_id) is not int
@@ -106,6 +123,7 @@ class AssociativeCalibrationResult(BaseModel, frozen=True):
     classification: Literal["plasticity_calibration", "null"]
     evidence_kind: Literal["simulation_observation"] = "simulation_observation"
     autonomous_behavior_claim_allowed: Literal[False] = False
+    input_mode: Literal["direct_kc", "sensory_path"]
     schedule_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     replay_exact: bool
@@ -173,7 +191,7 @@ def _execute(
 ) -> _CalibrationTrace:
     available = {int(neuron_id): index for index, neuron_id in enumerate(graph.neuron_ids)}
     required = {
-        *config.cue_ids,
+        *(config.cue_ids if config.input_mode == "direct_kc" else config.sensory_input_ids),
         *config.mbon_ids,
         *(dan_id for dan_id, _ in config.dan_to_mbon_pairs),
         *binding.pre_ids.tolist(),
@@ -199,14 +217,17 @@ def _execute(
     cue_spikes = 0
     mbon_spikes = 0
     contact_dan_events = 0
-    cue_indices = np.asarray([available[item] for item in config.cue_ids], dtype=np.int64)
+    source_ids = (
+        config.cue_ids if config.input_mode == "direct_kc" else config.sensory_input_ids
+    )
+    source_indices = np.asarray([available[item] for item in source_ids], dtype=np.int64)
     for event in schedule.events:
         external = {}
         if event.odor_intensity:
             external[state.step] = (
-                cue_indices,
+                source_indices,
                 np.full(
-                    cue_indices.size,
+                    source_indices.size,
                     config.cue_voltage_mv * event.odor_intensity,
                     dtype=np.float32,
                 ),
@@ -280,6 +301,7 @@ def run_associative_calibration(
         trace_digest=first.digest,
         replay_exact=first == replay,
         graph_unchanged=_graph_digest(graph) == graph_digest,
+        input_mode=config.input_mode,
         cue_spikes=first.cue_spikes,
         mbon_spikes=first.mbon_spikes,
         contact_dan_events=first.contact_dan_events,

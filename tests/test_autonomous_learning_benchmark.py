@@ -40,6 +40,33 @@ def calibration_binding() -> PlasticEdgeBinding:
     )
 
 
+def sensory_calibration_graph() -> EventConnectome:
+    return EventConnectome(
+        neuron_ids=np.array([1, 10, 20, 30], dtype=np.uint64),
+        cell_types=("olfactory", "Kenyon_Cell", "MBON", "DAN"),
+        roles=("learning_olfactory", "learning_kc", "learning_mbon", "dan_appetitive"),
+        transmitters=("acetylcholine", "acetylcholine", "acetylcholine", "dopamine"),
+        superclasses=("central",) * 4,
+        outgoing=csr_array(
+            (
+                np.array([200.0, 200.0], dtype=np.float32),
+                ([0, 1], [1, 2]),
+            ),
+            shape=(4, 4),
+        ),
+    )
+
+
+def sensory_calibration_binding() -> PlasticEdgeBinding:
+    return PlasticEdgeBinding(
+        overlay=PlasticWeightOverlay.create(
+            edge_indices=np.array([1], dtype=np.int64), canonical_edge_count=2
+        ),
+        pre_ids=np.array([10], dtype=np.uint64),
+        post_ids=np.array([20], dtype=np.uint64),
+    )
+
+
 def test_paired_contact_changes_only_the_sparse_overlay_and_replays_exactly() -> None:
     config = AssociativeCalibrationConfig(
         cue_ids=(10,),
@@ -84,6 +111,30 @@ def test_unpaired_contact_has_no_learning_effect() -> None:
 
     assert result.final_multipliers == (1.0,)
     assert result.contact_dan_events == 0
+
+
+def test_sensory_path_calibration_avoids_direct_external_kc_drive() -> None:
+    config = AssociativeCalibrationConfig(
+        cue_ids=(10,),
+        mbon_ids=(20,),
+        dan_to_mbon_pairs=((30, 20),),
+        input_mode="sensory_path",
+        sensory_input_ids=(1,),
+        neural_chunk_steps=20,
+        shiu_parameters=ShiuParameters(dt_ms=1.0, refractory_ms=2.0, synaptic_delay_ms=1.0),
+    )
+    result = run_associative_calibration(
+        sensory_calibration_graph(),
+        sensory_calibration_binding(),
+        schedule=ConditioningSchedule.create(seed=7, steps=2, appetitive_pair_steps=(0,)),
+        reinforcement=ReinforcementInterface(appetitive_dan_ids=(30,), aversive_dan_ids=(31,)),
+        config=config,
+    )
+
+    assert result.input_mode == "sensory_path"
+    assert result.cue_spikes > 0
+    assert result.mbon_spikes > 0
+    assert result.final_multipliers[0] < 1.0
 
 
 def test_calibration_requires_an_explicit_dan_to_mbon_route() -> None:
