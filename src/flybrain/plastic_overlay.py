@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
@@ -91,3 +92,47 @@ class PlasticWeightOverlay:
         digest.update(self.edge_indices.astype("<i8", copy=False).tobytes())
         digest.update(self.multipliers.astype("<f4", copy=False).tobytes())
         return digest.hexdigest()
+
+    def serialize(self) -> dict[str, object]:
+        """Produce a JSON-safe sparse state record with an exact integrity digest."""
+
+        return {
+            "canonical_edge_count": self.canonical_edge_count,
+            "edge_indices": self.edge_indices.tolist(),
+            "multipliers": self.multipliers.tolist(),
+            "digest": self.digest(),
+        }
+
+    @classmethod
+    def deserialize(cls, payload: Mapping[str, object]) -> PlasticWeightOverlay:
+        """Restore sparse state only when shape, types, and serialized digest agree."""
+
+        expected = {"canonical_edge_count", "edge_indices", "multipliers", "digest"}
+        if set(payload) != expected:
+            raise ValueError("plastic overlay serialization has unexpected fields")
+        edge_count = payload["canonical_edge_count"]
+        indices = payload["edge_indices"]
+        multipliers = payload["multipliers"]
+        digest = payload["digest"]
+        if type(edge_count) is not int or edge_count <= 0:
+            raise ValueError("serialized canonical edge count is invalid")
+        if not isinstance(indices, list) or any(type(value) is not int for value in indices):
+            raise ValueError("serialized plastic edge indices are invalid")
+        if not isinstance(multipliers, list) or any(
+            type(value) not in (int, float) or not np.isfinite(value)
+            for value in multipliers
+        ):
+            raise ValueError("serialized plastic multipliers are invalid")
+        if type(digest) is not str or len(digest) != 64:
+            raise ValueError("serialized plastic digest is invalid")
+        overlay = cls.create(
+            edge_indices=np.asarray(indices, dtype=np.int64),
+            canonical_edge_count=edge_count,
+        )
+        values = np.asarray(multipliers, dtype=np.float32)
+        if values.shape != overlay.multipliers.shape:
+            raise ValueError("serialized plastic multiplier shape is invalid")
+        overlay.multipliers[:] = values
+        if overlay.digest() != digest:
+            raise ValueError("serialized plastic digest does not match sparse state")
+        return overlay

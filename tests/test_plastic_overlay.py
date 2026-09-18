@@ -55,3 +55,28 @@ def test_overlay_copy_keeps_an_independent_sparse_state() -> None:
 
     assert copied.multipliers.tolist() == [0.5]
     assert copied.edge_indices.tolist() == [0]
+
+
+def test_overlay_serialization_restores_exact_sparse_state_without_aliasing() -> None:
+    overlay = PlasticWeightOverlay.create(
+        edge_indices=np.array([0, 3], dtype=np.int64), canonical_edge_count=4
+    )
+    overlay.set_multipliers(np.array([0.5, 0.7], dtype=np.float32), minimum=0.2, maximum=1.0)
+
+    restored = PlasticWeightOverlay.deserialize(overlay.serialize())
+    overlay.reset()
+
+    assert restored.digest() != overlay.digest()
+    assert restored.edge_indices.tolist() == [0, 3]
+    assert restored.multipliers.tolist() == pytest.approx([0.5, 0.7])
+
+
+def test_overlay_serialization_rejects_tampered_sparse_state() -> None:
+    overlay = PlasticWeightOverlay.create(
+        edge_indices=np.array([0], dtype=np.int64), canonical_edge_count=2
+    )
+    payload = overlay.serialize()
+    payload["multipliers"] = [0.5]
+
+    with pytest.raises(ValueError, match="digest"):
+        PlasticWeightOverlay.deserialize(payload)
