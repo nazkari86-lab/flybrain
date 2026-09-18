@@ -30,3 +30,19 @@ def test_rejects_unknown_or_untyped_receptor_channels() -> None:
 
     with pytest.raises(ValueError, match="unknown ORN"):
         mapping.channel_ids(("ORN_DM1",))
+
+
+def test_excludes_untyped_neurons_without_mixing_them_into_a_channel() -> None:
+    untyped = EventConnectome(
+        neuron_ids=np.array([1, 2], dtype=np.uint64),
+        cell_types=("ORN_DA1", "untyped"),
+        roles=("fixture", "fixture"),
+        transmitters=("acetylcholine", "acetylcholine"),
+        superclasses=("fixture", "fixture"),
+        outgoing=csr_array((2, 2), dtype=np.float32),
+    )
+
+    mapping = OlfactoryReceptorMap.from_graph(untyped, olfactory_neuron_ids=(1, 2))
+
+    assert mapping.channel_ids(("ORN_DA1",)) == (1,)
+    assert mapping.excluded_untyped_neuron_ids == (2,)

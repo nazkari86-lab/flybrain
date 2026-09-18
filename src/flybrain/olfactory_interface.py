@@ -23,6 +23,7 @@ class OlfactoryReceptorMap(BaseModel, frozen=True):
 
     evidence_kind: str = "dataset_measurement"
     banks: tuple[OlfactoryReceptorBank, ...]
+    excluded_untyped_neuron_ids: tuple[int, ...] = ()
 
     @classmethod
     def from_graph(
@@ -39,13 +40,15 @@ class OlfactoryReceptorMap(BaseModel, frozen=True):
             raise ValueError("olfactory neuron IDs must be nonempty and unique")
         index = {int(neuron_id): position for position, neuron_id in enumerate(graph.neuron_ids)}
         grouped: dict[str, list[int]] = {}
+        excluded: list[int] = []
         for neuron_id in olfactory_neuron_ids:
             try:
                 cell_type = graph.cell_types[index[neuron_id]]
             except KeyError as error:
                 raise ValueError(f"olfactory neuron absent from graph: {neuron_id}") from error
             if not cell_type.startswith("ORN_"):
-                raise ValueError(f"olfactory neuron lacks an ORN cell type: {neuron_id}")
+                excluded.append(neuron_id)
+                continue
             grouped.setdefault(cell_type, []).append(neuron_id)
         return cls(
             banks=tuple(
@@ -54,7 +57,8 @@ class OlfactoryReceptorMap(BaseModel, frozen=True):
                     neuron_ids=tuple(sorted(neuron_ids)),
                 )
                 for cell_type, neuron_ids in sorted(grouped.items())
-            )
+            ),
+            excluded_untyped_neuron_ids=tuple(sorted(excluded)),
         )
 
     def channel_ids(self, cell_types: tuple[str, ...]) -> tuple[int, ...]:
