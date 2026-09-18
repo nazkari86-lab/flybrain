@@ -34,6 +34,7 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
     neural_chunk_steps: int = Field(default=20, gt=0)
     cue_voltage_mv: float = Field(default=100.0, gt=0.0)
     shiu_parameters: ShiuParameters = ShiuParameters()
+    presynaptic_transmitter_multipliers: dict[str, float] = Field(default_factory=dict)
     learning_parameters: MushroomBodyLearningParameters = (
         MushroomBodyLearningParameters()
     )
@@ -50,6 +51,7 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
         neural_chunk_steps: int = 20,
         cue_voltage_mv: float = 100.0,
         shiu_parameters: ShiuParameters | None = None,
+        presynaptic_transmitter_multipliers: dict[str, float] | None = None,
         learning_parameters: MushroomBodyLearningParameters | None = None,
     ) -> AssociativeCalibrationConfig:
         """Build calibration routes only from measured sign-zero DAN adjacency."""
@@ -78,6 +80,9 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
             neural_chunk_steps=neural_chunk_steps,
             cue_voltage_mv=cue_voltage_mv,
             shiu_parameters=shiu_parameters or ShiuParameters(),
+            presynaptic_transmitter_multipliers=(
+                presynaptic_transmitter_multipliers or {}
+            ),
             learning_parameters=learning_parameters or MushroomBodyLearningParameters(),
         )
 
@@ -111,6 +116,13 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
         ):
             raise ValueError("DAN-to-MBON routes must target declared MBON IDs")
         self.shiu_parameters.validate()
+        if any(
+            not isinstance(name, str) or not np.isfinite(value) or value < 0.0
+            for name, value in self.presynaptic_transmitter_multipliers.items()
+        ):
+            raise ValueError(
+                "transmitter multipliers must have string names and finite values >= 0"
+            )
         self.learning_parameters.validate()
         return self
 
@@ -240,6 +252,9 @@ def _execute(
                 external_voltage_events=external,
                 seed=schedule.seed,
                 state=state,
+                presynaptic_transmitter_multipliers=(
+                    config.presynaptic_transmitter_multipliers
+                ),
             )
         )
         fired_ids = np.asarray(

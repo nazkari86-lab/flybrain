@@ -93,6 +93,27 @@ def test_paired_contact_changes_only_the_sparse_overlay_and_replays_exactly() ->
     assert result.contact_dan_events == 1
 
 
+def test_transmitter_gain_profile_is_explicit_and_validated() -> None:
+    config = AssociativeCalibrationConfig(
+        cue_ids=(10,),
+        mbon_ids=(20,),
+        dan_to_mbon_pairs=((30, 20),),
+        presynaptic_transmitter_multipliers={"acetylcholine": 0.5, "gaba": 1.2},
+    )
+
+    assert config.presynaptic_transmitter_multipliers == {
+        "acetylcholine": 0.5,
+        "gaba": 1.2,
+    }
+    with pytest.raises(ValidationError, match="transmitter multipliers"):
+        AssociativeCalibrationConfig(
+            cue_ids=(10,),
+            mbon_ids=(20,),
+            dan_to_mbon_pairs=((30, 20),),
+            presynaptic_transmitter_multipliers={"acetylcholine": -1.0},
+        )
+
+
 def test_unpaired_contact_has_no_learning_effect() -> None:
     config = AssociativeCalibrationConfig(
         cue_ids=(10,),

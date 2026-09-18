@@ -230,6 +230,9 @@ def _run(
                 external_voltage_events=external,
                 state=state,
                 silenced=silence_mask,
+                presynaptic_transmitter_multipliers=(
+                    learning.presynaptic_transmitter_multipliers
+                ),
             )
         )
         fired_ids = tuple(
