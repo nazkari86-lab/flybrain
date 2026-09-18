@@ -96,6 +96,13 @@ prediction. The raw contact means still ranked dopamine above acetylcholine on e
 This confirms at contact resolution that raw prediction probabilities are not an admissible
 replacement for the release consensus in the current simulator.
 
+The complete immutable KC-to-MBON manifest was also audited: all `402,850 / 402,850` contacts
+across all `33,496` plastic edges matched a T-bar by exact coordinate. Despite that complete
+coverage, raw predictions ranked dopamine highest for `32,153` edges (acetylcholine for `1,183`),
+with mean edge probabilities `0.754` dopamine and `0.143` acetylcholine. This is therefore a
+systematic source-model disagreement, not a missing-data artifact or an effect limited to the
+motor-relevant example edges.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.
