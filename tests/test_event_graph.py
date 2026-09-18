@@ -43,6 +43,24 @@ def test_event_graph_accumulates_shared_postsynaptic_target() -> None:
     np.testing.assert_allclose(output, np.array([0.0, 0.0, 5.0], dtype=np.float32))
 
 
+def test_event_graph_accepts_a_distinct_scale_per_fired_source() -> None:
+    graph = EventConnectome.from_sparse(
+        sparse(
+            np.array(
+                [[0.0, 0.0, 0.0], [4.0, 0.0, 0.0], [0.0, -2.0, 0.0]],
+                dtype=np.float32,
+            )
+        )
+    )
+
+    output = graph.propagate_indices(
+        np.array([0, 1], dtype=np.int64),
+        scale=np.array([0.5, 2.0], dtype=np.float32),
+    )
+
+    np.testing.assert_allclose(output, np.array([0.0, 2.0, -4.0], dtype=np.float32))
+
+
 def test_event_graph_preserves_neuron_metadata_and_linear_storage() -> None:
     source = sparse(np.array([[0.0, 0.0], [2.0, 0.0]], dtype=np.float32))
     graph = EventConnectome.from_sparse(source)

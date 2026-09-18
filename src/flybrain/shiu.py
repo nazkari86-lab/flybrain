@@ -139,6 +139,7 @@ def simulate_shiu(
     state: ShiuState | None = None,
     silenced: NDArray[np.bool_] | None = None,
     refractory_exempt: NDArray[np.bool_] | None = None,
+    presynaptic_transmitter_multipliers: Mapping[str, float] | None = None,
 ) -> Iterator[SpikeBatch]:
     """Advance analytic alpha-synapse LIF dynamics with delayed sparse events."""
 
@@ -166,6 +167,12 @@ def simulate_shiu(
     if exempt_mask.shape != (graph.neuron_count,):
         raise ValueError("refractory exemption mask must match graph neuron count")
     voltage_events = external_voltage_events or {}
+    transmitter_multipliers = presynaptic_transmitter_multipliers or {}
+    if any(
+        not isinstance(name, str) or not np.isfinite(value) or value < 0.0
+        for name, value in transmitter_multipliers.items()
+    ):
+        raise ValueError("transmitter multipliers must have string names and finite values >= 0")
 
     membrane_decay = np.float32(np.exp(-params.dt_ms / params.membrane_tau_ms))
     conductance_decay = np.float32(np.exp(-params.dt_ms / params.conductance_tau_ms))
@@ -223,9 +230,20 @@ def simulate_shiu(
             active_state.refractory_steps_left[fired_indices] = refractory_values
             arrival_step = step + params.delay_steps
             arrival_index = arrival_step % active_state.delayed_conductance_mv.shape[0]
+            scales = np.asarray(
+                [
+                    params.synapse_mv * transmitter_multipliers.get(
+                        graph.transmitters[index]
+                        if len(graph.transmitters) == graph.neuron_count
+                        else "unresolved",
+                        1.0,
+                    )
+                    for index in fired_indices
+                ],
+                dtype=np.float32,
+            )
             active_state.delayed_conductance_mv[arrival_index] += graph.propagate_indices(
-                fired_indices,
-                scale=params.synapse_mv,
+                fired_indices, scale=scales
             )
 
         active_state.step += 1

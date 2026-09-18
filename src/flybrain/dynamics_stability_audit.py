@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping
 from typing import Literal
 
 import numpy as np
@@ -69,6 +70,7 @@ def audit_perturbation_recovery(
     stimulus_mode: Literal["direct_voltage", "source_poisson"] = "direct_voltage",
     maximum_tail_fraction: float = 0.1,
     seed: int = 7,
+    presynaptic_transmitter_multipliers: Mapping[str, float] | None = None,
 ) -> PerturbationRecoveryAudit:
     """Deliver one finite pulse and audit observed activity in following windows."""
 
@@ -119,6 +121,7 @@ def audit_perturbation_recovery(
             steps=total_steps,
             external_voltage_events=event,
             state=state,
+            presynaptic_transmitter_multipliers=presynaptic_transmitter_multipliers,
         ):
             batch_indices = np.searchsorted(graph.neuron_ids, batch.neuron_ids)
             observed = np.flatnonzero(observed_mask[batch_indices])

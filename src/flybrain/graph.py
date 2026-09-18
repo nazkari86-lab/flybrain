@@ -139,7 +139,7 @@ class EventConnectome:
         self,
         fired_indices: NDArray[np.int64],
         *,
-        scale: float,
+        scale: float | NDArray[np.float32],
     ) -> NDArray[np.float32]:
         """Accumulate outgoing signed weights for only the neurons that fired."""
 
@@ -149,12 +149,15 @@ class EventConnectome:
             int(fired_indices.min()) < 0 or int(fired_indices.max()) >= self.neuron_count
         ):
             raise ValueError("fired index outside graph")
+        if isinstance(scale, np.ndarray) and scale.shape != fired_indices.shape:
+            raise ValueError("per-source scale must match fired indices")
 
         output = np.zeros(self.neuron_count, dtype=np.float32)
-        for pre_index in fired_indices:
+        for position, pre_index in enumerate(fired_indices):
             start = self.outgoing.indptr[pre_index]
             stop = self.outgoing.indptr[pre_index + 1]
             postsynaptic = self.outgoing.indices[start:stop]
-            values = self.outgoing.data[start:stop] * np.float32(scale)
+            source_scale = scale[position] if isinstance(scale, np.ndarray) else scale
+            values = self.outgoing.data[start:stop] * np.float32(source_scale)
             np.add.at(output, postsynaptic, values)
         return output
