@@ -99,6 +99,7 @@ def test_associative_motor_loop_closes_neural_motor_body_proprioception_and_repl
     assert result.replay_exact is True
     assert result.graph_unchanged is True
     assert result.motor_spikes > 0
+    assert result.mbon_spikes > 0
     assert 0 < result.sensory_voltage_events < 20
     assert result.proprioceptive_events == 12
     assert result.final_multipliers[0] < 1.0

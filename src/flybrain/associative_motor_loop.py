@@ -44,6 +44,7 @@ class AssociativeMotorCalibrationResult(BaseModel, frozen=True):
     replay_exact: bool
     graph_unchanged: bool
     motor_spikes: int = Field(ge=0)
+    mbon_spikes: int = Field(ge=0)
     sensory_voltage_events: int = Field(ge=0)
     proprioceptive_events: int = Field(ge=0)
     final_multipliers: tuple[float, ...]
@@ -61,6 +62,9 @@ class AssociativeMotorLearningProbeResult(BaseModel, frozen=True):
     replay_exact: bool
     graph_unchanged: bool
     training_final_multipliers: tuple[float, ...]
+    baseline_probe_mbon_spikes: int = Field(ge=0)
+    learned_probe_mbon_spikes: int = Field(ge=0)
+    probe_mbon_spike_difference: int
     baseline_probe_motor_spikes: int = Field(ge=0)
     learned_probe_motor_spikes: int = Field(ge=0)
     probe_motor_spike_difference: int
@@ -70,6 +74,7 @@ class AssociativeMotorLearningProbeResult(BaseModel, frozen=True):
 @dataclass(frozen=True)
 class _LoopTrace:
     motor_spikes: int
+    mbon_spikes: int
     sensory_voltage_events: int
     proprioceptive_events: int
     final_multipliers: tuple[float, ...]
@@ -164,6 +169,7 @@ def _run(
         [index_by_id[item] for item in source_ids], dtype=np.int64
     )
     motor_spikes = 0
+    mbon_spikes = 0
     sensory_voltage_events = 0
     proprioceptive_events = 0
     body_trace = []
@@ -239,6 +245,7 @@ def _run(
             int(neuron_id) for batch in batches for neuron_id in batch.neuron_ids
         )
         motor_spikes += sum(neuron_id in motor_ids for neuron_id in fired_ids)
+        mbon_spikes += sum(neuron_id in learning.mbon_ids for neuron_id in fired_ids)
         recruitment = reinforcement.recruit(
             AnonymousContact(
                 appetitive_intensity=event.appetitive_contact_intensity,
@@ -264,6 +271,7 @@ def _run(
         body_trace.append(body.step(activation.torques).model_dump(mode="json"))
     return _LoopTrace(
         motor_spikes=motor_spikes,
+        mbon_spikes=mbon_spikes,
         sensory_voltage_events=sensory_voltage_events,
         proprioceptive_events=proprioceptive_events,
         final_multipliers=tuple(float(value) for value in binding.overlay.multipliers),
@@ -319,6 +327,7 @@ def run_associative_motor_calibration(
         replay_exact=first == replay,
         graph_unchanged=_graph_digest(graph) == before,
         motor_spikes=first.motor_spikes,
+        mbon_spikes=first.mbon_spikes,
         sensory_voltage_events=first.sensory_voltage_events,
         proprioceptive_events=first.proprioceptive_events,
         final_multipliers=first.final_multipliers,
@@ -401,6 +410,7 @@ def run_associative_motor_learning_probe(
     first_training, first_learned, first_baseline = sequence()
     replay_training, replay_learned, replay_baseline = sequence()
     difference = first_learned.motor_spikes - first_baseline.motor_spikes
+    mbon_difference = first_learned.mbon_spikes - first_baseline.mbon_spikes
     if first_baseline.motor_spikes == 0 and first_learned.motor_spikes == 0:
         classification: Literal["motor_difference", "null", "underpowered"] = (
             "underpowered"
@@ -423,6 +433,9 @@ def run_associative_motor_learning_probe(
         ),
         graph_unchanged=_graph_digest(graph) == before,
         training_final_multipliers=first_training.final_multipliers,
+        baseline_probe_mbon_spikes=first_baseline.mbon_spikes,
+        learned_probe_mbon_spikes=first_learned.mbon_spikes,
+        probe_mbon_spike_difference=mbon_difference,
         baseline_probe_motor_spikes=first_baseline.motor_spikes,
         learned_probe_motor_spikes=first_learned.motor_spikes,
         probe_motor_spike_difference=difference,
