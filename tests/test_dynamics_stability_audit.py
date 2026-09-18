@@ -53,6 +53,30 @@ def test_audit_distinguishes_recovered_from_persistent_response() -> None:
     assert persistent.graph_unchanged is True
 
 
+def test_delayed_finite_response_is_not_misclassified_as_underpowered() -> None:
+    delayed = EventConnectome(
+        neuron_ids=np.array([1, 2], dtype=np.uint64),
+        cell_types=("fixture", "fixture"),
+        roles=("fixture", "fixture"),
+        transmitters=("acetylcholine", "acetylcholine"),
+        superclasses=("fixture", "fixture"),
+        outgoing=csr_array(np.array([[0.0, 200.0], [0.0, 0.0]], dtype=np.float32)),
+    )
+
+    result = audit_perturbation_recovery(
+        delayed,
+        stimulus_ids=(1,),
+        observed_ids=(2,),
+        params=ShiuParameters(dt_ms=0.5, refractory_ms=2.0, synaptic_delay_ms=3.0),
+        stimulus_voltage_mv=8.0,
+        window_steps=1,
+        recovery_windows=20,
+    )
+
+    assert result.window_spikes[0] == 0
+    assert result.classification == "recovered"
+
+
 def test_retained_malecns_olfactory_perturbation_is_not_yet_recovered() -> None:
     raw_snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
     if raw_snapshot is None:

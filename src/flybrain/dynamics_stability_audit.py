@@ -27,7 +27,7 @@ class PerturbationRecoveryAudit(BaseModel, frozen=True):
     classification: Literal["recovered", "persistent_activity", "underpowered"]
     stimulus_voltage_events: int = Field(ge=0)
     window_spikes: tuple[int, ...]
-    tail_to_initial_fraction: float = Field(ge=0.0)
+    tail_to_peak_fraction: float = Field(ge=0.0)
     replay_exact: bool
     graph_unchanged: bool
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -129,8 +129,8 @@ def audit_perturbation_recovery(
 
     first_counts, first_digest = run()
     replay_counts, replay_digest = run()
-    initial = first_counts[0]
-    tail = max(first_counts[1:])
+    initial = max(first_counts)
+    tail = first_counts[-1]
     fraction = (
         0.0
         if initial == 0 and tail == 0
@@ -149,7 +149,7 @@ def audit_perturbation_recovery(
         classification=classification,
         stimulus_voltage_events=sum(int(indices.size) for indices, _ in event.values()),
         window_spikes=first_counts,
-        tail_to_initial_fraction=0.0 if not np.isfinite(fraction) else fraction,
+        tail_to_peak_fraction=0.0 if not np.isfinite(fraction) else fraction,
         replay_exact=first_counts == replay_counts and first_digest == replay_digest,
         graph_unchanged=_graph_digest(graph) == before,
         trace_digest=first_digest,
