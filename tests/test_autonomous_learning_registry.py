@@ -18,18 +18,24 @@ def test_learning_registry_declares_complete_and_valence_bounded_populations() -
     by_name = {population.name: population for population in registry.populations}
 
     assert set(by_name) == {
+        "olfactory_sensory",
+        "alpn",
         "kenyon_cells",
         "mbons",
         "dan_appetitive_pam",
         "dan_aversive_ppl1",
         "dan_unassigned_ppl2",
     }
+    assert by_name["olfactory_sensory"].role == "learning_olfactory"
+    assert by_name["alpn"].role == "learning_alpn"
     assert by_name["kenyon_cells"].role == "learning_kc"
     assert by_name["mbons"].role == "learning_mbon"
     assert by_name["dan_appetitive_pam"].role == "dan_appetitive"
     assert by_name["dan_aversive_ppl1"].role == "dan_aversive"
     assert by_name["dan_unassigned_ppl2"].role == "dan_unassigned"
     assert by_name["kenyon_cells"].selector.expected_count == 4_064
+    assert by_name["olfactory_sensory"].selector.expected_count == 2_639
+    assert by_name["alpn"].selector.expected_count == 686
     assert by_name["mbons"].selector.expected_count == 97
     assert by_name["dan_appetitive_pam"].selector.expected_count == 316
     assert by_name["dan_aversive_ppl1"].selector.expected_count == 16
@@ -42,6 +48,12 @@ def test_learning_registry_declares_complete_and_valence_bounded_populations() -
     )
     assert by_name["kenyon_cells"].selector.expected_id_sha256 == (
         "50be316bdb907707ca51ea4baf2cba65f5fdbcf010f3bc38defef0fcfca6cc9d"
+    )
+    assert by_name["olfactory_sensory"].selector.expected_id_sha256 == (
+        "58ae0c0096a8929b958113dde43ba544063b00d858c96d4bd07abdd9285a92fc"
+    )
+    assert by_name["alpn"].selector.expected_id_sha256 == (
+        "5c99f65c290c4705d13231fb31e44e6ac96d23fb88be9c2e994c261faee90022"
     )
     assert by_name["mbons"].selector.expected_id_sha256 == (
         "7c62a4af692408193e754422ec0bd803a25e63c94e3ce3850bba913ccfb45201"
@@ -57,6 +69,8 @@ def test_learning_registry_resolves_full_retained_inventory() -> None:
     )
 
     assert len(resolved.population("kenyon_cells").neuron_ids) == 4_064
+    assert len(resolved.population("olfactory_sensory").neuron_ids) == 2_639
+    assert len(resolved.population("alpn").neuron_ids) == 686
     assert len(resolved.population("mbons").neuron_ids) == 97
     assert len(resolved.population("dan_appetitive_pam").neuron_ids) == 316
     assert len(resolved.population("dan_aversive_ppl1").neuron_ids) == 16

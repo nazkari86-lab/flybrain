@@ -236,6 +236,8 @@ class PopulationDeclaration(BaseModel, frozen=True):
         "retreat",
         "motor",
         "future_interface",
+        "learning_olfactory",
+        "learning_alpn",
         "learning_kc",
         "learning_mbon",
         "dan_appetitive",

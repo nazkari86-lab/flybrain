@@ -3,6 +3,26 @@
   "dataset_id": "male-cns-v1.0-essential",
   "populations": [
     {
+      "name": "olfactory_sensory",
+      "role": "learning_olfactory",
+      "selector": {
+        "equals": {"superclass": "cb_sensory", "class": "olfactory"},
+        "expected_count": 2639,
+        "expected_id_sha256": "58ae0c0096a8929b958113dde43ba544063b00d858c96d4bd07abdd9285a92fc"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
+    },
+    {
+      "name": "alpn",
+      "role": "learning_alpn",
+      "selector": {
+        "equals": {"class": "ALPN"},
+        "expected_count": 686,
+        "expected_id_sha256": "5c99f65c290c4705d13231fb31e44e6ac96d23fb88be9c2e994c261faee90022"
+      },
+      "evidence_ids": ["male-cns-v1.0-body-annotations"]
+    },
+    {
       "name": "kenyon_cells",
       "role": "learning_kc",
       "selector": {
