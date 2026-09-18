@@ -183,6 +183,70 @@ def test_no_contact_leaves_plastic_overlay_at_unity() -> None:
     assert result.final_multipliers == (1.0,)
 
 
+def test_proprioceptive_silence_removes_only_body_feedback_events() -> None:
+    normal = run_associative_motor_calibration(
+        graph(),
+        binding(),
+        learning=AssociativeCalibrationConfig(
+            cue_ids=(10,),
+            mbon_ids=(20,),
+            dan_to_mbon_pairs=((30, 20),),
+            input_mode="sensory_path",
+            sensory_input_ids=(1,),
+            neural_chunk_steps=20,
+            shiu_parameters=ShiuParameters(
+                dt_ms=0.5,
+                refractory_ms=2.0,
+                synaptic_delay_ms=1.0,
+            ),
+        ),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        schedule=ConditioningSchedule.create(
+            seed=7,
+            steps=2,
+            appetitive_pair_steps=(0,),
+        ),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+    silenced = run_associative_motor_calibration(
+        graph(),
+        binding(),
+        learning=AssociativeCalibrationConfig(
+            cue_ids=(10,),
+            mbon_ids=(20,),
+            dan_to_mbon_pairs=((30, 20),),
+            input_mode="sensory_path",
+            sensory_input_ids=(1,),
+            neural_chunk_steps=20,
+            shiu_parameters=ShiuParameters(
+                dt_ms=0.5,
+                refractory_ms=2.0,
+                synaptic_delay_ms=1.0,
+            ),
+        ),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        schedule=ConditioningSchedule.create(
+            seed=7,
+            steps=2,
+            appetitive_pair_steps=(0,),
+        ),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        proprioceptive_silenced=True,
+    )
+
+    assert normal.proprioceptive_events == 12
+    assert silenced.proprioceptive_events == 0
+    assert silenced.graph_unchanged is True
+
+
 def test_learning_probe_isolates_persistent_sparse_weight_effect() -> None:
     result = run_associative_motor_learning_probe(
         graph(),

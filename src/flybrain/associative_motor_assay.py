@@ -23,6 +23,10 @@ from flybrain.biological_registry import (
     resolve_biological_registry,
 )
 from flybrain.conditioning_world import ConditioningEvent, ConditioningSchedule
+from flybrain.dynamics_stability_audit import (
+    PerturbationRecoveryAudit,
+    audit_perturbation_recovery,
+)
 from flybrain.graph import EventConnectome, SparseConnectome
 from flybrain.hexapod_body import HexapodParameters
 from flybrain.hexapod_motor import HexapodMotorMap
@@ -51,12 +55,19 @@ class RetainedAssociativeMotorAssayResult(BaseModel, frozen=True):
     graph_neurons: int = Field(gt=0)
     graph_edges: int = Field(gt=0)
     anatomy: MbonMotorPathwayAudit
+    dynamics_stability: PerturbationRecoveryAudit
     paired_training: AssociativeMotorCalibrationResult
     motor_lesion: AssociativeMotorCalibrationResult
     no_contact: AssociativeMotorCalibrationResult
     learning_probe: AssociativeMotorLearningProbeResult
+    unpaired_probe: AssociativeMotorLearningProbeResult
+    olfactory_isolation_paired_probe: AssociativeMotorLearningProbeResult
+    olfactory_isolation_delayed_probe: AssociativeMotorLearningProbeResult
     no_contact_preserves_overlay: bool
     paired_associative_change_detected: bool
+    delayed_contact_depression_exceeds_paired: bool
+    paired_is_stronger_under_olfactory_isolation: bool
+    persistent_dynamics_blocks_behavior_claim: bool
 
 
 def _no_contact_schedule(*, seed: int, body_steps: int) -> ConditioningSchedule:
@@ -74,11 +85,31 @@ def _no_contact_schedule(*, seed: int, body_steps: int) -> ConditioningSchedule:
     )
 
 
+def _delayed_contact_schedule(
+    *,
+    seed: int,
+    delay_body_steps: int,
+) -> ConditioningSchedule:
+    return ConditioningSchedule(
+        seed=seed,
+        events=tuple(
+            ConditioningEvent(
+                step=step,
+                odor_intensity=1.0 if step == 0 else 0.0,
+                appetitive_contact_intensity=1.0 if step == delay_body_steps else 0.0,
+                aversive_contact_intensity=0.0,
+            )
+            for step in range(delay_body_steps + 1)
+        ),
+    )
+
+
 def run_retained_associative_motor_assay(
     snapshot: Path,
     *,
     body_steps: int = 1,
     probe_body_steps: int = 5,
+    delayed_contact_body_steps: int = 100,
     seed: int = 7,
 ) -> RetainedAssociativeMotorAssayResult:
     """Run paired, motor-lesion, and no-contact controls on one exact snapshot."""
@@ -87,6 +118,8 @@ def run_retained_associative_motor_assay(
         raise ValueError("body_steps must be a positive integer")
     if type(probe_body_steps) is not int or probe_body_steps <= 0:
         raise ValueError("probe_body_steps must be a positive integer")
+    if type(delayed_contact_body_steps) is not int or delayed_contact_body_steps <= 0:
+        raise ValueError("delayed_contact_body_steps must be a positive integer")
     if type(seed) is not int or seed < 0:
         raise ValueError("seed must be a non-negative integer")
     learning_registry = load_biological_registry(LEARNING_REGISTRY)
@@ -119,6 +152,16 @@ def run_retained_associative_motor_assay(
             refractory_ms=2.0,
             synaptic_delay_ms=1.0,
         ),
+    )
+    dynamics_stability = audit_perturbation_recovery(
+        graph,
+        stimulus_ids=learning.sensory_input_ids,
+        observed_ids=learning.cue_ids,
+        params=learning.shiu_parameters,
+        stimulus_voltage_mv=learning.cue_voltage_mv,
+        window_steps=learning.neural_chunk_steps,
+        recovery_windows=10,
+        seed=seed,
     )
     paired_schedule = ConditioningSchedule.create(
         seed=seed,
@@ -161,6 +204,56 @@ def run_retained_associative_motor_assay(
         reinforcement=reinforcement,
         body_parameters=body_parameters,
     )
+    unpaired_probe = run_associative_motor_learning_probe(
+        graph,
+        binding,
+        learning=learning,
+        motor=motor,
+        proprio=proprio,
+        training_schedule=_delayed_contact_schedule(
+            seed=seed,
+            delay_body_steps=delayed_contact_body_steps,
+        ),
+        probe_schedule=_no_contact_schedule(
+            seed=seed,
+            body_steps=probe_body_steps,
+        ),
+        reinforcement=reinforcement,
+        body_parameters=body_parameters,
+    )
+    olfactory_isolation_paired_probe = run_associative_motor_learning_probe(
+        graph,
+        binding,
+        learning=learning,
+        motor=motor,
+        proprio=proprio,
+        training_schedule=paired_schedule,
+        probe_schedule=_no_contact_schedule(
+            seed=seed,
+            body_steps=probe_body_steps,
+        ),
+        reinforcement=reinforcement,
+        body_parameters=body_parameters,
+        proprioceptive_silenced=True,
+    )
+    olfactory_isolation_delayed_probe = run_associative_motor_learning_probe(
+        graph,
+        binding,
+        learning=learning,
+        motor=motor,
+        proprio=proprio,
+        training_schedule=_delayed_contact_schedule(
+            seed=seed,
+            delay_body_steps=delayed_contact_body_steps,
+        ),
+        probe_schedule=_no_contact_schedule(
+            seed=seed,
+            body_steps=probe_body_steps,
+        ),
+        reinforcement=reinforcement,
+        body_parameters=body_parameters,
+        proprioceptive_silenced=True,
+    )
     no_contact_preserves_overlay = all(
         value == 1.0 for value in no_contact.final_multipliers
     )
@@ -173,12 +266,33 @@ def run_retained_associative_motor_assay(
             mbon_ids=learning_populations.population("mbons").neuron_ids,
             motor=motor,
         ),
+        dynamics_stability=dynamics_stability,
         paired_training=paired_training,
         motor_lesion=motor_lesion,
         no_contact=no_contact,
         learning_probe=learning_probe,
+        unpaired_probe=unpaired_probe,
+        olfactory_isolation_paired_probe=olfactory_isolation_paired_probe,
+        olfactory_isolation_delayed_probe=olfactory_isolation_delayed_probe,
         no_contact_preserves_overlay=no_contact_preserves_overlay,
         paired_associative_change_detected=(
             paired_training.final_multipliers != no_contact.final_multipliers
+        ),
+        delayed_contact_depression_exceeds_paired=(
+            sum(1.0 - value for value in learning_probe.training_final_multipliers)
+            < sum(1.0 - value for value in unpaired_probe.training_final_multipliers)
+        ),
+        paired_is_stronger_under_olfactory_isolation=(
+            sum(
+                1.0 - value
+                for value in olfactory_isolation_paired_probe.training_final_multipliers
+            )
+            > sum(
+                1.0 - value
+                for value in olfactory_isolation_delayed_probe.training_final_multipliers
+            )
+        ),
+        persistent_dynamics_blocks_behavior_claim=(
+            dynamics_stability.classification != "recovered"
         ),
     )

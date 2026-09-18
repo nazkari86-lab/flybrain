@@ -102,6 +102,7 @@ def _run(
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration,
     motor_silenced: bool,
+    proprioceptive_silenced: bool,
 ) -> _LoopTrace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -149,15 +150,31 @@ def _run(
         motor,
         frozenset(motor.named_populations()) if motor_silenced else frozenset(),
     )
+    proprio_ids = {
+        neuron_id for bank in proprio.banks for neuron_id in bank.neuron_ids
+    }
+    proprio_mask = np.isin(graph.neuron_ids, tuple(proprio_ids))
+    silence_mask = np.logical_or(
+        motor_mask,
+        proprio_mask if proprioceptive_silenced else np.zeros_like(proprio_mask),
+    )
     source_indices = np.asarray([index_by_id[item] for item in source_ids], dtype=np.int64)
     motor_spikes = 0
     proprioceptive_events = 0
     body_trace = []
     for event in schedule.events:
         current_body = body.observe()
-        proprio_events = encoder.encode(
-            observe_proprioception(current_body, body_parameters, proprioceptive_calibration),
-            step=state.step,
+        proprio_events = (
+            ()
+            if proprioceptive_silenced
+            else encoder.encode(
+                observe_proprioception(
+                    current_body,
+                    body_parameters,
+                    proprioceptive_calibration,
+                ),
+                step=state.step,
+            )
         )
         proprioceptive_events += len(proprio_events)
         indices: list[int] = []
@@ -185,7 +202,7 @@ def _run(
                 steps=chunk_steps,
                 external_voltage_events=external,
                 state=state,
-                silenced=motor_mask,
+                silenced=silence_mask,
             )
         )
         fired_ids = tuple(
@@ -235,6 +252,7 @@ def run_associative_motor_calibration(
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
     motor_silenced: bool = False,
+    proprioceptive_silenced: bool = False,
 ) -> AssociativeMotorCalibrationResult:
     """Run a stateful sensory-learning-motor-body loop and exact independent replay."""
 
@@ -251,6 +269,7 @@ def run_associative_motor_calibration(
         body_parameters=body_parameters,
         proprioceptive_calibration=active_calibration,
         motor_silenced=motor_silenced,
+        proprioceptive_silenced=proprioceptive_silenced,
     )
     replay = _run(
         graph,
@@ -263,6 +282,7 @@ def run_associative_motor_calibration(
         body_parameters=body_parameters,
         proprioceptive_calibration=active_calibration,
         motor_silenced=motor_silenced,
+        proprioceptive_silenced=proprioceptive_silenced,
     )
     return AssociativeMotorCalibrationResult(
         replay_exact=first == replay,
@@ -287,6 +307,7 @@ def run_associative_motor_learning_probe(
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
     motor_silenced: bool = False,
+    proprioceptive_silenced: bool = False,
 ) -> AssociativeMotorLearningProbeResult:
     """Compare an odor-only probe before/after training with reset dynamic state.
 
@@ -315,6 +336,7 @@ def run_associative_motor_learning_probe(
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
             motor_silenced=motor_silenced,
+            proprioceptive_silenced=proprioceptive_silenced,
         )
         learned_probe = _run(
             graph,
@@ -327,6 +349,7 @@ def run_associative_motor_learning_probe(
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
             motor_silenced=motor_silenced,
+            proprioceptive_silenced=proprioceptive_silenced,
         )
         baseline_probe = _run(
             graph,
@@ -339,6 +362,7 @@ def run_associative_motor_learning_probe(
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
             motor_silenced=motor_silenced,
+            proprioceptive_silenced=proprioceptive_silenced,
         )
         return training, learned_probe, baseline_probe
 
