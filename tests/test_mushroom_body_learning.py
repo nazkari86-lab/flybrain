@@ -77,6 +77,58 @@ def test_unrouted_dan_cannot_change_an_eligible_edge() -> None:
     assert overlay.multipliers.tolist() == [1.0]
 
 
+def test_presynaptic_kc_eligibility_does_not_require_an_mbon_spike() -> None:
+    overlay = PlasticWeightOverlay.create(
+        edge_indices=np.array([3], dtype=np.int64), canonical_edge_count=4
+    )
+    learning = MushroomBodyLearning(
+        overlay=overlay,
+        edge_pre_ids=np.array([10], dtype=np.uint64),
+        edge_post_ids=np.array([20], dtype=np.uint64),
+        dan_ids=np.array([30], dtype=np.uint64),
+        dan_post_ids=np.array([20], dtype=np.uint64),
+        parameters=MushroomBodyLearningParameters(),
+    )
+
+    learning.step(
+        active_kc_ids=np.array([10], dtype=np.uint64),
+        active_mbon_ids=np.array([], dtype=np.uint64),
+        routed_dan_ids=np.array([30], dtype=np.uint64),
+        dt_ms=10.0,
+    )
+
+    assert overlay.multipliers[0] < 1.0
+
+
+def test_dan_trace_can_gate_later_kc_eligibility_in_the_same_compartment() -> None:
+    overlay = PlasticWeightOverlay.create(
+        edge_indices=np.array([3], dtype=np.int64), canonical_edge_count=4
+    )
+    learning = MushroomBodyLearning(
+        overlay=overlay,
+        edge_pre_ids=np.array([10], dtype=np.uint64),
+        edge_post_ids=np.array([20], dtype=np.uint64),
+        dan_ids=np.array([30], dtype=np.uint64),
+        dan_post_ids=np.array([20], dtype=np.uint64),
+        parameters=MushroomBodyLearningParameters(dopamine_trace_tau_ms=100.0),
+    )
+
+    learning.step(
+        active_kc_ids=np.array([], dtype=np.uint64),
+        active_mbon_ids=np.array([], dtype=np.uint64),
+        routed_dan_ids=np.array([30], dtype=np.uint64),
+        dt_ms=0.0,
+    )
+    learning.step(
+        active_kc_ids=np.array([10], dtype=np.uint64),
+        active_mbon_ids=np.array([], dtype=np.uint64),
+        routed_dan_ids=np.array([], dtype=np.uint64),
+        dt_ms=30.0,
+    )
+
+    assert overlay.multipliers[0] < 1.0
+
+
 def test_repeated_routed_updates_respect_the_declared_weight_floor() -> None:
     overlay = PlasticWeightOverlay.create(
         edge_indices=np.array([3], dtype=np.int64), canonical_edge_count=4
