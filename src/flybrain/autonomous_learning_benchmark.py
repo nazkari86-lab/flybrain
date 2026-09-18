@@ -16,6 +16,7 @@ from flybrain.mushroom_body_learning import (
     MushroomBodyLearningParameters,
 )
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
+from flybrain.plastic_edge_registry import ResolvedPlasticEdgeManifest
 from flybrain.reinforcement_interface import AnonymousContact, ReinforcementInterface
 from flybrain.shiu import ShiuParameters, ShiuState, simulate_shiu
 
@@ -34,6 +35,46 @@ class AssociativeCalibrationConfig(BaseModel, frozen=True):
     learning_parameters: MushroomBodyLearningParameters = (
         MushroomBodyLearningParameters()
     )
+
+    @classmethod
+    def from_manifest(
+        cls,
+        binding: PlasticEdgeBinding,
+        dan_to_mbon: ResolvedPlasticEdgeManifest,
+        reinforcement: ReinforcementInterface,
+        *,
+        valence: Literal["appetitive", "aversive"],
+        neural_chunk_steps: int = 20,
+        cue_voltage_mv: float = 100.0,
+        shiu_parameters: ShiuParameters | None = None,
+        learning_parameters: MushroomBodyLearningParameters | None = None,
+    ) -> AssociativeCalibrationConfig:
+        """Build calibration routes only from measured sign-zero DAN adjacency."""
+
+        if dan_to_mbon.name != "dan_to_mbon" or dan_to_mbon.sign != 0:
+            raise ValueError("calibration requires the declared sign-zero DAN-to-MBON manifest")
+        permitted_dan_ids = (
+            reinforcement.appetitive_dan_ids
+            if valence == "appetitive"
+            else reinforcement.aversive_dan_ids
+        )
+        mbon_ids = tuple(sorted(set(int(value) for value in binding.post_ids)))
+        routes = tuple(
+            (pre_id, post_id)
+            for pre_id, post_id in dan_to_mbon.edge_pairs
+            if pre_id in permitted_dan_ids and post_id in mbon_ids
+        )
+        if not routes:
+            raise ValueError("no declared DAN-to-MBON routes for requested valence")
+        return cls(
+            cue_ids=tuple(sorted(set(int(value) for value in binding.pre_ids))),
+            mbon_ids=mbon_ids,
+            dan_to_mbon_pairs=routes,
+            neural_chunk_steps=neural_chunk_steps,
+            cue_voltage_mv=cue_voltage_mv,
+            shiu_parameters=shiu_parameters or ShiuParameters(),
+            learning_parameters=learning_parameters or MushroomBodyLearningParameters(),
+        )
 
     @model_validator(mode="after")
     def validate_interfaces(self) -> AssociativeCalibrationConfig:

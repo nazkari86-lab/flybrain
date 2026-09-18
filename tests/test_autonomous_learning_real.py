@@ -35,14 +35,6 @@ def test_retained_malecns_direct_cue_dan_calibration() -> None:
     graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot))
     binding = bind_manifest_to_graph(graph, manifests["kc_to_mbon"])
     reinforcement = ReinforcementInterface.from_resolved_registry(populations)
-    cue_ids = tuple(sorted(set(int(value) for value in binding.pre_ids)))
-    mbon_ids = tuple(sorted(set(int(value) for value in binding.post_ids)))
-    allowed_appetitive = set(reinforcement.appetitive_dan_ids)
-    dan_routes = tuple(
-        (pre_id, post_id)
-        for pre_id, post_id in manifests["dan_to_mbon"].edge_pairs
-        if pre_id in allowed_appetitive and post_id in set(mbon_ids)
-    )
     result = run_associative_calibration(
         graph,
         binding,
@@ -50,10 +42,11 @@ def test_retained_malecns_direct_cue_dan_calibration() -> None:
             seed=7, steps=1, appetitive_pair_steps=(0,)
         ),
         reinforcement=reinforcement,
-        config=AssociativeCalibrationConfig(
-            cue_ids=cue_ids,
-            mbon_ids=mbon_ids,
-            dan_to_mbon_pairs=dan_routes,
+        config=AssociativeCalibrationConfig.from_manifest(
+            binding,
+            manifests["dan_to_mbon"],
+            reinforcement,
+            valence="appetitive",
             neural_chunk_steps=8,
             shiu_parameters=ShiuParameters(
                 dt_ms=1.0,

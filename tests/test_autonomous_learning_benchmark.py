@@ -11,6 +11,7 @@ from flybrain.conditioning_world import ConditioningSchedule
 from flybrain.graph import EventConnectome
 from flybrain.mushroom_body_learning import MushroomBodyLearningParameters
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
+from flybrain.plastic_edge_registry import ResolvedPlasticEdgeManifest
 from flybrain.plastic_overlay import PlasticWeightOverlay
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.shiu import ShiuParameters
@@ -109,3 +110,27 @@ def test_opposite_dan_channel_cannot_modify_the_declared_appetitive_route() -> N
     assert result.classification == "null"
     assert result.contact_dan_events == 1
     assert result.final_multipliers == (1.0,)
+
+
+def test_config_can_bind_appetitive_routes_only_from_a_zero_sign_manifest() -> None:
+    manifest = ResolvedPlasticEdgeManifest(
+        name="dan_to_mbon",
+        sign=0,
+        edge_count=2,
+        contact_count=2,
+        pre_count=2,
+        post_count=1,
+        edge_sha256="a" * 64,
+        edge_pairs=((30, 20), (31, 20)),
+    )
+
+    config = AssociativeCalibrationConfig.from_manifest(
+        calibration_binding(),
+        manifest,
+        ReinforcementInterface(appetitive_dan_ids=(30,), aversive_dan_ids=(31,)),
+        valence="appetitive",
+    )
+
+    assert config.cue_ids == (10,)
+    assert config.mbon_ids == (20,)
+    assert config.dan_to_mbon_pairs == ((30, 20),)
