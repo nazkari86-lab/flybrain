@@ -31,39 +31,35 @@ def resolve_nitric_oxide_dans(snapshot: Path) -> NitricOxideDANs:
 
     source = snapshot / "source-annotations.parquet"
     table = pq.read_table(source, columns=["bodyId", "class", "type"])
-    records: dict[int, tuple[str, str]] = {}
+    seen_ids: set[int] = set()
+    ppl101_ids: list[int] = []
+    pam01_ids: list[int] = []
     for body, neuron_class, neuron_type in zip(
         table.column("bodyId").to_pylist(),
         table.column("class").to_pylist(),
         table.column("type").to_pylist(),
         strict=True,
     ):
-        if body is None or neuron_class is None or neuron_type is None:
-            raise ValueError("source annotations must not contain null identities")
+        if body is None:
+            raise ValueError("source annotation body IDs must not be null")
         body_id = int(body)
         if body_id <= 0:
             raise ValueError("source annotation body IDs must be positive")
-        if body_id in records:
+        if body_id in seen_ids:
             raise ValueError(f"source annotations contain duplicate body ID {body_id}")
-        records[body_id] = (str(neuron_class), str(neuron_type))
+        seen_ids.add(body_id)
+        identity = (neuron_class, neuron_type)
+        if identity == ("DAN", "PPL101"):
+            ppl101_ids.append(body_id)
+        elif identity == ("DAN", "PAM01"):
+            pam01_ids.append(body_id)
 
-    ppl101_ids = tuple(
-        sorted(
-            body_id
-            for body_id, identity in records.items()
-            if identity == ("DAN", "PPL101")
-        )
-    )
-    pam01_ids = tuple(
-        sorted(
-            body_id
-            for body_id, identity in records.items()
-            if identity == ("DAN", "PAM01")
-        )
-    )
     if not ppl101_ids or not pam01_ids:
         raise ValueError("source annotations require DAN types PPL101 and PAM01")
-    return NitricOxideDANs(ppl101_ids=ppl101_ids, pam01_ids=pam01_ids)
+    return NitricOxideDANs(
+        ppl101_ids=tuple(sorted(ppl101_ids)),
+        pam01_ids=tuple(sorted(pam01_ids)),
+    )
 
 
 @dataclass(frozen=True)

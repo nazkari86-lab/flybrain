@@ -34,6 +34,25 @@ def test_no_dan_resolver_selects_only_measured_ppl101_and_pam01(tmp_path: Path) 
     assert resolved.evidence_doi == "10.7554/eLife.49257"
 
 
+def test_no_dan_resolver_ignores_incomplete_unrelated_annotations(tmp_path: Path) -> None:
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    pq.write_table(
+        pa.table(
+            {
+                "bodyId": [1, 2, 3, 4],
+                "class": ["DAN", "DAN", None, None],
+                "type": ["PPL101", "PAM01", "DNp01", None],
+            }
+        ),
+        snapshot / "source-annotations.parquet",
+    )
+
+    resolved = resolve_nitric_oxide_dans(snapshot)
+
+    assert resolved.all_ids == (1, 2)
+
+
 def test_measured_slow_da_no_dynamics_are_multiplicative_and_no_specific() -> None:
     params = SlowMemoryParameters()
     state = SlowMemoryState.initial(
