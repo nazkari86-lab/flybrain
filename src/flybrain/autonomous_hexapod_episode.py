@@ -16,7 +16,7 @@ from flybrain.autonomous_learning_benchmark import (
     _effective_graph,
 )
 from flybrain.graph import EventConnectome
-from flybrain.hexapod_backend import ReferenceHexapodBackend
+from flybrain.hexapod_backend import BackendIdentity, ReferenceHexapodBackend
 from flybrain.hexapod_body import HexapodBody, HexapodParameters
 from flybrain.hexapod_motor import HexapodMotorDecoder, HexapodMotorMap
 from flybrain.mushroom_body_learning import MushroomBodyLearning
@@ -83,6 +83,7 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     )
     evidence_kind: Literal["simulation_observation"] = "simulation_observation"
     autonomous_behavior_claim_allowed: Literal[False] = False
+    backend: BackendIdentity
     replay_exact: bool
     graph_unchanged: bool
     body_steps: int = Field(gt=0)
@@ -101,6 +102,7 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
 
 @dataclass(frozen=True)
 class _Trace:
+    backend: BackendIdentity
     appetitive_contacts: int
     aversive_contacts: int
     dan_events: int
@@ -309,6 +311,7 @@ def _run(
         )
     final_body = backend.observe()
     return _Trace(
+        backend=backend.identity,
         appetitive_contacts=appetitive_contacts,
         aversive_contacts=aversive_contacts,
         dan_events=dan_events,
@@ -360,6 +363,7 @@ def run_autonomous_hexapod_episode(
         proprioceptive_calibration=calibration,
     )
     return AutonomousHexapodResult(
+        backend=first.backend,
         replay_exact=first == replay,
         graph_unchanged=_graph_digest(graph) == before,
         body_steps=config.body_steps,

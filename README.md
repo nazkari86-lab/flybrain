@@ -174,3 +174,27 @@ DN-to-motor paths were null. Two of six proprioceptive banks passed, and the ful
 was directionally wrong under its explicit mirrored-interface control. These are recorded without
 retuning in [docs/data/male-cns-hexapod-motor.md](docs/data/male-cns-hexapod-motor.md). The assay
 is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
+
+## Run the autonomous retained hexapod loop
+
+The autonomous command removes the external conditioning schedule. Anonymous olfactory activity
+propagates through the retained graph, physical contact recruits registered DANs, sparse local
+KC-to-MBON plasticity updates existing positive edges, all 24 motor groups remain available to the
+decoder, and six-bank proprioception returns body state to the graph. No reward scalar, target
+coordinate, desired action, or hidden policy enters the controller.
+
+```bash
+uv sync --extra dev --extra physics
+uv run --extra physics flybrain experiment autonomous-hexapod \
+  artifacts/male-cns-v1.0-w5 \
+  --steps 2 \
+  --seed 7 \
+  --backend reference \
+  --output artifacts/autonomous-hexapod-reference-seed7.json
+```
+
+Use `--backend flygym` to run the same neural and torque inputs on pinned FlyGym 2.1.0 / MuJoCo
+3.9.0. The retained two-step reference and FlyGym runs both preserved the graph, replayed exactly,
+produced motor spikes, closed physical contact-to-DAN learning, and returned proprioception. See
+[docs/data/male-cns-autonomous-hexapod.md](docs/data/male-cns-autonomous-hexapod.md) for identities,
+measurements, reproduction commands, and the remaining behavioral-validation gates.

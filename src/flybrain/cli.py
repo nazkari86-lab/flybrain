@@ -5,11 +5,16 @@ import os
 import tempfile
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 
 from flybrain.acquire import acquire_artifact
+from flybrain.autonomous_hexapod_assay import (
+    DEFAULT_LEARNING_REGISTRY,
+    DEFAULT_MOTOR_REGISTRY,
+    run_retained_autonomous_hexapod_assay,
+)
 from flybrain.biological_registry import (
     load_biological_registry,
     resolve_biological_registry,
@@ -336,6 +341,55 @@ def hexapod_motor_command(
         stage = Path(temporary) / output_final.name
         with stage.open("xb") as stream:
             stream.write((json.dumps(payload, indent=2, sort_keys=True) + "\n").encode())
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(serialized)
+
+
+@experiment_app.command("autonomous-hexapod")
+def autonomous_hexapod_command(
+    snapshot: Path,
+    output: Annotated[Path, typer.Option("--output")],
+    learning_registry: Annotated[
+        Path, typer.Option("--learning-registry")
+    ] = DEFAULT_LEARNING_REGISTRY,
+    motor_registry: Annotated[
+        Path, typer.Option("--motor-registry")
+    ] = DEFAULT_MOTOR_REGISTRY,
+    backend: Annotated[
+        Literal["reference", "flygym"], typer.Option("--backend")
+    ] = "reference",
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 2,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+) -> None:
+    """Publish a retained schedule-free contact-learning hexapod episode."""
+
+    output_final = output.resolve()
+    snapshot_final = snapshot.resolve()
+    learning_registry_final = learning_registry.resolve()
+    motor_registry_final = motor_registry.resolve()
+    inputs = {snapshot_final, learning_registry_final, motor_registry_final}
+    if output_final in inputs or output_final.is_relative_to(snapshot_final):
+        raise typer.BadParameter(
+            "--output must differ from inputs and be outside snapshot"
+        )
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    result = run_retained_autonomous_hexapod_assay(
+        snapshot_final,
+        learning_registry_path=learning_registry_final,
+        motor_registry_path=motor_registry_final,
+        backend=backend,
+        body_steps=steps,
+        seed=seed,
+    )
+    serialized = result.model_dump_json()
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
             stream.flush()
             os.fsync(stream.fileno())
         os.link(stage, output_final)

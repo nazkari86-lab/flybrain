@@ -53,6 +53,8 @@ def test_contact_driven_hexapod_closes_learning_motor_body_feedback_loop() -> No
     )
 
     assert result.replay_exact is True
+    assert result.backend.name == "reference_hexapod"
+    assert result.backend.evidence_kind == "model_assumption"
     assert result.graph_unchanged is True
     assert result.appetitive_contacts == 2
     assert result.aversive_contacts == 0

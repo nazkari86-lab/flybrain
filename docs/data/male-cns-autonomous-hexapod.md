@@ -1,0 +1,76 @@
+# Retained MaleCNS autonomous hexapod contact loop
+
+## Scope
+
+This assay removes the predeclared reinforcement schedule from the primary path. At every body
+step, an anonymous olfactory field stimulates retained sensory neurons, the immutable MaleCNS graph
+propagates activity, exact KC-to-MBON edges use a sparse local plastic overlay, registered motor
+populations drive the six-leg backend, and body state returns through six exact proprioceptive
+banks. Food or threat identity exists only inside the collision boundary that recruits declared
+PAM/PPL DANs; it is never emitted as a reward, target coordinate, desired action, or body command.
+
+## Reproduction
+
+Install the optional high-fidelity backend when FlyGym parity is required:
+
+```bash
+uv sync --extra dev --extra physics
+```
+
+Run the deterministic reference backend:
+
+```bash
+uv run --extra physics flybrain experiment autonomous-hexapod \
+  artifacts/male-cns-v1.0-w5 \
+  --steps 2 \
+  --seed 7 \
+  --backend reference \
+  --output artifacts/autonomous-hexapod-reference-seed7.json
+```
+
+Run the same neural controller and torque contract on FlyGym 2.1.0 / MuJoCo 3.9.0:
+
+```bash
+uv run --extra physics flybrain experiment autonomous-hexapod \
+  artifacts/male-cns-v1.0-w5 \
+  --steps 2 \
+  --seed 7 \
+  --backend flygym \
+  --output artifacts/autonomous-hexapod-flygym-seed7.json
+```
+
+Publication is staged and linked atomically. Existing output, registry aliases, and paths inside
+the snapshot are rejected.
+
+## Retained observation on 2026-09-19
+
+- graph: 166,606 neurons and 6,240,402 retained edges;
+- sparse plastic manifest: 33,496 exact positive KC-to-MBON edges;
+- reference backend: 7 motor spikes across 4 of 24 motor groups;
+- physical appetitive contacts: 2 of 2 body steps;
+- routed DAN events: 2 of 2 body steps;
+- proprioceptive events: 12, one event per leg and body step;
+- changed KC-to-MBON multipliers: 10,552;
+- graph unchanged: true;
+- exact replay: true;
+- reference runtime: 7.38 seconds on the retained local host;
+- FlyGym retained smoke: exact replay, unchanged graph, 7 motor spikes, 4 active groups, 2 physical
+  contacts, and 2 DAN events;
+- 18-joint reference/FlyGym torque intervention: all 18 response directions matched without
+  backend-specific retraining.
+
+Identity hashes for the measured reference run:
+
+- snapshot content: `9b7d4594216c8b37b5ffc4199f2b5cd448a77d0b1daadfbb3de8b322738a2f1f`;
+- learning registry: `7953875f6df1c655876090b3cd32ca71601e3463f8e5d7789e9f1c47e30c7750`;
+- motor registry: `f4bacc27b45b524b24cff4498ac14dbddf316e359066460980149e0087c86b71`.
+
+## Interpretation limits
+
+This is a schedule-free, contact-driven autonomous neural-learning loop. It proves that the retained
+sensory, plastic, modulatory, motor, body, and proprioceptive components can execute together on two
+physics backends. It does not yet prove learned food seeking, threat avoidance, generalization, or
+animal-equivalent intelligence. Only 4 of 24 groups were recruited naturally in this short retained
+episode, although the separate direct causal calibration passes all 24 groups. Behavioral claims
+remain disabled until conditioned preference/avoidance beats no-plasticity, matching-lesion,
+rewired, random, and unseen-world controls.
