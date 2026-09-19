@@ -48,6 +48,24 @@ def test_photoreceptor_events_never_contain_motion_or_looming_channels() -> None
     }
 
 
+def test_photoreceptor_spike_events_cross_the_lif_voltage_boundary() -> None:
+    first = ENCODER.encode_photoreceptor_spikes(OBSERVATION, steps=20, seed=7)
+    second = ENCODER.encode_photoreceptor_spikes(OBSERVATION, steps=20, seed=7)
+
+    assert first == second
+    assert first
+    assert {event.channel for event in first} <= {
+        "photoreceptor_spikes_left",
+        "photoreceptor_spikes_right",
+    }
+    assert all(max(event.voltages) >= 68.75 for event in first)
+    assert all(
+        neuron_id in {1, 2, 3, 4}
+        for event in first
+        for neuron_id in event.neuron_ids
+    )
+
+
 def test_feature_calibration_is_separate_and_normalized_by_bank_size() -> None:
     events = ENCODER.encode_feature_calibration(OBSERVATION, step=2)
     assert {event.channel for event in events} == {

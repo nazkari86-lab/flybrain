@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+import numpy as np
+
 from flybrain.embodied_interfaces import ExternalEvent
 from flybrain.embodied_world import FlyBody
 
@@ -177,6 +179,70 @@ class VisualInterfaceEncoder:
             ("contrast_right", self.mapping.right_r1_r6_ids, observation.right_contrast),
         )
         return self._events(channels, step)
+
+    def encode_photoreceptor_spikes(
+        self,
+        observation: RetinalObservation,
+        *,
+        steps: int,
+        seed: int,
+        rate_hz: float = 150.0,
+        dt_ms: float = 0.1,
+    ) -> tuple[ExternalEvent, ...]:
+        """Encode luminance/contrast as deterministic source-equivalent spikes.
+
+        ``encode_photoreceptors`` is a population-voltage calibration API.  The Shiu
+        simulator consumes voltage jumps per source event, so dividing one population
+        voltage across every cell leaves each R1-R6 neuron below threshold.  This API
+        preserves the same anonymous hemispheric boundary while generating sparse
+        per-neuron source events at a declared rate.
+        """
+
+        if type(steps) is not int or steps <= 0:
+            raise ValueError("photoreceptor spike steps must be a positive integer")
+        if type(seed) is not int or seed < 0:
+            raise ValueError("photoreceptor spike seed must be a non-negative integer")
+        if not math.isfinite(rate_hz) or rate_hz <= 0.0:
+            raise ValueError("photoreceptor spike rate must be finite and positive")
+        if not math.isfinite(dt_ms) or dt_ms <= 0.0:
+            raise ValueError("photoreceptor spike timestep must be finite and positive")
+        probability = rate_hz * dt_ms / 1000.0
+        if probability > 1.0:
+            raise ValueError("photoreceptor spike probability must not exceed one")
+
+        generator = np.random.default_rng(seed)
+        banks = (
+            (
+                "photoreceptor_spikes_left",
+                self.mapping.left_r1_r6_ids,
+                max(observation.left_luminance, observation.left_contrast),
+            ),
+            (
+                "photoreceptor_spikes_right",
+                self.mapping.right_r1_r6_ids,
+                max(observation.right_luminance, observation.right_contrast),
+            ),
+        )
+        events: list[ExternalEvent] = []
+        for step in range(steps):
+            for channel, neuron_ids, drive in banks:
+                selected = generator.random(len(neuron_ids)) < probability * drive
+                if not np.any(selected):
+                    continue
+                selected_ids = tuple(
+                    neuron_id
+                    for neuron_id, include in zip(neuron_ids, selected, strict=True)
+                    if include
+                )
+                events.append(
+                    ExternalEvent(
+                        step=step,
+                        neuron_ids=selected_ids,
+                        voltages=(self.total_voltage,) * len(selected_ids),
+                        channel=channel,
+                    )
+                )
+        return tuple(events)
 
     def encode_feature_calibration(
         self, observation: RetinalObservation, *, step: int

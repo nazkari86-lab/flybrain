@@ -154,3 +154,11 @@ geometry, and learned food/threat behavior with predeclared lesions and holdout 
 
 The audit proves this biological-steering phase, not the broader goal of a complete or intelligent
 digital fly. Those stronger claims remain explicitly unachieved.
+
+The photoreceptor protocol now delivers deterministic source-equivalent R1-R6 spike events at the
+declared Shiu rate and records both event counts in every condition. This repairs the earlier
+subthreshold population-voltage interface: individual R1-R6 source events cross the LIF boundary.
+On the retained graph, however, the photoreceptor-to-descending claim remains `null`; the measured
+R1-R6 route does not yet produce a downstream DNa02/DNg13/MDN response under the declared dynamics.
+The benchmark therefore preserves the null result instead of changing edge signs, weights, or the
+claim threshold.

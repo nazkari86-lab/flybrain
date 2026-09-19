@@ -39,3 +39,10 @@ def test_real_malecns_biological_steering_gate(tmp_path: Path) -> None:
     assert payload["calibration_passed"] is True
     assert payload["replay_exact"] is True
     assert payload["graph_unchanged"] is True
+    photoreceptor = payload["sensory_claims"]["photoreceptor_response"]
+    assert photoreceptor["classification"] == "null"
+    photoreceptor_condition = next(
+        item for item in payload["conditions"] if item["name"] == "photoreceptor_left"
+    )
+    assert photoreceptor_condition["injected_neuron_event_count"] > 0
+    assert photoreceptor_condition["upstream_visual_processing_bypassed"] is False

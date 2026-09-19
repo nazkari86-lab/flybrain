@@ -54,6 +54,8 @@ class ConditionResult(BaseModel, frozen=True):
     spike_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     command_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    injected_event_count: int = Field(ge=0)
+    injected_neuron_event_count: int = Field(ge=0)
     relevant_spike_counts: dict[str, int]
     turn_integral: float
     reverse_integral: float
@@ -247,6 +249,8 @@ def _sensory_condition(
         spike_digest=_digest(spike_steps),
         command_digest=_digest(commands),
         trace_digest=_digest(trace),
+        injected_event_count=len(events),
+        injected_neuron_event_count=sum(len(event.neuron_ids) for event in events),
         relevant_spike_counts=counts,
         turn_integral=sum(command[1] for command in commands),
         reverse_integral=sum(max(0.0, -command[0]) for command in commands),
@@ -356,17 +360,28 @@ def _run_sensory_protocols(
         feature: bool = True,
         first_step: int = 0,
     ) -> ConditionResult:
+        events = (
+            visual.encode_photoreceptor_spikes(
+                observation,
+                steps=steps,
+                # Keep the source schedule fixed so benchmark seed changes only
+                # the explicitly declared perturbation condition.
+                seed=0,
+            )
+            if not feature
+            else _repeat_visual_events(
+                visual,
+                observation,
+                steps=steps,
+                feature_calibration=True,
+                first_step=first_step,
+            )
+        )
         return _sensory_condition(
             graph,
             mapping,
             name,
-            _repeat_visual_events(
-                visual,
-                observation,
-                steps=steps,
-                feature_calibration=feature,
-                first_step=first_step,
-            ),
+            events,
             silenced,
             steps=steps,
             seed=seed,
@@ -578,6 +593,8 @@ def _closed_loop_condition(
         spike_digest=_digest(spike_steps),
         command_digest=_digest(commands),
         trace_digest=_digest(trace),
+        injected_event_count=len(all_events),
+        injected_neuron_event_count=sum(len(event.neuron_ids) for event in all_events),
         relevant_spike_counts=counts,
         turn_integral=sum(command[1] for command in commands),
         reverse_integral=sum(max(0.0, -command[0]) for command in commands),
@@ -669,6 +686,10 @@ def _condition(
                 "commands": commands,
                 "bodies": [asdict(body) for body in bodies],
             }
+        ),
+        injected_event_count=len(voltage_events),
+        injected_neuron_event_count=sum(
+            int(indices.size) for indices, _ in voltage_events.values()
         ),
         relevant_spike_counts=counts,
         turn_integral=sum(command[1] for command in commands),
