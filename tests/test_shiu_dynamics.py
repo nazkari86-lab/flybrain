@@ -106,6 +106,35 @@ def test_silencing_prevents_spike_emission() -> None:
     assert batches[0].neuron_ids.size == 0
 
 
+def test_presynaptic_transmitter_multiplier_scales_outgoing_conductance() -> None:
+    graph = EventConnectome(
+        neuron_ids=np.array([1, 2], dtype=np.uint64),
+        cell_types=("test", "test"),
+        roles=("test", "test"),
+        transmitters=("acetylcholine", "gaba"),
+        superclasses=("test", "test"),
+        outgoing=csr_array(np.array([[0.0, 100.0], [0.0, 0.0]], dtype=np.float32)),
+    )
+    params = ShiuParameters(dt_ms=0.5, refractory_ms=2.0, synaptic_delay_ms=0.5)
+    events = {0: (np.array([0]), np.array([8.0], dtype=np.float32))}
+
+    normal = ShiuState.initial(2, params=params, seed=2)
+    scaled = ShiuState.initial(2, params=params, seed=2)
+    list(simulate_shiu(graph, params, steps=2, external_voltage_events=events, state=normal))
+    list(
+        simulate_shiu(
+            graph,
+            params,
+            steps=2,
+            external_voltage_events=events,
+            state=scaled,
+            presynaptic_transmitter_multipliers={"acetylcholine": 0.5},
+        )
+    )
+
+    assert scaled.conductance_mv[1] == normal.conductance_mv[1] * 0.5
+
+
 def test_poisson_target_can_be_exempt_from_refractory_like_source_model() -> None:
     params = ShiuParameters()
     graph = event_graph(np.zeros((1, 1), dtype=np.float32))

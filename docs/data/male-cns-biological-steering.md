@@ -75,6 +75,51 @@ checked all required lesion/restoration/replay/holdout condition names, required
 positive denominators, and recomputed the result SHA-256. A source scan found no dense
 `neuron_count x neuron_count` allocation in the runtime or tests; the canonical graph remains CSR.
 
+## T-bar neurotransmitter uncertainty audit
+
+The official `tbar-neurotransmitters-male-cns-v1.0.feather` product was acquired with its
+published byte count (`2,651,680,218`) and MD5 checksum; its local SHA-256 is
+`bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d`.
+The distinct official body-level product records both raw `predicted_nt` and the release
+`consensus_nt`. On the learning-to-motor audit population, raw predictions disagree with the
+release consensus for all 4,064 KC bodies, but for only 2 of 97 MBON bodies and 1 of 10 retained
+two-hop intermediates. Therefore neither per-T-bar means nor raw body predictions are permitted
+to overwrite the consensus transmitter labels, edge signs, contacts, or synaptic gains. The
+new `tbar_neurotransmitters.py` audit preserves this distinction explicitly.
+
+The independently verified `syn-partners-male-cns-v1.0-minconf-0.5.feather` product
+(`6,777,179,098` bytes; SHA-256
+`959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07`) makes an exact
+coordinate join possible. A focused audit of the six natural-ORN-active KC-to-motor-pathway-MBON
+edges found all 68 of 68 declared contacts in the partner export and matched each to one T-bar
+prediction. The raw contact means still ranked dopamine above acetylcholine on every audited edge.
+This confirms at contact resolution that raw prediction probabilities are not an admissible
+replacement for the release consensus in the current simulator.
+
+The complete immutable KC-to-MBON manifest was also audited: all `402,850 / 402,850` contacts
+across all `33,496` plastic edges matched a T-bar by exact coordinate. Despite that complete
+coverage, raw predictions ranked dopamine highest for `32,153` edges (acetylcholine for `1,183`),
+with mean edge probabilities `0.754` dopamine and `0.143` acetylcholine. This is therefore a
+systematic source-model disagreement, not a missing-data artifact or an effect limited to the
+motor-relevant example edges.
+
+## KC--DAN contact locality measurement
+
+`contact_locality.py` streams the same partner export and measures nearest presynaptic DAN-contact
+distances for each exact plastic KC-contact on a shared MBON. For the 33,496 KC-to-MBON edges,
+PAM-to-MBON contacts were present on 42 MBONs (25,911 PAM contacts); 49 KC-target MBONs had no
+PAM contact. The two motor-pathway-relevant PAM targets were both covered: MBON27 (`519128`) had
+172 PAM contacts with nearest-PAM median/p90 `208.7 / 420.0`, while MBON26 (`524893`) had 780 with
+`74.4 / 176.5`, in native source coordinates. These are dataset measurements. They do not select a
+biochemical distance radius or alter learning weights, because the release supplies no measured
+spatial diffusion or receptor-response scale.
+
+The matching PPL1 audit measured 10,626 contacts across 65 KC-target MBONs, leaving 26 without a
+PPL1 contact. All seven fully signed motor-pathway MBONs declared for PPL1 were covered. Six had
+nearest-PPL1 medians from `154.1` to `508.7`; MBON26 (`524893`) was a clear spatial outlier at
+`1427.2` median and `2343.7` p90 from only 21 PPL1 contacts. This supports keeping PAM and PPL1
+locality separate instead of treating every DAN-to-MBON edge as one interchangeable global trace.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.

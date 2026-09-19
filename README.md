@@ -153,3 +153,67 @@ were null. Direct HS/LC16 stimulation bypasses upstream visual processing and is
 retina-to-behavior evidence. See
 [`docs/data/male-cns-biological-steering.md`](docs/data/male-cns-biological-steering.md) for exact
 hashes, effects, resource use, and limitations.
+
+## Run the evidence-bound hexapod motor assay
+
+The hexapod command resolves 24 exact flexor/extensor motor populations, six proprioceptive banks,
+and six descending populations from one registry. It publishes direct motor calibration,
+phase-gait calibration, DN-to-motor, proprio-to-motor, and stateful neural-body feedback as
+separate result families; it never turns direct calibration into a sensory or locomotion claim.
+
+```bash
+uv run flybrain experiment hexapod-motor artifacts/male-cns-v1.0-w5 \
+  --registry data/registry/hexapod-motor-registry-v1.json \
+  --steps 90 \
+  --seed 7 \
+  --output artifacts/hexapod-motor-malecns-seed7.json
+```
+
+The retained 90-step run calibrated all 24 direct antagonist groups, but phase-gait and all six
+DN-to-motor paths were null. Two of six proprioceptive banks passed, and the full feedback loop
+was directionally wrong under its explicit mirrored-interface control. These are recorded without
+retuning in [docs/data/male-cns-hexapod-motor.md](docs/data/male-cns-hexapod-motor.md). The assay
+is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
+
+## Run the autonomous retained hexapod loop
+
+The autonomous command removes the external conditioning schedule. Anonymous olfactory activity
+propagates through the retained graph, physical contact recruits registered DANs, sparse local
+KC-to-MBON plasticity updates existing positive edges, measured PPL101/PAM01 DANs contribute fast
+dopamine and slow nitric-oxide traces, all 24 motor groups remain available to the decoder, and
+six-bank proprioception returns body state to the graph. No reward scalar, target coordinate,
+desired action, or hidden policy enters the controller.
+
+```bash
+uv sync --extra dev --extra physics
+uv run --extra physics flybrain experiment autonomous-hexapod \
+  artifacts/male-cns-v1.0-w5 \
+  --steps 2 \
+  --seed 7 \
+  --backend reference \
+  --output artifacts/autonomous-hexapod-reference-seed7.json
+```
+
+Use `--backend flygym` to run the same neural and torque inputs on pinned FlyGym 2.1.0 / MuJoCo
+3.9.0. The retained two-step reference and FlyGym runs both preserved the graph, replayed exactly,
+produced motor spikes, closed physical contact-to-DAN learning, and returned proprioception. See
+[docs/data/male-cns-autonomous-hexapod.md](docs/data/male-cns-autonomous-hexapod.md) for identities,
+measurements, slow-memory evidence, reproduction commands, and the remaining behavioral-validation
+gates.
+
+Run the multi-condition behavior benchmark:
+
+```bash
+uv run --extra physics flybrain experiment autonomous-behavior \
+  artifacts/male-cns-v1.0-w5 \
+  --training-episodes 1 \
+  --holdout-episodes 1 \
+  --steps 2 \
+  --seed 7 \
+  --backend reference \
+  --output artifacts/autonomous-behavior-reference-seed7.json
+```
+
+The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
+separate mutable state and publishes environment-only food/threat metrics. A positive claim requires
+multiple paired holdout observations; bootstrap resampling alone cannot unlock the claim gate.

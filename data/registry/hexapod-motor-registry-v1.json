@@ -1,0 +1,229 @@
+{
+  "registry_version": "male-cns-hexapod-motor-v1",
+  "dataset_id": "male-cns-v1.0-essential",
+  "populations": [
+    {
+      "name": "left_fore_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "L", "somaNeuromere": "T1"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [821291, 828939, 909618, 911134], "expected_count": 4},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_fore_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "L", "somaNeuromere": "T1", "type": "Tr extensor MN"}, "expected_ids": [807906], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_fore_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "L", "somaNeuromere": "T1"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [806599, 807165, 809912, 815246, 816215, 816404, 817283, 818057, 819384, 819869, 825516, 867630, 903298, 909831, 1050115387], "expected_count": 15},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_fore_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "L", "somaNeuromere": "T1", "type": "Ti extensor MN"}, "expected_ids": [800636, 815344], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_fore_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "ProLN", "rootSide": "L"}, "expected_count": 41, "expected_id_sha256": "3a4669ac64ec3481e9dc21862e4547504f8bc8c01d948d7b1154661676974384"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "right_fore_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "R", "somaNeuromere": "T1"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [914655, 1050306082, 1050349786], "expected_count": 3},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_fore_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "R", "somaNeuromere": "T1", "type": "Tr extensor MN"}, "expected_ids": [818842], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_fore_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "R", "somaNeuromere": "T1"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [810098, 817509, 821635, 827188, 833140, 837745, 909713, 1050005026, 1050031705, 1050091581, 1050126678, 1050156705, 1050189039, 1050268065], "expected_count": 14},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_fore_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "ProLN", "somaSide": "R", "somaNeuromere": "T1", "type": "Ti extensor MN"}, "expected_ids": [804257, 815678], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_fore_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "ProLN", "rootSide": "R"}, "expected_count": 17, "expected_id_sha256": "9d4fbd78f11402d05a84dd51786500952ff270f7e63bf84e0f71a297eeed2cdf"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "left_middle_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "L", "somaNeuromere": "T2"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [800589, 802232, 803829, 821375, 903158, 903159, 903579, 927828, 1050669248], "expected_count": 9},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_middle_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "L", "somaNeuromere": "T2", "type": "Tr extensor MN"}, "expected_ids": [805477, 909078], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_middle_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "L", "somaNeuromere": "T2"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [802295, 809670, 818295, 819674, 823739, 824041, 825485, 830480, 908094, 927808, 1051356801], "expected_count": 11},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_middle_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "L", "somaNeuromere": "T2", "type": "Ti extensor MN"}, "expected_ids": [800911, 801234], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_middle_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "MesoLN", "rootSide": "L"}, "expected_count": 135, "expected_id_sha256": "dad088a688069d5dafdf58695e26942588ce9f9dd1ba59505d80d34ab93daf26"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "right_middle_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "R", "somaNeuromere": "T2"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [801057, 801058, 810720, 817681, 819203, 824315, 867926, 910095, 924142], "expected_count": 9},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_middle_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "R", "somaNeuromere": "T2", "type": "Tr extensor MN"}, "expected_ids": [814942, 840530], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_middle_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "R", "somaNeuromere": "T2"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [804405, 805010, 805568, 812531, 816222, 822013, 903363, 905235, 907848, 909255, 1052521030], "expected_count": 11},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_middle_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MesoLN", "somaSide": "R", "somaNeuromere": "T2", "type": "Ti extensor MN"}, "expected_ids": [830514, 928579], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_middle_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "MesoLN", "rootSide": "R"}, "expected_count": 140, "expected_id_sha256": "553058e46e38d5c165f6298cb2cf4336ddb8bdf3eff7cfcbc53dc6caa6bb0098"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "left_hind_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "L", "somaNeuromere": "T3"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [809604, 821154, 896719, 1050038433, 1050139141, 1050194310, 1050239701, 1050730563, 1051236875], "expected_count": 9},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_hind_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "L", "somaNeuromere": "T3", "type": "Tr extensor MN"}, "expected_ids": [840981], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_hind_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "L", "somaNeuromere": "T3"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [803147, 804919, 817374, 819112, 822945, 829873, 843389, 908762, 929376, 934519, 1050003192, 1050088257, 1050100010, 1050123559, 1050166426, 1050233038, 1050263576], "expected_count": 17},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_hind_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "L", "somaNeuromere": "T3", "type": "Ti extensor MN"}, "expected_ids": [800621, 812953], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "left_hind_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "MetaLN", "rootSide": "L"}, "expected_count": 138, "expected_id_sha256": "b104113b764da36fc9c8b26c0818c0acb138b608c0e5588781b6b0367e86dc8a"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "right_hind_trochanter_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "R", "somaNeuromere": "T3"}, "in_values": {"type": ["Tr flexor MN", "Acc. tr flexor MN"]}, "expected_ids": [801721, 807640, 815958, 905586, 905928, 914852, 1050098047, 1050102118, 1050938258], "expected_count": 9},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_hind_trochanter_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "R", "somaNeuromere": "T3", "type": "Tr extensor MN"}, "expected_ids": [808453, 905661], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_hind_tibia_flexor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "R", "somaNeuromere": "T3"}, "in_values": {"type": ["Ti flexor MN", "Acc. ti flexor MN"]}, "expected_ids": [801637, 803072, 808685, 813629, 823665, 827968, 840740, 910178, 910296, 1050013311, 1050032839, 1050160514, 1050202461, 1050303231, 1050460102, 1059707690], "expected_count": 16},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_hind_tibia_extensor", "role": "motor",
+      "selector": {"equals": {"superclass": "vnc_motor", "exitNerve": "MetaLN", "somaSide": "R", "somaNeuromere": "T3", "type": "Ti extensor MN"}, "expected_ids": [800158, 809935], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-antagonist-joint-interface"]
+    },
+    {
+      "name": "right_hind_proprioception", "role": "sensory",
+      "selector": {"equals": {"superclass": "vnc_sensory", "class": "mechanosensory_proprioceptive", "entryNerve": "MetaLN", "rootSide": "R"}, "expected_count": 151, "expected_id_sha256": "9b18767f018616620618bf06a2d761ae85a58a54393e5a06f83d8f89aa211a3e"},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "assumption-proprioceptive-bank-interface"]
+    },
+    {
+      "name": "d_na02_left", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNa02", "somaSide": "L"}, "expected_ids": [523769], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_na02_right", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNa02", "somaSide": "R"}, "expected_ids": [10360], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_left", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNg13", "somaSide": "L"}, "expected_ids": [11074], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "d_ng13_right", "role": "steering",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "DNg13", "somaSide": "R"}, "expected_ids": [512006], "expected_count": 1},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "yang-2024-steering"]
+    },
+    {
+      "name": "mdn_left", "role": "retreat",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "L"}, "expected_ids": [11288, 12348], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat"]
+    },
+    {
+      "name": "mdn_right", "role": "retreat",
+      "selector": {"equals": {"superclass": "descending_neuron", "type": "MDN", "somaSide": "R"}, "expected_ids": [10763, 11332], "expected_count": 2},
+      "evidence_ids": ["male-cns-v1.0-body-annotations", "mdn-2017-retreat"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "male-cns-v1.0-body-annotations",
+      "kind": "dataset_measurement",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "MaleCNS v1.0 body annotations identify exact motor and proprioceptive populations by type, nerve, neuromere, and anatomical side.",
+      "source_artifact_name": "body-annotations",
+      "source_artifact_url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "source_artifact_sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "confidence": "measured"
+    },
+    {
+      "evidence_id": "assumption-antagonist-joint-interface",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "Flexor and extensor annotation names define opposite model channels; moment arms, gains, force, activation dynamics, and joint axes are not measured by this dataset.",
+      "confidence": "assumption"
+    },
+    {
+      "evidence_id": "assumption-proprioceptive-bank-interface",
+      "kind": "model_assumption",
+      "source_url": "https://male-cns.janelia.org/download/",
+      "claim": "Entry nerve and root side define six leg-specific proprioceptive banks; receptor transfer functions and event calibration remain explicit model assumptions.",
+      "confidence": "assumption"
+    },
+    {
+      "evidence_id": "yang-2024-steering",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/39293446/",
+      "pmid": "39293446",
+      "doi": "10.1016/j.cell.2024.08.033",
+      "claim": "DNa02 and DNg13 activity and unilateral perturbation are associated with ipsiversive steering and distinct stride effects.",
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "mdn-2017-retreat",
+      "kind": "experimental_result",
+      "source_url": "https://pubmed.ncbi.nlm.nih.gov/28238656/",
+      "pmid": "28238656",
+      "claim": "MDNs are critical for visually evoked backward walking and directional retreat.",
+      "confidence": "high"
+    }
+  ]
+}

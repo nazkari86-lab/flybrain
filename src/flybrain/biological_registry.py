@@ -39,6 +39,7 @@ ALLOWED_SELECTOR_COLUMNS = frozenset(
         "class",
         "subclass",
         "somaSide",
+        "somaNeuromere",
         "rootSide",
         "entryNerve",
         "exitNerve",
@@ -122,6 +123,7 @@ class AnnotationSelector(BaseModel, frozen=True):
     )
     expected_ids: tuple[int, ...] = ()
     expected_count: int | None = Field(default=None, gt=0)
+    expected_id_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @field_validator("expected_ids", mode="before")
     @classmethod
@@ -130,6 +132,17 @@ class AnnotationSelector(BaseModel, frozen=True):
             type(item) is not int for item in value
         ):
             raise ValueError("expected IDs must contain only integers")
+        return value
+
+    @field_validator("equals", mode="before")
+    @classmethod
+    def validate_exact_predicate_types(cls, value: object) -> object:
+        if (
+            isinstance(value, Mapping)
+            and "somaNeuromere" in value
+            and type(value["somaNeuromere"]) is not str
+        ):
+            raise ValueError("somaNeuromere exact predicate must be a string")
         return value
 
     @field_validator("expected_count", mode="before")
@@ -176,6 +189,8 @@ class AnnotationSelector(BaseModel, frozen=True):
         conflicts = sorted(set(self.equals) & set(self.in_values))
         if conflicts:
             raise ValueError(f"conflicting equals/in_values selector columns: {conflicts}")
+        if "somaNeuromere" in self.in_values:
+            raise ValueError("somaNeuromere must use one exact equals predicate")
         for column, values in self.in_values.items():
             if not values:
                 raise ValueError(f"selector predicate has no values: {column}")
@@ -200,6 +215,12 @@ class AnnotationSelector(BaseModel, frozen=True):
             and len(self.expected_ids) != self.expected_count
         ):
             raise ValueError("expected IDs and expected count disagree")
+        if self.expected_ids and self.expected_id_sha256 is not None:
+            id_bytes = b"\n".join(
+                str(value).encode("ascii") for value in self.expected_ids
+            )
+            if hashlib.sha256(id_bytes).hexdigest() != self.expected_id_sha256:
+                raise ValueError("expected IDs and expected ID SHA-256 disagree")
         return self
 
 
@@ -209,9 +230,39 @@ class PopulationDeclaration(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    role: Literal["sensory", "steering", "retreat", "future_interface"]
+    role: Literal[
+        "sensory",
+        "steering",
+        "retreat",
+        "motor",
+        "future_interface",
+        "learning_olfactory",
+        "learning_alpn",
+        "learning_kc",
+        "learning_mbon",
+        "dan_appetitive",
+        "dan_aversive",
+        "dan_unassigned",
+    ]
     selector: AnnotationSelector
     evidence_ids: tuple[str, ...]
+
+
+class PlasticEdgeManifestDeclaration(BaseModel, frozen=True):
+    """Immutable sparse edge set eligible for a declared learning operation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    pre_populations: tuple[str, ...] = Field(min_length=1)
+    post_populations: tuple[str, ...] = Field(min_length=1)
+    sign: Literal[-1, 0, 1]
+    expected_edge_count: int = Field(gt=0)
+    expected_contact_count: int = Field(gt=0)
+    expected_pre_count: int = Field(gt=0)
+    expected_post_count: int = Field(gt=0)
+    expected_edge_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
 
 
 class BiologicalInterfaceRegistry(BaseModel, frozen=True):
@@ -222,6 +273,7 @@ class BiologicalInterfaceRegistry(BaseModel, frozen=True):
     registry_version: str
     dataset_id: str
     populations: tuple[PopulationDeclaration, ...]
+    plastic_edge_manifests: tuple[PlasticEdgeManifestDeclaration, ...] = ()
     evidence: tuple[EvidenceRecord, ...]
 
     @model_validator(mode="after")
@@ -244,6 +296,24 @@ class BiologicalInterfaceRegistry(BaseModel, frozen=True):
             if absent:
                 raise ValueError(
                     f"absent evidence reference for population {population.name}: {absent}"
+                )
+        manifests = tuple(item.name for item in self.plastic_edge_manifests)
+        if len(manifests) != len(set(manifests)):
+            raise ValueError("duplicate plastic edge manifest name")
+        declared_populations = set(names)
+        for manifest in self.plastic_edge_manifests:
+            referenced = set(manifest.pre_populations) | set(manifest.post_populations)
+            absent_populations = sorted(referenced - declared_populations)
+            if absent_populations:
+                raise ValueError(
+                    "absent population reference for plastic edge manifest "
+                    f"{manifest.name}: {absent_populations}"
+                )
+            absent_evidence = sorted(set(manifest.evidence_ids) - available)
+            if absent_evidence:
+                raise ValueError(
+                    "absent evidence reference for plastic edge manifest "
+                    f"{manifest.name}: {absent_evidence}"
                 )
         return self
 
@@ -367,6 +437,13 @@ def _resolve_population_ids(
             "resolved population expected count differs for "
             f"{declaration.name}: {len(neuron_ids)}"
         )
+    if declaration.selector.expected_id_sha256 is not None:
+        id_bytes = b"\n".join(str(value).encode("ascii") for value in neuron_ids)
+        if hashlib.sha256(id_bytes).hexdigest() != declaration.selector.expected_id_sha256:
+            raise ValueError(
+                "resolved population expected ID SHA-256 differs for "
+                f"{declaration.name}"
+            )
     return neuron_ids
 
 
@@ -399,8 +476,21 @@ def resolve_biological_registry(
     _validated_body_ids(table)
     evidence_by_id = {record.evidence_id: record for record in registry.evidence}
     resolved_populations = []
+    motor_owner: dict[int, str] = {}
     for declaration in registry.populations:
         neuron_ids = _resolve_population_ids(table, declaration)
+        if declaration.role == "motor":
+            overlaps = {
+                neuron_id: motor_owner[neuron_id]
+                for neuron_id in neuron_ids
+                if neuron_id in motor_owner
+            }
+            if overlaps:
+                raise ValueError(
+                    "overlapping motor populations for "
+                    f"{declaration.name}: {sorted(overlaps.items())}"
+                )
+            motor_owner.update(dict.fromkeys(neuron_ids, declaration.name))
         id_bytes = b"\n".join(str(value).encode("ascii") for value in neuron_ids)
         resolved_populations.append(
             ResolvedPopulation(
