@@ -15,9 +15,10 @@ from flybrain.autonomous_learning_benchmark import (
     AssociativeCalibrationConfig,
     _effective_graph,
 )
+from flybrain.behavioral_perturbations import BodyPerturbation, apply_perturbation
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_backend import BackendIdentity, ReferenceHexapodBackend
-from flybrain.hexapod_body import HexapodBody, HexapodParameters
+from flybrain.hexapod_body import HexapodBody, HexapodParameters, HexapodTorque
 from flybrain.hexapod_motor import HexapodMotorDecoder, HexapodMotorMap
 from flybrain.mushroom_body_learning import MushroomBodyLearning
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
@@ -110,6 +111,11 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     slow_memory_dopamine_effect_max: float = Field(ge=0.0, le=1.0)
     slow_memory_nitric_oxide_effect_max: float = Field(ge=0.0, le=1.0)
     final_multipliers: tuple[float, ...]
+    trace_distance_to_food: tuple[float, ...]
+    trace_distance_to_threat: tuple[float, ...]
+    first_food_contact_step: int | None
+    first_threat_contact_step: int | None
+    time_to_clear_threat_steps: int | None
     final_body: HexapodBody
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
@@ -128,6 +134,11 @@ class _Trace:
     slow_memory_dopamine_effect_max: float
     slow_memory_nitric_oxide_effect_max: float
     final_multipliers: tuple[float, ...]
+    trace_distance_to_food: tuple[float, ...]
+    trace_distance_to_threat: tuple[float, ...]
+    first_food_contact_step: int | None
+    first_threat_contact_step: int | None
+    time_to_clear_threat_steps: int | None
     final_body: HexapodBody
     body_digest: str
 
@@ -182,6 +193,7 @@ def _run(
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory,
     proprioceptive_calibration: ProprioceptiveCalibration,
+    perturbation: BodyPerturbation,
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -256,7 +268,13 @@ def _run(
     aversive_contacts = 0
     dan_events = 0
     body_trace = []
-    for _ in range(config.body_steps):
+    distance_to_food: list[float] = []
+    distance_to_threat: list[float] = []
+    first_food_contact_step: int | None = None
+    first_threat_contact_step: int | None = None
+    time_to_clear_threat_steps: int | None = None
+    torque_queue: list[HexapodTorque] = []
+    for step_index in range(config.body_steps):
         body = backend.observe()
         intensity = _odor_intensity(body, config.arena)
         sensory_params = replace(
@@ -322,8 +340,20 @@ def _run(
             window_s=body_parameters.dt_s,
             leg_phases=phases,
         )
-        next_body = backend.step(activation.torques)
+        torque_queue.append(activation.torques)
+        if len(torque_queue) <= perturbation.delay_steps:
+            applied_torque = HexapodTorque.zero()
+        else:
+            applied_torque = torque_queue[-(perturbation.delay_steps + 1)]
+        if perturbation.damaged_legs:
+            values = list(applied_torque.values)
+            for leg_index in perturbation.damaged_legs:
+                values[leg_index] = (0.0, 0.0, 0.0)
+            applied_torque = HexapodTorque(values=tuple(values))
+        next_body = backend.step(applied_torque)
         body_trace.append(next_body.model_dump(mode="json"))
+        distance_to_food.append(_distance(next_body, config.arena.food_position_m))
+        distance_to_threat.append(_distance(next_body, config.arena.threat_position_m))
         food_contact = (
             _distance(next_body, config.arena.food_position_m)
             <= config.arena.contact_radius_m
@@ -334,6 +364,17 @@ def _run(
         )
         appetitive_contacts += int(food_contact)
         aversive_contacts += int(threat_contact)
+        if food_contact and first_food_contact_step is None:
+            first_food_contact_step = step_index
+        if threat_contact and first_threat_contact_step is None:
+            first_threat_contact_step = step_index
+        if (
+            first_threat_contact_step is not None
+            and time_to_clear_threat_steps is None
+            and step_index > first_threat_contact_step
+            and not threat_contact
+        ):
+            time_to_clear_threat_steps = step_index - first_threat_contact_step
         recruitment = reinforcement.recruit(
             AnonymousContact(
                 appetitive_intensity=1.0 if food_contact else 0.0,
@@ -399,6 +440,11 @@ def _run(
         slow_memory_dopamine_effect_max=dopamine_effect_max,
         slow_memory_nitric_oxide_effect_max=nitric_oxide_effect_max,
         final_multipliers=tuple(float(value) for value in binding.overlay.multipliers),
+        trace_distance_to_food=tuple(distance_to_food),
+        trace_distance_to_threat=tuple(distance_to_threat),
+        first_food_contact_step=first_food_contact_step,
+        first_threat_contact_step=first_threat_contact_step,
+        time_to_clear_threat_steps=time_to_clear_threat_steps,
         final_body=final_body,
         body_digest=hashlib.sha256(repr(body_trace).encode("utf-8")).hexdigest(),
     )
@@ -415,11 +461,14 @@ def run_autonomous_hexapod_episode(
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory = ReferenceHexapodBackend,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
+    perturbation: BodyPerturbation | None = None,
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
     before = _graph_digest(graph)
     calibration = proprioceptive_calibration or ProprioceptiveCalibration()
+    active_perturbation = perturbation or BodyPerturbation()
+    active_parameters = apply_perturbation(body_parameters, active_perturbation)
     first = _run(
         graph,
         _clone_binding(binding),
@@ -427,9 +476,10 @@ def run_autonomous_hexapod_episode(
         motor=motor,
         proprio=proprio,
         reinforcement=reinforcement,
-        body_parameters=body_parameters,
+        body_parameters=active_parameters,
         backend_factory=backend_factory,
         proprioceptive_calibration=calibration,
+        perturbation=active_perturbation,
     )
     replay = _run(
         graph,
@@ -438,9 +488,10 @@ def run_autonomous_hexapod_episode(
         motor=motor,
         proprio=proprio,
         reinforcement=reinforcement,
-        body_parameters=body_parameters,
+        body_parameters=active_parameters,
         backend_factory=backend_factory,
         proprioceptive_calibration=calibration,
+        perturbation=active_perturbation,
     )
     return AutonomousHexapodResult(
         backend=first.backend,
@@ -462,6 +513,11 @@ def run_autonomous_hexapod_episode(
             first.slow_memory_nitric_oxide_effect_max
         ),
         final_multipliers=first.final_multipliers,
+        trace_distance_to_food=first.trace_distance_to_food,
+        trace_distance_to_threat=first.trace_distance_to_threat,
+        first_food_contact_step=first.first_food_contact_step,
+        first_threat_contact_step=first.first_threat_contact_step,
+        time_to_clear_threat_steps=first.time_to_clear_threat_steps,
         final_body=first.final_body,
         trace_digest=first.digest,
     )

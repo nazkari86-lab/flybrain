@@ -7,6 +7,7 @@ from flybrain.autonomous_hexapod_episode import (
     run_autonomous_hexapod_episode,
 )
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
+from flybrain.behavioral_perturbations import BodyPerturbation
 from flybrain.flygym_backend import FlyGymBackend, flygym_availability
 from flybrain.hexapod_body import HexapodParameters
 from flybrain.reinforcement_interface import ReinforcementInterface
@@ -116,6 +117,26 @@ def test_autonomous_hexapod_contract_has_no_schedule_reward_or_target_output() -
 
     forbidden = {"schedule", "reward", "target", "desired_action", "policy"}
     assert forbidden.isdisjoint(type(result).model_fields)
+
+
+def test_autonomous_episode_reports_environment_trace_under_perturbation() -> None:
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        config(),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        perturbation=BodyPerturbation(delay_steps=1, damaged_legs=(0,)),
+    )
+
+    assert len(result.trace_distance_to_food) == 2
+    assert len(result.trace_distance_to_threat) == 2
+    assert result.first_food_contact_step == 0
+    assert result.first_threat_contact_step is None
 
 
 @pytest.mark.skipif(
