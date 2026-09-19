@@ -103,6 +103,17 @@ with mean edge probabilities `0.754` dopamine and `0.143` acetylcholine. This is
 systematic source-model disagreement, not a missing-data artifact or an effect limited to the
 motor-relevant example edges.
 
+## KC--DAN contact locality measurement
+
+`contact_locality.py` streams the same partner export and measures nearest presynaptic DAN-contact
+distances for each exact plastic KC-contact on a shared MBON. For the 33,496 KC-to-MBON edges,
+PAM-to-MBON contacts were present on 42 MBONs (25,911 PAM contacts); 49 KC-target MBONs had no
+PAM contact. The two motor-pathway-relevant PAM targets were both covered: MBON27 (`519128`) had
+172 PAM contacts with nearest-PAM median/p90 `208.7 / 420.0`, while MBON26 (`524893`) had 780 with
+`74.4 / 176.5`, in native source coordinates. These are dataset measurements. They do not select a
+biochemical distance radius or alter learning weights, because the release supplies no measured
+spatial diffusion or receptor-response scale.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.
