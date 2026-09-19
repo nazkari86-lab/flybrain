@@ -55,3 +55,30 @@ sources:
     authority: NeLy EPFL
     repository: https://github.com/NeLy-EPFL/flygym
     status: deferred-embodiment
+  - dataset_id: mbon-alpha3-electrophysiology-elife-77578
+    authority: eLife and Europe PMC
+    project_url: https://doi.org/10.7554/eLife.77578
+    supplementary_url: https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10069864/supplementaryFiles
+    license: CC-BY-4.0
+    status: acquired-verified
+    artifacts:
+      - name: mbon-alpha3-egfp-passive-properties
+        bytes: 11391
+        sha256: 0d879607e7d33a1d77917989077e07095e3e6a7f86b71a59a4f520e0439f2f26
+        priority: acquired-verified
+        local_name: mbon-alpha3-elife-77578/elife-77578-table1-data1.xlsx
+      - name: mbon-alpha3-model-morphology-summary
+        bytes: 9729
+        sha256: be7666b00f94fbbed0490b56d503b30e5bc914097ab8bfb6a84b1afd93fd9b80
+        priority: acquired-verified
+        local_name: mbon-alpha3-elife-77578/elife-77578-fig2-data1.xlsx
+  - dataset_id: drosophila-leg-motor-size-principle
+    authority: Azevedo et al. 2020 and Dryad
+    project_url: https://doi.org/10.7554/eLife.56754
+    repository: https://doi.org/10.5061/dryad.76hdr7stb
+    license: CC0-1.0
+    status: article-measurements-only
+    artifacts:
+      - name: full-dryad-package
+        bytes: 48764413973
+        priority: deferred-storage-budget
