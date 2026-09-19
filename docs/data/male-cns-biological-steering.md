@@ -114,6 +114,12 @@ PAM contact. The two motor-pathway-relevant PAM targets were both covered: MBON2
 biochemical distance radius or alter learning weights, because the release supplies no measured
 spatial diffusion or receptor-response scale.
 
+The matching PPL1 audit measured 10,626 contacts across 65 KC-target MBONs, leaving 26 without a
+PPL1 contact. All seven fully signed motor-pathway MBONs declared for PPL1 were covered. Six had
+nearest-PPL1 medians from `154.1` to `508.7`; MBON26 (`524893`) was a clear spatial outlier at
+`1427.2` median and `2343.7` p90 from only 21 PPL1 contacts. This supports keeping PAM and PPL1
+locality separate instead of treating every DAN-to-MBON edge as one interchangeable global trace.
+
 ## Scientific limitations
 
 - Photoreceptor stimulation is hemispheric, not ommatidial or retinotopic.
