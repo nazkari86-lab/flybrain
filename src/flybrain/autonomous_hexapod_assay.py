@@ -53,6 +53,8 @@ class RetainedAutonomousHexapodAssay(BaseModel, frozen=True):
     motor_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     graph_neurons: int = Field(gt=0)
     graph_edges: int = Field(gt=0)
+    appetitive_dan_routes: int = Field(gt=0)
+    aversive_dan_routes: int = Field(gt=0)
     body_steps: int = Field(gt=0)
     seed: int = Field(ge=0)
     software_revision: str = Field(min_length=1)
@@ -97,18 +99,41 @@ def run_retained_autonomous_hexapod_assay(
     graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot))
     binding = bind_manifest_to_graph(graph, manifests["kc_to_mbon"])
     reinforcement = ReinforcementInterface.from_resolved_registry(learning_populations)
-    learning = AssociativeCalibrationConfig.from_manifest(
+    sensory_input_ids = learning_populations.population(
+        "olfactory_sensory"
+    ).neuron_ids
+    shiu_parameters = ShiuParameters(
+        dt_ms=0.1,
+        refractory_ms=2.0,
+        synaptic_delay_ms=1.0,
+    )
+    appetitive_learning = AssociativeCalibrationConfig.from_manifest(
         binding,
         manifests["dan_to_mbon"],
         reinforcement,
         valence="appetitive",
-        sensory_input_ids=learning_populations.population("olfactory_sensory").neuron_ids,
+        sensory_input_ids=sensory_input_ids,
         neural_chunk_steps=100,
-        shiu_parameters=ShiuParameters(
-            dt_ms=0.1,
-            refractory_ms=2.0,
-            synaptic_delay_ms=1.0,
-        ),
+        shiu_parameters=shiu_parameters,
+    )
+    aversive_learning = AssociativeCalibrationConfig.from_manifest(
+        binding,
+        manifests["dan_to_mbon"],
+        reinforcement,
+        valence="aversive",
+        sensory_input_ids=sensory_input_ids,
+        neural_chunk_steps=100,
+        shiu_parameters=shiu_parameters,
+    )
+    learning = appetitive_learning.model_copy(
+        update={
+            "dan_to_mbon_pairs": tuple(
+                sorted(
+                    set(appetitive_learning.dan_to_mbon_pairs)
+                    | set(aversive_learning.dan_to_mbon_pairs)
+                )
+            )
+        }
     )
     backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
     episode = run_autonomous_hexapod_episode(
@@ -137,6 +162,8 @@ def run_retained_autonomous_hexapod_assay(
         motor_registry_sha256=motor_populations.registry_sha256,
         graph_neurons=graph.neuron_count,
         graph_edges=graph.edge_count,
+        appetitive_dan_routes=len(appetitive_learning.dan_to_mbon_pairs),
+        aversive_dan_routes=len(aversive_learning.dan_to_mbon_pairs),
         body_steps=body_steps,
         seed=seed,
         software_revision=_software_revision(),

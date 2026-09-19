@@ -38,6 +38,8 @@ def test_real_cli_atomically_publishes_autonomous_hexapod_artifact(tmp_path: Pat
     assert payload["protocol"] == "retained-autonomous-hexapod-assay-v1"
     assert payload["graph_neurons"] == 166_606
     assert payload["graph_edges"] == 6_240_402
+    assert payload["appetitive_dan_routes"] == 1_211
+    assert payload["aversive_dan_routes"] == 188
     assert payload["episode"]["backend"]["name"] == "reference_hexapod"
     assert payload["episode"]["replay_exact"] is True
     assert payload["episode"]["graph_unchanged"] is True

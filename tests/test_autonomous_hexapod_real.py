@@ -60,13 +60,32 @@ def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:
             synaptic_delay_ms=1.0,
         ),
     )
+    aversive_learning = AssociativeCalibrationConfig.from_manifest(
+        binding,
+        manifests["dan_to_mbon"],
+        reinforcement,
+        valence="aversive",
+        sensory_input_ids=learning_populations.population("olfactory_sensory").neuron_ids,
+        neural_chunk_steps=100,
+        shiu_parameters=learning.shiu_parameters,
+    )
+    bivalent_learning = learning.model_copy(
+        update={
+            "dan_to_mbon_pairs": tuple(
+                sorted(
+                    set(learning.dan_to_mbon_pairs)
+                    | set(aversive_learning.dan_to_mbon_pairs)
+                )
+            )
+        }
+    )
 
     result = run_autonomous_hexapod_episode(
         graph,
         binding,
         AutonomousHexapodConfig(
             body_steps=2,
-            learning=learning,
+            learning=bivalent_learning,
             arena=HexapodArenaConfig(
                 food_position_m=(0.0, 0.0),
                 threat_position_m=(10.0, 10.0),
@@ -91,3 +110,30 @@ def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:
     assert result.proprioceptive_events == 12
     assert len(result.final_multipliers) == 33_496
     assert any(value < 1.0 for value in result.final_multipliers)
+
+    threat_result = run_autonomous_hexapod_episode(
+        graph,
+        binding,
+        AutonomousHexapodConfig(
+            body_steps=2,
+            learning=bivalent_learning,
+            arena=HexapodArenaConfig(
+                food_position_m=(10.0, 10.0),
+                threat_position_m=(0.0, 0.0),
+                contact_radius_m=0.05,
+                odor_length_scale_m=1.0,
+            ),
+            seed=7,
+        ),
+        motor=HexapodMotorMap.from_registry(motor_populations),
+        proprio=ProprioceptiveMap.from_registry(motor_populations),
+        reinforcement=reinforcement,
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert threat_result.replay_exact is True
+    assert threat_result.appetitive_contacts == 0
+    assert threat_result.aversive_contacts == 2
+    assert threat_result.dan_events == 2
+    assert threat_result.motor_spikes > 0
+    assert any(value < 1.0 for value in threat_result.final_multipliers)
