@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import Literal, cast
 
@@ -16,7 +17,11 @@ from flybrain.autonomous_learning_benchmark import (
 )
 from flybrain.conditioning_world import ConditioningSchedule
 from flybrain.graph import EventConnectome
-from flybrain.hexapod_body import HexapodParameters, ReferenceHexapod
+from flybrain.hexapod_backend import (
+    HexapodBackend,
+    ReferenceHexapodBackend,
+)
+from flybrain.hexapod_body import HexapodParameters
 from flybrain.hexapod_motor import (
     HexapodMotorDecoder,
     HexapodMotorMap,
@@ -32,6 +37,8 @@ from flybrain.proprioceptive_interface import (
 )
 from flybrain.reinforcement_interface import AnonymousContact, ReinforcementInterface
 from flybrain.shiu import ShiuState, poisson_voltage_events, simulate_shiu
+
+BackendFactory = Callable[[HexapodParameters], HexapodBackend]
 
 
 class AssociativeMotorCalibrationResult(BaseModel, frozen=True):
@@ -112,6 +119,7 @@ def _run(
     reinforcement: ReinforcementInterface,
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration,
+    backend_factory: BackendFactory,
     motor_silenced: bool,
     proprioceptive_silenced: bool,
 ) -> _LoopTrace:
@@ -152,7 +160,7 @@ def _run(
         dan_post_ids=np.asarray([item[1] for item in learning.dan_to_mbon_pairs], dtype=np.uint64),
         parameters=learning.learning_parameters,
     )
-    body = ReferenceHexapod(body_parameters)
+    body = backend_factory(body_parameters)
     encoder = ProprioceptiveEncoder(proprio, proprioceptive_calibration)
     decoder = HexapodMotorDecoder(motor)
     motor_ids = {neuron_id for group in motor.groups for neuron_id in group.neuron_ids}
@@ -303,6 +311,7 @@ def run_associative_motor_calibration(
     reinforcement: ReinforcementInterface,
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
+    backend_factory: BackendFactory = ReferenceHexapodBackend,
     motor_silenced: bool = False,
     proprioceptive_silenced: bool = False,
 ) -> AssociativeMotorCalibrationResult:
@@ -320,6 +329,7 @@ def run_associative_motor_calibration(
         reinforcement=reinforcement,
         body_parameters=body_parameters,
         proprioceptive_calibration=active_calibration,
+        backend_factory=backend_factory,
         motor_silenced=motor_silenced,
         proprioceptive_silenced=proprioceptive_silenced,
     )
@@ -333,6 +343,7 @@ def run_associative_motor_calibration(
         reinforcement=reinforcement,
         body_parameters=body_parameters,
         proprioceptive_calibration=active_calibration,
+        backend_factory=backend_factory,
         motor_silenced=motor_silenced,
         proprioceptive_silenced=proprioceptive_silenced,
     )
@@ -361,6 +372,7 @@ def run_associative_motor_learning_probe(
     reinforcement: ReinforcementInterface,
     body_parameters: HexapodParameters,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
+    backend_factory: BackendFactory = ReferenceHexapodBackend,
     motor_silenced: bool = False,
     proprioceptive_silenced: bool = False,
 ) -> AssociativeMotorLearningProbeResult:
@@ -390,6 +402,7 @@ def run_associative_motor_learning_probe(
             reinforcement=reinforcement,
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
+            backend_factory=backend_factory,
             motor_silenced=motor_silenced,
             proprioceptive_silenced=proprioceptive_silenced,
         )
@@ -403,6 +416,7 @@ def run_associative_motor_learning_probe(
             reinforcement=reinforcement,
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
+            backend_factory=backend_factory,
             motor_silenced=motor_silenced,
             proprioceptive_silenced=proprioceptive_silenced,
         )
@@ -416,6 +430,7 @@ def run_associative_motor_learning_probe(
             reinforcement=reinforcement,
             body_parameters=body_parameters,
             proprioceptive_calibration=active_calibration,
+            backend_factory=backend_factory,
             motor_silenced=motor_silenced,
             proprioceptive_silenced=proprioceptive_silenced,
         )

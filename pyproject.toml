@@ -24,6 +24,9 @@ dev = [
   "ruff>=0.9",
   "types-PyYAML>=6.0",
 ]
+physics = [
+    "flygym==2.1.0",
+]
 
 [project.scripts]
 flybrain = "flybrain.cli:app"

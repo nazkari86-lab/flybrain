@@ -8,6 +8,7 @@ from flybrain.associative_motor_loop import (
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
 from flybrain.conditioning_world import ConditioningEvent, ConditioningSchedule
 from flybrain.graph import EventConnectome
+from flybrain.hexapod_backend import ReferenceHexapodBackend
 from flybrain.hexapod_body import HexapodParameters
 from flybrain.hexapod_motor import CANONICAL_MOTOR_GROUPS, HexapodMotorMap, MotorGroup
 from flybrain.mushroom_body_learning import MushroomBodyLearningParameters
@@ -103,6 +104,40 @@ def test_associative_motor_loop_closes_neural_motor_body_proprioception_and_repl
     assert 0 < result.sensory_voltage_events < 20
     assert result.proprioceptive_events == 12
     assert result.final_multipliers[0] < 1.0
+
+
+def test_associative_motor_loop_accepts_shared_physics_backend() -> None:
+    kwargs = dict(
+        learning=AssociativeCalibrationConfig(
+            cue_ids=(10,),
+            mbon_ids=(20,),
+            dan_to_mbon_pairs=((30, 20),),
+            input_mode="direct_kc",
+            neural_chunk_steps=20,
+            shiu_parameters=ShiuParameters(
+                dt_ms=0.5,
+                refractory_ms=2.0,
+                synaptic_delay_ms=1.0,
+            ),
+        ),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        schedule=ConditioningSchedule.create(seed=7, steps=2, appetitive_pair_steps=(0,)),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    original = run_associative_motor_calibration(graph(), binding(), **kwargs)
+    abstracted = run_associative_motor_calibration(
+        graph(),
+        binding(),
+        backend_factory=ReferenceHexapodBackend,
+        **kwargs,
+    )
+
+    assert abstracted == original
 
 
 def test_motor_lesion_removes_only_motor_spikes_from_closed_loop() -> None:
