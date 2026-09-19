@@ -212,6 +212,7 @@ def _run(
     proprioceptive_calibration: ProprioceptiveCalibration,
     perturbation: BodyPerturbation,
     dan_enabled: bool,
+    plasticity_enabled: bool,
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -443,13 +444,14 @@ def _run(
         )
         dan_events += int(bool(recruitment.dan_ids))
         fired = np.asarray(fired_ids, dtype=np.uint64)
-        learner.step(
-            active_kc_ids=fired[np.isin(fired, binding.pre_ids)],
-            active_mbon_ids=fired[np.isin(fired, binding.post_ids)],
-            routed_dan_ids=np.asarray(recruitment.dan_ids, dtype=np.uint64),
-            dt_ms=learning.neural_chunk_steps * learning.shiu_parameters.dt_ms,
-        )
-        if slow_state is not None:
+        if plasticity_enabled:
+            learner.step(
+                active_kc_ids=fired[np.isin(fired, binding.pre_ids)],
+                active_mbon_ids=fired[np.isin(fired, binding.post_ids)],
+                routed_dan_ids=np.asarray(recruitment.dan_ids, dtype=np.uint64),
+                dt_ms=learning.neural_chunk_steps * learning.shiu_parameters.dt_ms,
+            )
+        if slow_state is not None and plasticity_enabled:
             routed_dans = set(recruitment.dan_ids)
             routed_posts = np.asarray(
                 [
@@ -526,6 +528,7 @@ def run_autonomous_hexapod_episode(
     replay: bool = True,
     mutate_binding: bool = False,
     dan_enabled: bool = True,
+    plasticity_enabled: bool = True,
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
@@ -546,6 +549,7 @@ def run_autonomous_hexapod_episode(
         proprioceptive_calibration=calibration,
         perturbation=active_perturbation,
         dan_enabled=dan_enabled,
+        plasticity_enabled=plasticity_enabled,
     )
     replay_trace = first
     if replay:
@@ -561,6 +565,7 @@ def run_autonomous_hexapod_episode(
             proprioceptive_calibration=calibration,
             perturbation=active_perturbation,
             dan_enabled=dan_enabled,
+            plasticity_enabled=plasticity_enabled,
         )
     return AutonomousHexapodResult(
         tactile_contact_model=(

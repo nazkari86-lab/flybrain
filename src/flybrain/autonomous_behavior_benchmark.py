@@ -176,6 +176,7 @@ def _run_condition(
             mutate_binding=not holdout,
             replay=False,
             dan_enabled=condition_binding.dan_enabled,
+            plasticity_enabled=condition_binding.plasticity_enabled,
             perturbation=variant.perturbation,
         )
         if holdout:

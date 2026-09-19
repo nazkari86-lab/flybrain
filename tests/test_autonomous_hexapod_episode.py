@@ -68,6 +68,28 @@ def test_contact_driven_hexapod_closes_learning_motor_body_feedback_loop() -> No
     assert result.autonomous_behavior_claim_allowed is False
 
 
+def test_disabled_plasticity_keeps_the_live_overlay_at_its_initial_values() -> None:
+    live_binding = binding()
+
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        live_binding,
+        config(),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        mutate_binding=True,
+        plasticity_enabled=False,
+    )
+
+    assert result.dan_events == 2
+    assert result.final_multipliers == (1.0,)
+    assert tuple(live_binding.overlay.multipliers) == (1.0,)
+
+
 def test_physical_contact_gates_registered_tactile_inputs() -> None:
     tactile_config = config().model_copy(update={"tactile_contact_input_ids": (1,)})
     result = run_autonomous_hexapod_episode(

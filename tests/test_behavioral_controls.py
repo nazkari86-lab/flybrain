@@ -46,3 +46,19 @@ def test_controls_have_expected_effects() -> None:
     assert no_plasticity.overlay.multipliers.tolist() == [1.0, 1.0, 1.0]
     assert kc_lesion.overlay.multipliers.tolist() == [0.0, 0.0, 0.0]
     assert dan_lesion.dan_enabled is False
+
+
+def test_controls_declare_whether_their_overlay_may_learn() -> None:
+    original = binding()
+
+    normal = build_condition("normal", original, learning(), seed=7)
+    no_plasticity = build_condition("no_plasticity", original, learning(), seed=7)
+    dan_lesion = build_condition("dan_lesion", original, learning(), seed=7)
+    kc_lesion = build_condition("kc_mbon_lesion", original, learning(), seed=7)
+    route_permutation = build_condition("rewired_control", original, learning(), seed=7)
+
+    assert normal.plasticity_enabled is True
+    assert no_plasticity.plasticity_enabled is False
+    assert dan_lesion.plasticity_enabled is True
+    assert kc_lesion.plasticity_enabled is False
+    assert route_permutation.plasticity_enabled is True
