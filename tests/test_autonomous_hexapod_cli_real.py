@@ -44,6 +44,10 @@ def test_real_cli_atomically_publishes_autonomous_hexapod_artifact(tmp_path: Pat
     assert payload["episode"]["replay_exact"] is True
     assert payload["episode"]["graph_unchanged"] is True
     assert payload["episode"]["motor_spikes"] > 0
+    assert payload["episode"]["slow_memory_enabled"] is True
+    assert payload["episode"]["slow_memory_edges"] == 10_952
+    assert payload["episode"]["slow_memory_dopamine_effect_max"] > 0.0
+    assert payload["episode"]["slow_memory_nitric_oxide_effect_max"] > 0.0
     assert payload["episode"]["final_multipliers"]
     assert payload["software_revision"]
     assert payload["runtime_seconds"] > 0

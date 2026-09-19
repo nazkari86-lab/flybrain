@@ -21,6 +21,7 @@ from flybrain.plastic_edge_registry import resolve_plastic_edge_manifests
 from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.shiu import ShiuParameters
+from flybrain.slow_memory import resolve_nitric_oxide_dans
 
 LEARNING_REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
 MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
@@ -93,6 +94,7 @@ def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:
                 odor_length_scale_m=1.0,
             ),
             seed=7,
+            nitric_oxide_dan_ids=resolve_nitric_oxide_dans(snapshot).all_ids,
         ),
         motor=HexapodMotorMap.from_registry(motor_populations),
         proprio=ProprioceptiveMap.from_registry(motor_populations),
@@ -108,6 +110,10 @@ def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:
     assert result.dan_events == 2
     assert result.motor_spikes > 0
     assert result.proprioceptive_events == 12
+    assert result.slow_memory_enabled is True
+    assert result.slow_memory_edges == 10_952
+    assert result.slow_memory_dopamine_effect_max > 0.0
+    assert result.slow_memory_nitric_oxide_effect_max > 0.0
     assert len(result.final_multipliers) == 33_496
     assert any(value < 1.0 for value in result.final_multipliers)
 
@@ -124,6 +130,7 @@ def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:
                 odor_length_scale_m=1.0,
             ),
             seed=7,
+            nitric_oxide_dan_ids=resolve_nitric_oxide_dans(snapshot).all_ids,
         ),
         motor=HexapodMotorMap.from_registry(motor_populations),
         proprio=ProprioceptiveMap.from_registry(motor_populations),

@@ -8,6 +8,9 @@ propagates activity, exact KC-to-MBON edges use a sparse local plastic overlay, 
 populations drive the six-leg backend, and body state returns through six exact proprioceptive
 banks. Food or threat identity exists only inside the collision boundary that recruits declared
 PAM/PPL DANs; it is never emitted as a reward, target coordinate, desired action, or body command.
+Measured PPL101/PAM01 nitric-oxide competence adds distinct Aso et al. 2019 fast dopamine and slow
+NO effect traces only to KC-to-MBON edges reached by those registered DAN routes. These traces stay
+in a mutable overlay; canonical graph weights and sign-zero DAN routing are never rewritten.
 
 ## Reproduction
 
@@ -49,11 +52,15 @@ the snapshot are rejected.
 - reference backend: 7 motor spikes across 4 of 24 motor groups;
 - physical appetitive contacts: 2 of 2 body steps;
 - routed DAN events: 2 of 2 body steps;
+- resolved NO-competent DANs: 46 PPL101/PAM01 neurons;
+- slow-memory scope: 10,952 unique KC-to-MBON edges reached by NO-competent DAN routes;
+- maximum two-step dopamine effect: 7.160399069375233e-07;
+- maximum two-step nitric-oxide effect: 7.998822338166445e-09;
 - proprioceptive events: 12, one event per leg and body step;
 - changed KC-to-MBON multipliers: 10,552;
 - graph unchanged: true;
 - exact replay: true;
-- reference runtime: 7.38 seconds on the retained local host;
+- reference runtime: 9.95 seconds on the retained local host with slow memory enabled;
 - FlyGym retained smoke: exact replay, unchanged graph, 7 motor spikes, 4 active groups, 2 physical
   contacts, and 2 DAN events;
 - 18-joint reference/FlyGym torque intervention: all 18 response directions matched without

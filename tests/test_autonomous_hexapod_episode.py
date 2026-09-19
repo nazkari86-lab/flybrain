@@ -67,6 +67,40 @@ def test_contact_driven_hexapod_closes_learning_motor_body_feedback_loop() -> No
     assert result.autonomous_behavior_claim_allowed is False
 
 
+def test_contact_driven_episode_integrates_local_slow_dan_no_memory() -> None:
+    baseline = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        config(),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+    slow_config = config().model_copy(update={"nitric_oxide_dan_ids": (30,)})
+
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        slow_config,
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert result.replay_exact is True
+    assert result.slow_memory_enabled is True
+    assert result.slow_memory_edges == 1
+    assert result.slow_memory_dopamine_effect_max > 0.0
+    assert result.slow_memory_nitric_oxide_effect_max > 0.0
+    assert result.final_multipliers != baseline.final_multipliers
+
+
 def test_autonomous_hexapod_contract_has_no_schedule_reward_or_target_output() -> None:
     result = run_autonomous_hexapod_episode(
         graph(),

@@ -33,6 +33,7 @@ from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.provenance import snapshot_content_sha256
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.shiu import ShiuParameters
+from flybrain.slow_memory import resolve_nitric_oxide_dans
 
 DEFAULT_LEARNING_REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
 DEFAULT_MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
@@ -135,6 +136,7 @@ def run_retained_autonomous_hexapod_assay(
             )
         }
     )
+    nitric_oxide_dans = resolve_nitric_oxide_dans(snapshot)
     backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
     episode = run_autonomous_hexapod_episode(
         graph,
@@ -149,6 +151,7 @@ def run_retained_autonomous_hexapod_assay(
                 odor_length_scale_m=1.0,
             ),
             seed=seed,
+            nitric_oxide_dan_ids=nitric_oxide_dans.all_ids,
         ),
         motor=HexapodMotorMap.from_registry(motor_populations),
         proprio=ProprioceptiveMap.from_registry(motor_populations),

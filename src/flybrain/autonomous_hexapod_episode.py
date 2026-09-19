@@ -29,6 +29,7 @@ from flybrain.proprioceptive_interface import (
 )
 from flybrain.reinforcement_interface import AnonymousContact, ReinforcementInterface
 from flybrain.shiu import ShiuState, poisson_voltage_events, simulate_shiu
+from flybrain.slow_memory import SlowMemoryParameters, SlowMemoryState
 
 
 class HexapodArenaConfig(BaseModel, frozen=True):
@@ -63,6 +64,10 @@ class AutonomousHexapodConfig(BaseModel, frozen=True):
     learning: AssociativeCalibrationConfig
     arena: HexapodArenaConfig
     seed: int = Field(ge=0)
+    nitric_oxide_dan_ids: tuple[int, ...] = ()
+    slow_memory_parameters: SlowMemoryParameters = Field(
+        default_factory=SlowMemoryParameters
+    )
 
     @model_validator(mode="after")
     def validate_sensory_path(self) -> Self:
@@ -70,6 +75,11 @@ class AutonomousHexapodConfig(BaseModel, frozen=True):
             raise ValueError("autonomous hexapod requires the canonical sensory path")
         if not self.learning.sensory_input_ids:
             raise ValueError("autonomous hexapod requires declared sensory input IDs")
+        if any(neuron_id <= 0 for neuron_id in self.nitric_oxide_dan_ids):
+            raise ValueError("nitric-oxide DAN IDs must be positive")
+        if len(set(self.nitric_oxide_dan_ids)) != len(self.nitric_oxide_dan_ids):
+            raise ValueError("nitric-oxide DAN IDs must be unique")
+        self.slow_memory_parameters.validate()
         return self
 
 
@@ -95,6 +105,10 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     active_motor_groups: int = Field(ge=0, le=24)
     all_motor_groups_active: bool
     proprioceptive_events: int = Field(ge=0)
+    slow_memory_enabled: bool
+    slow_memory_edges: int = Field(ge=0)
+    slow_memory_dopamine_effect_max: float = Field(ge=0.0, le=1.0)
+    slow_memory_nitric_oxide_effect_max: float = Field(ge=0.0, le=1.0)
     final_multipliers: tuple[float, ...]
     final_body: HexapodBody
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -109,6 +123,10 @@ class _Trace:
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
+    slow_memory_enabled: bool
+    slow_memory_edges: int
+    slow_memory_dopamine_effect_max: float
+    slow_memory_nitric_oxide_effect_max: float
     final_multipliers: tuple[float, ...]
     final_body: HexapodBody
     body_digest: str
@@ -192,7 +210,11 @@ def _run(
         seed=config.seed,
     )
     learner = MushroomBodyLearning(
-        overlay=binding.overlay,
+        overlay=(
+            binding.overlay.copy()
+            if config.nitric_oxide_dan_ids
+            else binding.overlay
+        ),
         edge_pre_ids=binding.pre_ids,
         edge_post_ids=binding.post_ids,
         dan_ids=np.asarray([item[0] for item in learning.dan_to_mbon_pairs], dtype=np.uint64),
@@ -201,6 +223,23 @@ def _run(
         ),
         parameters=learning.learning_parameters,
     )
+    slow_state: SlowMemoryState | None = None
+    if config.nitric_oxide_dan_ids:
+        no_dan_ids = set(config.nitric_oxide_dan_ids)
+        no_target_ids = np.asarray(
+            [
+                post_id
+                for dan_id, post_id in learning.dan_to_mbon_pairs
+                if dan_id in no_dan_ids
+            ],
+            dtype=np.uint64,
+        )
+        competent = np.isin(binding.post_ids, no_target_ids)
+        if not np.any(competent):
+            raise ValueError(
+                "nitric-oxide DANs do not route to any bound KC-to-MBON edge"
+            )
+        slow_state = SlowMemoryState.initial(nitric_oxide_competent=competent)
     backend = backend_factory(body_parameters)
     decoder = HexapodMotorDecoder(motor)
     proprio_encoder = ProprioceptiveEncoder(proprio, proprioceptive_calibration)
@@ -309,7 +348,40 @@ def _run(
             routed_dan_ids=np.asarray(recruitment.dan_ids, dtype=np.uint64),
             dt_ms=learning.neural_chunk_steps * learning.shiu_parameters.dt_ms,
         )
+        if slow_state is not None:
+            routed_dans = set(recruitment.dan_ids)
+            routed_posts = np.asarray(
+                [
+                    post_id
+                    for dan_id, post_id in learning.dan_to_mbon_pairs
+                    if dan_id in routed_dans
+                ],
+                dtype=np.uint64,
+            )
+            active_kc_edges = np.isin(binding.pre_ids, fired)
+            routed_edges = np.isin(binding.post_ids, routed_posts)
+            slow_state.step(
+                paired=active_kc_edges & routed_edges,
+                dan_unpaired=(~active_kc_edges) & routed_edges,
+                dt_seconds=neural_window_s,
+                parameters=config.slow_memory_parameters,
+            )
+            slow_multipliers = np.asarray(
+                learner.overlay.multipliers * slow_state.weight_multipliers,
+                dtype=np.float32,
+            )
+            binding.overlay.set_multipliers(
+                slow_multipliers,
+                minimum=0.0,
+                maximum=2.0,
+            )
     final_body = backend.observe()
+    dopamine_effect_max = (
+        float(np.max(slow_state.dopamine_effect)) if slow_state is not None else 0.0
+    )
+    nitric_oxide_effect_max = (
+        float(np.max(slow_state.nitric_oxide_effect)) if slow_state is not None else 0.0
+    )
     return _Trace(
         backend=backend.identity,
         appetitive_contacts=appetitive_contacts,
@@ -318,6 +390,14 @@ def _run(
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
+        slow_memory_enabled=slow_state is not None,
+        slow_memory_edges=(
+            int(np.count_nonzero(slow_state.nitric_oxide_competent))
+            if slow_state is not None
+            else 0
+        ),
+        slow_memory_dopamine_effect_max=dopamine_effect_max,
+        slow_memory_nitric_oxide_effect_max=nitric_oxide_effect_max,
         final_multipliers=tuple(float(value) for value in binding.overlay.multipliers),
         final_body=final_body,
         body_digest=hashlib.sha256(repr(body_trace).encode("utf-8")).hexdigest(),
@@ -375,6 +455,12 @@ def run_autonomous_hexapod_episode(
         active_motor_groups=len(first.active_motor_groups),
         all_motor_groups_active=len(first.active_motor_groups) == 24,
         proprioceptive_events=first.proprioceptive_events,
+        slow_memory_enabled=first.slow_memory_enabled,
+        slow_memory_edges=first.slow_memory_edges,
+        slow_memory_dopamine_effect_max=first.slow_memory_dopamine_effect_max,
+        slow_memory_nitric_oxide_effect_max=(
+            first.slow_memory_nitric_oxide_effect_max
+        ),
         final_multipliers=first.final_multipliers,
         final_body=first.final_body,
         trace_digest=first.digest,
