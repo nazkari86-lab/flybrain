@@ -28,6 +28,24 @@ class BodyPerturbation(BaseModel, frozen=True):
         return self
 
 
+class BehaviorVariant(BaseModel, frozen=True):
+    """One deterministic world variant used for training or holdout evaluation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    food_position_m: tuple[float, float]
+    threat_position_m: tuple[float, float]
+    perturbation: BodyPerturbation = BodyPerturbation()
+
+    @model_validator(mode="after")
+    def validate_positions(self) -> Self:
+        values = (*self.food_position_m, *self.threat_position_m)
+        if any(not isinstance(value, (int, float)) for value in values):
+            raise ValueError("behavior positions must be numeric")
+        return self
+
+
 def apply_perturbation(
     parameters: HexapodParameters,
     perturbation: BodyPerturbation,

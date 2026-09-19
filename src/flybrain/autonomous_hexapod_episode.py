@@ -194,6 +194,7 @@ def _run(
     backend_factory: BackendFactory,
     proprioceptive_calibration: ProprioceptiveCalibration,
     perturbation: BodyPerturbation,
+    dan_enabled: bool,
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -375,11 +376,15 @@ def _run(
             and not threat_contact
         ):
             time_to_clear_threat_steps = step_index - first_threat_contact_step
-        recruitment = reinforcement.recruit(
-            AnonymousContact(
-                appetitive_intensity=1.0 if food_contact else 0.0,
-                aversive_intensity=1.0 if threat_contact else 0.0,
+        recruitment = (
+            reinforcement.recruit(
+                AnonymousContact(
+                    appetitive_intensity=1.0 if food_contact else 0.0,
+                    aversive_intensity=1.0 if threat_contact else 0.0,
+                )
             )
+            if dan_enabled
+            else reinforcement.recruit(AnonymousContact())
         )
         dan_events += int(bool(recruitment.dan_ids))
         fired = np.asarray(fired_ids, dtype=np.uint64)
@@ -462,6 +467,9 @@ def run_autonomous_hexapod_episode(
     backend_factory: BackendFactory = ReferenceHexapodBackend,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
     perturbation: BodyPerturbation | None = None,
+    replay: bool = True,
+    mutate_binding: bool = False,
+    dan_enabled: bool = True,
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
@@ -469,9 +477,10 @@ def run_autonomous_hexapod_episode(
     calibration = proprioceptive_calibration or ProprioceptiveCalibration()
     active_perturbation = perturbation or BodyPerturbation()
     active_parameters = apply_perturbation(body_parameters, active_perturbation)
+    first_binding = binding if mutate_binding else _clone_binding(binding)
     first = _run(
         graph,
-        _clone_binding(binding),
+        first_binding,
         config,
         motor=motor,
         proprio=proprio,
@@ -480,22 +489,26 @@ def run_autonomous_hexapod_episode(
         backend_factory=backend_factory,
         proprioceptive_calibration=calibration,
         perturbation=active_perturbation,
+        dan_enabled=dan_enabled,
     )
-    replay = _run(
-        graph,
-        _clone_binding(binding),
-        config,
-        motor=motor,
-        proprio=proprio,
-        reinforcement=reinforcement,
-        body_parameters=active_parameters,
-        backend_factory=backend_factory,
-        proprioceptive_calibration=calibration,
-        perturbation=active_perturbation,
-    )
+    replay_trace = first
+    if replay:
+        replay_trace = _run(
+            graph,
+            _clone_binding(binding),
+            config,
+            motor=motor,
+            proprio=proprio,
+            reinforcement=reinforcement,
+            body_parameters=active_parameters,
+            backend_factory=backend_factory,
+            proprioceptive_calibration=calibration,
+            perturbation=active_perturbation,
+            dan_enabled=dan_enabled,
+        )
     return AutonomousHexapodResult(
         backend=first.backend,
-        replay_exact=first == replay,
+        replay_exact=first == replay_trace,
         graph_unchanged=_graph_digest(graph) == before,
         body_steps=config.body_steps,
         neural_steps=config.body_steps * config.learning.neural_chunk_steps,
