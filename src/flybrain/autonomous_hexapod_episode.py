@@ -66,6 +66,7 @@ class AutonomousHexapodConfig(BaseModel, frozen=True):
     arena: HexapodArenaConfig
     seed: int = Field(ge=0)
     nitric_oxide_dan_ids: tuple[int, ...] = ()
+    tactile_contact_input_ids: tuple[int, ...] = ()
     slow_memory_parameters: SlowMemoryParameters = Field(
         default_factory=SlowMemoryParameters
     )
@@ -80,6 +81,10 @@ class AutonomousHexapodConfig(BaseModel, frozen=True):
             raise ValueError("nitric-oxide DAN IDs must be positive")
         if len(set(self.nitric_oxide_dan_ids)) != len(self.nitric_oxide_dan_ids):
             raise ValueError("nitric-oxide DAN IDs must be unique")
+        if any(neuron_id <= 0 for neuron_id in self.tactile_contact_input_ids):
+            raise ValueError("tactile-contact IDs must be positive")
+        if len(set(self.tactile_contact_input_ids)) != len(self.tactile_contact_input_ids):
+            raise ValueError("tactile-contact IDs must be unique")
         self.slow_memory_parameters.validate()
         return self
 
@@ -96,6 +101,9 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     odor_channel_model: Literal["bipartite_registered_olfactory_assumption"] = (
         "bipartite_registered_olfactory_assumption"
     )
+    tactile_contact_model: Literal[
+        "none", "uniform_registered_vnc_tactile_assumption"
+    ]
     autonomous_behavior_claim_allowed: Literal[False] = False
     backend: BackendIdentity
     replay_exact: bool
@@ -109,6 +117,7 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     active_motor_groups: int = Field(ge=0, le=24)
     all_motor_groups_active: bool
     proprioceptive_events: int = Field(ge=0)
+    tactile_contact_events: int = Field(ge=0)
     slow_memory_enabled: bool
     slow_memory_edges: int = Field(ge=0)
     slow_memory_dopamine_effect_max: float = Field(ge=0.0, le=1.0)
@@ -132,6 +141,7 @@ class _Trace:
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
+    tactile_contact_events: int
     slow_memory_enabled: bool
     slow_memory_edges: int
     slow_memory_dopamine_effect_max: float
@@ -220,6 +230,7 @@ def _run(
         *(post for _, post in learning.dan_to_mbon_pairs),
         *binding.pre_ids.tolist(),
         *binding.post_ids.tolist(),
+        *config.tactile_contact_input_ids,
     }
     missing = sorted(required - set(index_by_id))
     if missing:
@@ -268,12 +279,16 @@ def _run(
     )
     food_source_indices = source_indices[::2]
     threat_source_indices = source_indices[1::2]
+    tactile_source_indices = np.asarray(
+        [index_by_id[item] for item in config.tactile_contact_input_ids], dtype=np.int64
+    )
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
     motor_spikes = 0
     active_groups: set[str] = set()
     proprioceptive_events = 0
+    tactile_contact_events = 0
     appetitive_contacts = 0
     aversive_contacts = 0
     dan_events = 0
@@ -314,6 +329,24 @@ def _run(
             scheduled.setdefault(state.step + relative_step, []).extend(
                 zip(indices.tolist(), voltages.tolist(), strict=True)
             )
+        physical_contact = (
+            _distance(body, config.arena.food_position_m) <= config.arena.contact_radius_m
+            or _distance(body, config.arena.threat_position_m) <= config.arena.contact_radius_m
+        )
+        if physical_contact and tactile_source_indices.size:
+            tactile_events = poisson_voltage_events(
+                tactile_source_indices,
+                steps=learning.neural_chunk_steps,
+                params=learning.shiu_parameters,
+                seed=config.seed + state.step + 2_000_006,
+            )
+            tactile_contact_events += sum(
+                len(indices) for indices, _ in tactile_events.values()
+            )
+            for relative_step, (indices, voltages) in tactile_events.items():
+                scheduled.setdefault(state.step + relative_step, []).extend(
+                    zip(indices.tolist(), voltages.tolist(), strict=True)
+                )
         proprio_events = proprio_encoder.encode(
             observe_proprioception(body, body_parameters, proprioceptive_calibration),
             step=state.step,
@@ -458,6 +491,7 @@ def _run(
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
+        tactile_contact_events=tactile_contact_events,
         slow_memory_enabled=slow_state is not None,
         slow_memory_edges=(
             int(np.count_nonzero(slow_state.nitric_oxide_competent))
@@ -529,6 +563,11 @@ def run_autonomous_hexapod_episode(
             dan_enabled=dan_enabled,
         )
     return AutonomousHexapodResult(
+        tactile_contact_model=(
+            "uniform_registered_vnc_tactile_assumption"
+            if config.tactile_contact_input_ids
+            else "none"
+        ),
         backend=first.backend,
         replay_exact=first == replay_trace,
         graph_unchanged=_graph_digest(graph) == before,
@@ -541,6 +580,7 @@ def run_autonomous_hexapod_episode(
         active_motor_groups=len(first.active_motor_groups),
         all_motor_groups_active=len(first.active_motor_groups) == 24,
         proprioceptive_events=first.proprioceptive_events,
+        tactile_contact_events=first.tactile_contact_events,
         slow_memory_enabled=first.slow_memory_enabled,
         slow_memory_edges=first.slow_memory_edges,
         slow_memory_dopamine_effect_max=first.slow_memory_dopamine_effect_max,

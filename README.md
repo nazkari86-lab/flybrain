@@ -184,6 +184,12 @@ dopamine and slow nitric-oxide traces, all 24 motor groups remain available to t
 six-bank proprioception returns body state to the graph. No reward scalar, target coordinate,
 desired action, or hidden policy enters the controller.
 
+Physical contact also drives only the 2,558 exact `vnc_sensory` / `mechanosensory_tactile` bodies
+resolved from the biological-interface registry. Because the retained annotations do not yet map
+each body-surface point to individual tactile neurons, their uniform source-event assignment is
+recorded as `uniform_registered_vnc_tactile_assumption` in every episode artifact. It is a contact
+reflex input, not a claim of learned threat avoidance.
+
 ```bash
 uv sync --extra dev --extra physics
 uv run --extra physics flybrain experiment autonomous-hexapod \

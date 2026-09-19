@@ -8,6 +8,11 @@ propagates activity, exact KC-to-MBON edges use a sparse local plastic overlay, 
 populations drive the six-leg backend, and body state returns through six exact proprioceptive
 banks. Food or threat identity exists only inside the collision boundary that recruits declared
 PAM/PPL DANs; it is never emitted as a reward, target coordinate, desired action, or body command.
+At any physical contact, a separate source-event stream reaches only the 2,558 bodies resolved as
+`superclass=vnc_sensory`, `class=mechanosensory_tactile`. The retained annotation has no
+body-surface-to-neuron receptive-field map, so the current equal unlabelled assignment is explicitly
+serialized as `uniform_registered_vnc_tactile_assumption`; it does not expose an object label or a
+movement instruction.
 Measured PPL101/PAM01 nitric-oxide competence adds distinct Aso et al. 2019 fast dopamine and slow
 NO effect traces only to KC-to-MBON edges reached by those registered DAN routes. These traces stay
 in a mutable overlay; canonical graph weights and sign-zero DAN routing are never rewritten.

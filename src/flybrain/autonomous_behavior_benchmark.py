@@ -51,6 +51,7 @@ class BehaviorBenchmarkConfig(BaseModel, frozen=True):
     holdout_variants: tuple[BehaviorVariant, ...]
     controls: tuple[ControlCondition, ...] = CONDITIONS[1:]
     nitric_oxide_dan_ids: tuple[int, ...] = ()
+    tactile_contact_input_ids: tuple[int, ...] = ()
 
     @model_validator(mode="after")
     def validate_benchmark(self) -> BehaviorBenchmarkConfig:
@@ -62,6 +63,10 @@ class BehaviorBenchmarkConfig(BaseModel, frozen=True):
             raise ValueError("benchmark controls must be unique")
         if any(condition not in CONDITIONS[1:] for condition in self.controls):
             raise ValueError("benchmark controls must be explicit non-normal conditions")
+        if any(neuron_id <= 0 for neuron_id in self.tactile_contact_input_ids):
+            raise ValueError("tactile-contact IDs must be positive")
+        if len(set(self.tactile_contact_input_ids)) != len(self.tactile_contact_input_ids):
+            raise ValueError("tactile-contact IDs must be unique")
         return self
 
 
@@ -157,6 +162,7 @@ def _run_condition(
                 ),
                 seed=seed,
                 nitric_oxide_dan_ids=config.nitric_oxide_dan_ids,
+                tactile_contact_input_ids=config.tactile_contact_input_ids,
             ),
             motor=motor,
             proprio=proprio,

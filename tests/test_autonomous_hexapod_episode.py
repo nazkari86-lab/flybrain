@@ -68,6 +68,44 @@ def test_contact_driven_hexapod_closes_learning_motor_body_feedback_loop() -> No
     assert result.autonomous_behavior_claim_allowed is False
 
 
+def test_physical_contact_gates_registered_tactile_inputs() -> None:
+    tactile_config = config().model_copy(update={"tactile_contact_input_ids": (1,)})
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        tactile_config,
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert result.tactile_contact_events > 0
+    assert result.autonomous_behavior_claim_allowed is False
+
+    no_contact = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        tactile_config.model_copy(
+            update={
+                "arena": tactile_config.arena.model_copy(
+                    update={"food_position_m": (10.0, 10.0)}
+                )
+            }
+        ),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert no_contact.tactile_contact_events == 0
+
+
 def test_contact_driven_episode_integrates_local_slow_dan_no_memory() -> None:
     baseline = run_autonomous_hexapod_episode(
         graph(),

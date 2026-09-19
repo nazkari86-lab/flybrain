@@ -43,6 +43,7 @@ from flybrain.slow_memory import resolve_nitric_oxide_dans
 
 DEFAULT_LEARNING_REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
 DEFAULT_MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
+DEFAULT_INTERFACE_REGISTRY = Path("data/registry/biological-interface-registry-v1.json")
 
 
 class RetainedAutonomousHexapodAssay(BaseModel, frozen=True):
@@ -58,6 +59,7 @@ class RetainedAutonomousHexapodAssay(BaseModel, frozen=True):
     snapshot_content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     learning_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     motor_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    interface_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     graph_neurons: int = Field(gt=0)
     graph_edges: int = Field(gt=0)
     appetitive_dan_routes: int = Field(gt=0)
@@ -81,6 +83,7 @@ class RetainedAutonomousBehaviorBenchmark(BaseModel, frozen=True):
     snapshot_content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     learning_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     motor_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    interface_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     graph_neurons: int = Field(gt=0)
     graph_edges: int = Field(gt=0)
     training_episodes: int = Field(gt=0)
@@ -102,6 +105,7 @@ def run_retained_autonomous_hexapod_assay(
     *,
     learning_registry_path: Path = DEFAULT_LEARNING_REGISTRY,
     motor_registry_path: Path = DEFAULT_MOTOR_REGISTRY,
+    interface_registry_path: Path = DEFAULT_INTERFACE_REGISTRY,
     backend: Literal["reference", "flygym"] = "reference",
     body_steps: int = 2,
     seed: int = 7,
@@ -115,8 +119,10 @@ def run_retained_autonomous_hexapod_assay(
     started = time.perf_counter()
     learning_registry = load_biological_registry(learning_registry_path)
     motor_registry = load_biological_registry(motor_registry_path)
+    interface_registry = load_biological_registry(interface_registry_path)
     learning_populations = resolve_biological_registry(learning_registry, snapshot)
     motor_populations = resolve_biological_registry(motor_registry, snapshot)
+    interface_populations = resolve_biological_registry(interface_registry, snapshot)
     manifests = {
         manifest.name: manifest
         for manifest in resolve_plastic_edge_manifests(
@@ -180,6 +186,9 @@ def run_retained_autonomous_hexapod_assay(
             ),
             seed=seed,
             nitric_oxide_dan_ids=nitric_oxide_dans.all_ids,
+            tactile_contact_input_ids=interface_populations.population(
+                "tactile_vnc"
+            ).neuron_ids,
         ),
         motor=HexapodMotorMap.from_registry(motor_populations),
         proprio=ProprioceptiveMap.from_registry(motor_populations),
@@ -191,6 +200,7 @@ def run_retained_autonomous_hexapod_assay(
         snapshot_content_sha256=snapshot_content_sha256(snapshot),
         learning_registry_sha256=learning_populations.registry_sha256,
         motor_registry_sha256=motor_populations.registry_sha256,
+        interface_registry_sha256=interface_populations.registry_sha256,
         graph_neurons=graph.neuron_count,
         graph_edges=graph.edge_count,
         appetitive_dan_routes=len(appetitive_learning.dan_to_mbon_pairs),
@@ -209,6 +219,7 @@ def run_retained_autonomous_behavior_benchmark(
     *,
     learning_registry_path: Path = DEFAULT_LEARNING_REGISTRY,
     motor_registry_path: Path = DEFAULT_MOTOR_REGISTRY,
+    interface_registry_path: Path = DEFAULT_INTERFACE_REGISTRY,
     backend: Literal["reference", "flygym"] = "reference",
     training_episodes: int = 1,
     holdout_episodes: int = 1,
@@ -226,8 +237,10 @@ def run_retained_autonomous_behavior_benchmark(
     started = time.perf_counter()
     learning_registry = load_biological_registry(learning_registry_path)
     motor_registry = load_biological_registry(motor_registry_path)
+    interface_registry = load_biological_registry(interface_registry_path)
     learning_populations = resolve_biological_registry(learning_registry, snapshot)
     motor_populations = resolve_biological_registry(motor_registry, snapshot)
+    interface_populations = resolve_biological_registry(interface_registry, snapshot)
     manifests = {
         manifest.name: manifest
         for manifest in resolve_plastic_edge_manifests(
@@ -290,6 +303,7 @@ def run_retained_autonomous_behavior_benchmark(
         training_variants=(variant,),
         holdout_variants=(holdout, threat_holdout),
         nitric_oxide_dan_ids=no_dans.all_ids,
+        tactile_contact_input_ids=interface_populations.population("tactile_vnc").neuron_ids,
     )
     backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
     benchmark = run_behavior_benchmark(
@@ -307,6 +321,7 @@ def run_retained_autonomous_behavior_benchmark(
         snapshot_content_sha256=snapshot_content_sha256(snapshot),
         learning_registry_sha256=learning_populations.registry_sha256,
         motor_registry_sha256=motor_populations.registry_sha256,
+        interface_registry_sha256=interface_populations.registry_sha256,
         graph_neurons=graph.neuron_count,
         graph_edges=graph.edge_count,
         training_episodes=training_episodes,
