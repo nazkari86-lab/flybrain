@@ -85,7 +85,7 @@ class RetainedAutonomousBehaviorBenchmark(BaseModel, frozen=True):
     graph_edges: int = Field(gt=0)
     training_episodes: int = Field(gt=0)
     holdout_episodes: int = Field(gt=0)
-    seed: int = Field(ge=0)
+    seeds: tuple[int, ...]
     software_revision: str = Field(min_length=1)
     runtime_seconds: float = Field(gt=0.0)
     peak_rss_bytes: int = Field(gt=0)
@@ -214,13 +214,15 @@ def run_retained_autonomous_behavior_benchmark(
     holdout_episodes: int = 1,
     body_steps: int = 2,
     seed: int = 7,
+    seeds: tuple[int, ...] | None = None,
 ) -> RetainedAutonomousBehaviorBenchmark:
     """Run the bounded multi-condition benchmark on a retained snapshot."""
 
     if training_episodes <= 0 or holdout_episodes <= 0 or body_steps <= 0:
         raise ValueError("benchmark episode and body counts must be positive")
-    if seed < 0:
-        raise ValueError("seed must be non-negative")
+    active_seeds = tuple(seeds or (seed,))
+    if not active_seeds or any(value < 0 for value in active_seeds):
+        raise ValueError("seeds must be non-empty and non-negative")
     started = time.perf_counter()
     learning_registry = load_biological_registry(learning_registry_path)
     motor_registry = load_biological_registry(motor_registry_path)
@@ -275,13 +277,18 @@ def run_retained_autonomous_behavior_benchmark(
             "threat_position_m": (9.5, 9.5),
         }
     )
+    threat_holdout = BehaviorVariant(
+        name="retained-threat-holdout",
+        food_position_m=(10.0, 10.0),
+        threat_position_m=(0.0, 0.0),
+    )
     config = BehaviorBenchmarkConfig(
         training_episodes=training_episodes,
         holdout_episodes=holdout_episodes,
         body_steps=body_steps,
-        seeds=(seed,),
+        seeds=active_seeds,
         training_variants=(variant,),
-        holdout_variants=(holdout,),
+        holdout_variants=(holdout, threat_holdout),
         nitric_oxide_dan_ids=no_dans.all_ids,
     )
     backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
@@ -304,7 +311,7 @@ def run_retained_autonomous_behavior_benchmark(
         graph_edges=graph.edge_count,
         training_episodes=training_episodes,
         holdout_episodes=holdout_episodes,
-        seed=seed,
+        seeds=active_seeds,
         software_revision=_software_revision(),
         runtime_seconds=time.perf_counter() - started,
         peak_rss_bytes=_peak_rss_bytes(),

@@ -36,11 +36,12 @@ class BehaviorVariant(BaseModel, frozen=True):
     name: str = Field(min_length=1)
     food_position_m: tuple[float, float]
     threat_position_m: tuple[float, float]
+    initial_position_m: tuple[float, float] = (0.0, 0.0)
     perturbation: BodyPerturbation = BodyPerturbation()
 
     @model_validator(mode="after")
     def validate_positions(self) -> Self:
-        values = (*self.food_position_m, *self.threat_position_m)
+        values = (*self.food_position_m, *self.threat_position_m, *self.initial_position_m)
         if any(not isinstance(value, (int, float)) for value in values):
             raise ValueError("behavior positions must be numeric")
         return self

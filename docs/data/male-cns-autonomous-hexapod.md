@@ -93,3 +93,9 @@ uv run --extra physics flybrain experiment autonomous-behavior \
 
 Its minimum smoke run records all five conditions and leaves `behavioral_claim_allowed` false because
 one paired holdout observation is intentionally insufficient for a scientific behavioral claim.
+
+An expanded retained run with seeds `7,11,13`, 1 training episode, 4 holdout episodes, and 10 body
+steps produced 12 paired observations across the food and threat holdouts. The bipartite registered-
+olfactory channel assumption produced small food-distance differences against some controls, but all
+threat-avoidance deltas remained `0.0`; the claim gate therefore stayed false. This is an observed
+failure of the current motor/aversive pathway, not evidence of successful threat avoidance.

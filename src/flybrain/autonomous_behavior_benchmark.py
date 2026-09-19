@@ -161,7 +161,11 @@ def _run_condition(
             motor=motor,
             proprio=proprio,
             reinforcement=reinforcement,
-            body_parameters=body_parameters,
+            body_parameters=body_parameters.model_copy(
+                update={
+                    "initial_thorax_position_m": variant.initial_position_m,
+                }
+            ),
             backend_factory=backend_factory,
             mutate_binding=not holdout,
             replay=False,

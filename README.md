@@ -210,6 +210,7 @@ uv run --extra physics flybrain experiment autonomous-behavior \
   --holdout-episodes 1 \
   --steps 2 \
   --seed 7 \
+  --seeds 7,11,13 \
   --backend reference \
   --output artifacts/autonomous-behavior-reference-seed7.json
 ```

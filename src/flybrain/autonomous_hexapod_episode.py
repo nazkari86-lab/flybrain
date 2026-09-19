@@ -93,6 +93,9 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
         "autonomous-hexapod-contact-learning-v1"
     )
     evidence_kind: Literal["simulation_observation"] = "simulation_observation"
+    odor_channel_model: Literal["bipartite_registered_olfactory_assumption"] = (
+        "bipartite_registered_olfactory_assumption"
+    )
     autonomous_behavior_claim_allowed: Literal[False] = False
     backend: BackendIdentity
     replay_exact: bool
@@ -174,12 +177,16 @@ def _distance(body: HexapodBody, point: tuple[float, float]) -> float:
     )
 
 
-def _odor_intensity(body: HexapodBody, arena: HexapodArenaConfig) -> float:
-    distance = min(
-        _distance(body, arena.food_position_m),
-        _distance(body, arena.threat_position_m),
+def _odor_intensities(
+    body: HexapodBody,
+    arena: HexapodArenaConfig,
+) -> tuple[float, float]:
+    """Return independent anonymous food/threat concentration channels."""
+
+    return (
+        math.exp(-_distance(body, arena.food_position_m) / arena.odor_length_scale_m),
+        math.exp(-_distance(body, arena.threat_position_m) / arena.odor_length_scale_m),
     )
-    return math.exp(-distance / arena.odor_length_scale_m)
 
 
 def _run(
@@ -259,6 +266,8 @@ def _run(
     source_indices = np.asarray(
         [index_by_id[item] for item in learning.sensory_input_ids], dtype=np.int64
     )
+    food_source_indices = source_indices[::2]
+    threat_source_indices = source_indices[1::2]
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
@@ -277,19 +286,32 @@ def _run(
     torque_queue: list[HexapodTorque] = []
     for step_index in range(config.body_steps):
         body = backend.observe()
-        intensity = _odor_intensity(body, config.arena)
-        sensory_params = replace(
+        food_intensity, threat_intensity = _odor_intensities(body, config.arena)
+        food_sensory_params = replace(
             learning.shiu_parameters,
-            poisson_rate_hz=learning.shiu_parameters.poisson_rate_hz * intensity,
+            poisson_rate_hz=learning.shiu_parameters.poisson_rate_hz * food_intensity,
+        )
+        threat_sensory_params = replace(
+            learning.shiu_parameters,
+            poisson_rate_hz=learning.shiu_parameters.poisson_rate_hz * threat_intensity,
         )
         scheduled: dict[int, list[tuple[int, float]]] = {}
         for relative_step, (indices, voltages) in poisson_voltage_events(
-            source_indices,
+            food_source_indices,
             steps=learning.neural_chunk_steps,
-            params=sensory_params,
+            params=food_sensory_params,
             seed=config.seed + state.step,
         ).items():
             scheduled[state.step + relative_step] = list(
+                zip(indices.tolist(), voltages.tolist(), strict=True)
+            )
+        for relative_step, (indices, voltages) in poisson_voltage_events(
+            threat_source_indices,
+            steps=learning.neural_chunk_steps,
+            params=threat_sensory_params,
+            seed=config.seed + state.step + 1_000_003,
+        ).items():
+            scheduled.setdefault(state.step + relative_step, []).extend(
                 zip(indices.tolist(), voltages.tolist(), strict=True)
             )
         proprio_events = proprio_encoder.encode(

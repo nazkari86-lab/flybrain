@@ -414,6 +414,7 @@ def autonomous_behavior_command(
     holdout_episodes: Annotated[int, typer.Option("--holdout-episodes", min=1)] = 1,
     steps: Annotated[int, typer.Option("--steps", min=1)] = 2,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    seeds: Annotated[str | None, typer.Option("--seeds")] = None,
 ) -> None:
     """Publish the retained multi-condition autonomous behavior benchmark."""
 
@@ -428,6 +429,11 @@ def autonomous_behavior_command(
         )
     if output_final.exists():
         raise typer.BadParameter(f"output already exists: {output_final}")
+    parsed_seeds = (
+        tuple(int(item.strip()) for item in seeds.split(",") if item.strip())
+        if seeds is not None
+        else None
+    )
     result = run_retained_autonomous_behavior_benchmark(
         snapshot_final,
         learning_registry_path=learning_registry_final,
@@ -437,6 +443,7 @@ def autonomous_behavior_command(
         holdout_episodes=holdout_episodes,
         body_steps=steps,
         seed=seed,
+        seeds=parsed_seeds,
     )
     output_final.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:

@@ -183,6 +183,7 @@ class HexapodParameters(BaseModel, frozen=True):
     joint_lower_rad: Vec3 = (-0.8, -1.2, -1.6)
     joint_upper_rad: Vec3 = (0.8, 1.2, 0.3)
     initial_joint_angles_rad: Vec3 = (0.0, 0.0, 0.0)
+    initial_thorax_position_m: tuple[float, float] = (0.0, 0.0)
     joint_inertia_kg_m2: Vec3 = (2.0e-5, 3.0e-5, 2.0e-5)
     joint_damping_nm_s_rad: Vec3 = (2.0e-4, 3.0e-4, 2.0e-4)
     max_torque_nm: Vec3 = (0.02, 0.03, 0.03)
@@ -262,6 +263,7 @@ class HexapodParameters(BaseModel, frozen=True):
             self.fall_support_margin_m,
         )
         _require_finite(scalar_values, "parameter scalar")
+        _require_finite(self.initial_thorax_position_m, "initial thorax position")
         return self
 
 
@@ -407,7 +409,11 @@ class ReferenceHexapod:
         self._state = self._initial_state()
 
     def _initial_state(self) -> HexapodBody:
-        thorax = (0.0, 0.0, self.parameters.thorax_height_m)
+        thorax = (
+            self.parameters.initial_thorax_position_m[0],
+            self.parameters.initial_thorax_position_m[1],
+            self.parameters.thorax_height_m,
+        )
         legs = []
         for name in LEG_NAMES:
             raw_foot = _raw_foot_position(
