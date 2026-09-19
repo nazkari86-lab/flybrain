@@ -10,6 +10,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from flybrain.autonomous_behavior_benchmark import (
+    BehaviorBenchmarkConfig,
+    BehaviorBenchmarkResult,
+    run_behavior_benchmark,
+)
 from flybrain.autonomous_hexapod_episode import (
     AutonomousHexapodConfig,
     AutonomousHexapodResult,
@@ -17,6 +22,7 @@ from flybrain.autonomous_hexapod_episode import (
     run_autonomous_hexapod_episode,
 )
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
+from flybrain.behavioral_perturbations import BehaviorVariant
 from flybrain.biological_registry import (
     load_biological_registry,
     resolve_biological_registry,
@@ -62,6 +68,28 @@ class RetainedAutonomousHexapodAssay(BaseModel, frozen=True):
     runtime_seconds: float = Field(gt=0.0)
     peak_rss_bytes: int = Field(gt=0)
     episode: AutonomousHexapodResult
+
+
+class RetainedAutonomousBehaviorBenchmark(BaseModel, frozen=True):
+    """Provenance envelope for the multi-condition retained behavior benchmark."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["retained-autonomous-behavior-benchmark-v1"] = (
+        "retained-autonomous-behavior-benchmark-v1"
+    )
+    snapshot_content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    learning_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    motor_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    graph_neurons: int = Field(gt=0)
+    graph_edges: int = Field(gt=0)
+    training_episodes: int = Field(gt=0)
+    holdout_episodes: int = Field(gt=0)
+    seed: int = Field(ge=0)
+    software_revision: str = Field(min_length=1)
+    runtime_seconds: float = Field(gt=0.0)
+    peak_rss_bytes: int = Field(gt=0)
+    benchmark: BehaviorBenchmarkResult
 
 
 def _peak_rss_bytes() -> int:
@@ -173,4 +201,112 @@ def run_retained_autonomous_hexapod_assay(
         runtime_seconds=time.perf_counter() - started,
         peak_rss_bytes=_peak_rss_bytes(),
         episode=episode,
+    )
+
+
+def run_retained_autonomous_behavior_benchmark(
+    snapshot: Path,
+    *,
+    learning_registry_path: Path = DEFAULT_LEARNING_REGISTRY,
+    motor_registry_path: Path = DEFAULT_MOTOR_REGISTRY,
+    backend: Literal["reference", "flygym"] = "reference",
+    training_episodes: int = 1,
+    holdout_episodes: int = 1,
+    body_steps: int = 2,
+    seed: int = 7,
+) -> RetainedAutonomousBehaviorBenchmark:
+    """Run the bounded multi-condition benchmark on a retained snapshot."""
+
+    if training_episodes <= 0 or holdout_episodes <= 0 or body_steps <= 0:
+        raise ValueError("benchmark episode and body counts must be positive")
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
+    started = time.perf_counter()
+    learning_registry = load_biological_registry(learning_registry_path)
+    motor_registry = load_biological_registry(motor_registry_path)
+    learning_populations = resolve_biological_registry(learning_registry, snapshot)
+    motor_populations = resolve_biological_registry(motor_registry, snapshot)
+    manifests = {
+        manifest.name: manifest
+        for manifest in resolve_plastic_edge_manifests(
+            learning_registry, learning_populations, snapshot
+        )
+    }
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot))
+    binding = bind_manifest_to_graph(graph, manifests["kc_to_mbon"])
+    reinforcement = ReinforcementInterface.from_resolved_registry(learning_populations)
+    sensory_input_ids = learning_populations.population("olfactory_sensory").neuron_ids
+    shiu_parameters = ShiuParameters(dt_ms=0.1, refractory_ms=2.0, synaptic_delay_ms=1.0)
+    appetitive = AssociativeCalibrationConfig.from_manifest(
+        binding,
+        manifests["dan_to_mbon"],
+        reinforcement,
+        valence="appetitive",
+        sensory_input_ids=sensory_input_ids,
+        neural_chunk_steps=100,
+        shiu_parameters=shiu_parameters,
+    )
+    aversive = AssociativeCalibrationConfig.from_manifest(
+        binding,
+        manifests["dan_to_mbon"],
+        reinforcement,
+        valence="aversive",
+        sensory_input_ids=sensory_input_ids,
+        neural_chunk_steps=100,
+        shiu_parameters=shiu_parameters,
+    )
+    learning = appetitive.model_copy(
+        update={
+            "dan_to_mbon_pairs": tuple(
+                sorted(set(appetitive.dan_to_mbon_pairs) | set(aversive.dan_to_mbon_pairs))
+            )
+        }
+    )
+    no_dans = resolve_nitric_oxide_dans(snapshot)
+    variant = BehaviorVariant(
+        name="retained-training",
+        food_position_m=(0.0, 0.0),
+        threat_position_m=(10.0, 10.0),
+    )
+    holdout = variant.model_copy(
+        update={
+            "name": "retained-holdout",
+            "food_position_m": (0.25, 0.15),
+            "threat_position_m": (9.5, 9.5),
+        }
+    )
+    config = BehaviorBenchmarkConfig(
+        training_episodes=training_episodes,
+        holdout_episodes=holdout_episodes,
+        body_steps=body_steps,
+        seeds=(seed,),
+        training_variants=(variant,),
+        holdout_variants=(holdout,),
+        nitric_oxide_dan_ids=no_dans.all_ids,
+    )
+    backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
+    benchmark = run_behavior_benchmark(
+        graph,
+        binding,
+        config,
+        learning=learning,
+        motor=HexapodMotorMap.from_registry(motor_populations),
+        proprio=ProprioceptiveMap.from_registry(motor_populations),
+        reinforcement=reinforcement,
+        body_parameters=HexapodParameters(dt_s=0.01),
+        backend_factory=backend_factory,
+    )
+    return RetainedAutonomousBehaviorBenchmark(
+        snapshot_content_sha256=snapshot_content_sha256(snapshot),
+        learning_registry_sha256=learning_populations.registry_sha256,
+        motor_registry_sha256=motor_populations.registry_sha256,
+        graph_neurons=graph.neuron_count,
+        graph_edges=graph.edge_count,
+        training_episodes=training_episodes,
+        holdout_episodes=holdout_episodes,
+        seed=seed,
+        software_revision=_software_revision(),
+        runtime_seconds=time.perf_counter() - started,
+        peak_rss_bytes=_peak_rss_bytes(),
+        benchmark=benchmark,
     )

@@ -67,6 +67,7 @@ def test_claim_gate_requires_all_controls_and_both_tasks() -> None:
         control="no_plasticity",
         food_delta=BootstrapInterval(mean=1.0, low=0.5, high=1.5, samples=100),
         threat_delta=BootstrapInterval(mean=1.0, low=0.5, high=1.5, samples=100),
+        paired_observations=2,
     )
     assert claim_gate({
         "no_plasticity": good,

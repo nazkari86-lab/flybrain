@@ -81,3 +81,15 @@ animal-equivalent intelligence. Only 4 of 24 groups were recruited naturally in 
 episode, although the separate direct causal calibration passes all 24 groups. Behavioral claims
 remain disabled until conditioned preference/avoidance beats no-plasticity, matching-lesion,
 rewired, random, and unseen-world controls.
+
+The retained multi-condition benchmark is available as:
+
+```bash
+uv run --extra physics flybrain experiment autonomous-behavior \
+  artifacts/male-cns-v1.0-w5 --training-episodes 1 --holdout-episodes 1 \
+  --steps 2 --seed 7 --backend reference \
+  --output artifacts/autonomous-behavior-reference-seed7.json
+```
+
+Its minimum smoke run records all five conditions and leaves `behavioral_claim_allowed` false because
+one paired holdout observation is intentionally insufficient for a scientific behavioral claim.

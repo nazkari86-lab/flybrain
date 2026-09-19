@@ -58,6 +58,7 @@ class PairedComparison(BaseModel, frozen=True):
     control: ControlCondition
     food_delta: BootstrapInterval
     threat_delta: BootstrapInterval
+    paired_observations: int = Field(gt=0)
 
 
 def _require_observations(observations: Sequence[EpisodeObservation]) -> None:
@@ -128,5 +129,6 @@ def claim_gate(comparisons: Mapping[ControlCondition, PairedComparison]) -> bool
         and comparison.threat_delta.mean > 0.0
         and comparison.food_delta.samples > 1
         and comparison.threat_delta.samples > 1
+        and comparison.paired_observations > 1
         for comparison in comparisons.values()
     )

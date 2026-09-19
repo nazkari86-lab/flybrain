@@ -200,3 +200,20 @@ produced motor spikes, closed physical contact-to-DAN learning, and returned pro
 [docs/data/male-cns-autonomous-hexapod.md](docs/data/male-cns-autonomous-hexapod.md) for identities,
 measurements, slow-memory evidence, reproduction commands, and the remaining behavioral-validation
 gates.
+
+Run the multi-condition behavior benchmark:
+
+```bash
+uv run --extra physics flybrain experiment autonomous-behavior \
+  artifacts/male-cns-v1.0-w5 \
+  --training-episodes 1 \
+  --holdout-episodes 1 \
+  --steps 2 \
+  --seed 7 \
+  --backend reference \
+  --output artifacts/autonomous-behavior-reference-seed7.json
+```
+
+The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
+separate mutable state and publishes environment-only food/threat metrics. A positive claim requires
+multiple paired holdout observations; bootstrap resampling alone cannot unlock the claim gate.

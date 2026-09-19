@@ -50,6 +50,7 @@ class BehaviorBenchmarkConfig(BaseModel, frozen=True):
     training_variants: tuple[BehaviorVariant, ...]
     holdout_variants: tuple[BehaviorVariant, ...]
     controls: tuple[ControlCondition, ...] = CONDITIONS[1:]
+    nitric_oxide_dan_ids: tuple[int, ...] = ()
 
     @model_validator(mode="after")
     def validate_benchmark(self) -> BehaviorBenchmarkConfig:
@@ -155,6 +156,7 @@ def _run_condition(
                     odor_length_scale_m=1.0,
                 ),
                 seed=seed,
+                nitric_oxide_dan_ids=config.nitric_oxide_dan_ids,
             ),
             motor=motor,
             proprio=proprio,
@@ -220,6 +222,7 @@ def run_behavior_benchmark(
             control=condition,
             food_delta=bootstrap_interval(food_values, seed=config.seeds[0]),
             threat_delta=bootstrap_interval(threat_values, seed=config.seeds[0] + 1),
+            paired_observations=len(food_values),
         )
     return BehaviorBenchmarkResult(
         behavioral_claim_allowed=claim_gate(
