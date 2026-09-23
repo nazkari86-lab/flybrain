@@ -16,6 +16,50 @@ uv sync --extra dev
 uv run flybrain --help
 ```
 
+## Train and watch the autonomous game learner
+
+Install the optional learning stack without removing FlyGym/MuJoCo:
+
+```bash
+uv sync --all-extras
+```
+
+Train the procedural one-button runner, then continue the same replay buffer and optimizer from an
+atomic checkpoint:
+
+```bash
+uv run flybrain games train --game runner --steps 100000 --seed 7 \
+  --output artifacts/games/runner/seed7-v1
+
+uv run flybrain games train --game runner --steps 200000 --seed 7 \
+  --output artifacts/games/runner/seed7-v1 \
+  --resume artifacts/games/runner/seed7-v1/latest
+```
+
+Evaluate only on the immutable holdout seeds declared by the checkpoint, watch the trained agent,
+or take control yourself:
+
+```bash
+uv run flybrain games evaluate --game runner \
+  --checkpoint artifacts/games/runner/seed7-v1/best
+uv run flybrain games watch --game runner \
+  --checkpoint artifacts/games/runner/seed7-v1/best
+uv run flybrain games play --game runner \
+  --checkpoint artifacts/games/runner/seed7-v1/best
+```
+
+Runner controls are `Space/Up` to jump, `A` to switch human/agent, `P` to pause, `R` to reset,
+`N` for the next seed, `[`/`]` for speed, and `Q` to quit. Training is headless; the viewer can be
+opened separately at any time. Each run stores immutable step checkpoints, full replay state,
+`latest` and validation-selected `best` pointers, metrics, and holdout reports.
+
+The verified 100,000-step seed-7 checkpoint reached mean normalized distance `0.9668` on eight
+unseen procedural levels, versus `0.1119` for seeded random play and `0.0889` for the untrained
+network on the identical levels. It completed one level and reached approximately the final 4% of
+the other seven; this is strong measured learning but not perfect mastery. Evaluation left the
+checkpoint hash unchanged. This subsystem is engineered DQN reinforcement learning, not
+MaleCNS-generated biological intelligence and not direct automation of commercial Geometry Dash.
+
 ## Run the tiny causal experiment
 
 Create the canonical snapshot:
