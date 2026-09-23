@@ -26,6 +26,7 @@ from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episod
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
 from flybrain.experiment import ExperimentConfig, run_experiment
+from flybrain.games.cli import games_app
 from flybrain.graph import EventConnectome, SparseConnectome
 from flybrain.hexapod_benchmark import (
     HexapodBenchmarkThresholds,
@@ -57,6 +58,7 @@ app.add_typer(manifest_app, name="manifest")
 app.add_typer(data_app, name="data")
 app.add_typer(snapshot_app, name="snapshot")
 app.add_typer(experiment_app, name="experiment")
+app.add_typer(games_app, name="games")
 
 
 @manifest_app.command("validate")
