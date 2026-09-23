@@ -9,6 +9,19 @@ from typing import Annotated, Literal
 import typer
 
 from flybrain.games.artifacts import write_json_atomic
+from flybrain.games.chess_engine import resolve_stockfish
+from flybrain.games.chess_evaluation import (
+    evaluate_chess,
+    material_opponent,
+    random_opponent,
+    stockfish_opponent,
+)
+from flybrain.games.chess_training import ChessTrainingConfig, train_chess
+from flybrain.games.chess_viewer import (
+    ChessViewerConfig,
+    run_chess_viewer,
+    run_chess_viewer_smoke,
+)
 from flybrain.games.runner_learning import (
     RunnerCheckpointManifest,
     RunnerTrainingConfig,
@@ -21,7 +34,7 @@ from flybrain.games.runner_viewer import (
     run_runner_viewer_smoke,
 )
 
-GameName = Literal["runner"]
+GameName = Literal["runner", "chess"]
 
 games_app = typer.Typer(help="Train, evaluate, watch, and play game-learning agents.")
 
@@ -36,24 +49,55 @@ def train_game(
     ] = 10_000,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
     resume: Annotated[Path | None, typer.Option("--resume")] = None,
+    teacher_positions: Annotated[
+        int, typer.Option("--teacher-positions", min=0)
+    ] = 0,
+    teacher_nodes: Annotated[int, typer.Option("--teacher-nodes", min=1)] = 2_000,
+    self_play_games: Annotated[int, typer.Option("--self-play-games", min=0)] = 0,
+    self_play_simulations: Annotated[
+        int, typer.Option("--self-play-simulations", min=1)
+    ] = 16,
+    max_game_plies: Annotated[int, typer.Option("--max-game-plies", min=2)] = 160,
+    epochs: Annotated[int, typer.Option("--epochs", min=0)] = 3,
+    stockfish: Annotated[Path | None, typer.Option("--stockfish")] = None,
 ) -> None:
     """Train or resume one persistent game policy."""
 
-    if game != "runner":
-        raise typer.BadParameter(f"unsupported game: {game}")
     try:
-        result = train_runner(
-            RunnerTrainingConfig(
-                total_steps=steps,
-                checkpoint_every=min(checkpoint_every, steps),
-                seed=seed,
-            ),
-            output,
-            resume=resume,
-        )
-    except (FileExistsError, FileNotFoundError, ValueError) as error:
+        if game == "runner":
+            runner_result = train_runner(
+                RunnerTrainingConfig(
+                    total_steps=steps,
+                    checkpoint_every=min(checkpoint_every, steps),
+                    seed=seed,
+                ),
+                output,
+                resume=resume,
+            )
+            typer.echo(runner_result.model_dump_json())
+            return
+        else:
+            teacher = resolve_stockfish(stockfish)
+            if teacher_positions and teacher is None:
+                raise ValueError("teacher positions require a verified Stockfish binary")
+            chess_result = train_chess(
+                ChessTrainingConfig(
+                    seed=seed,
+                    teacher_positions=teacher_positions,
+                    teacher_nodes=teacher_nodes,
+                    self_play_games=self_play_games,
+                    self_play_simulations=self_play_simulations,
+                    max_game_plies=max_game_plies,
+                    epochs=epochs,
+                ),
+                output,
+                teacher=teacher,
+                resume=resume,
+            )
+            typer.echo(chess_result.model_dump_json())
+            return
+    except (FileExistsError, FileNotFoundError, RuntimeError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
-    typer.echo(result.model_dump_json())
 
 
 @games_app.command("evaluate")
@@ -61,22 +105,48 @@ def evaluate_game(
     checkpoint: Annotated[Path, typer.Option("--checkpoint")],
     game: Annotated[GameName, typer.Option("--game")] = "runner",
     output: Annotated[Path | None, typer.Option("--output")] = None,
+    games_per_opponent: Annotated[
+        int, typer.Option("--games-per-opponent", min=1)
+    ] = 2,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    search_simulations: Annotated[
+        int, typer.Option("--search-simulations", min=1)
+    ] = 16,
+    max_game_plies: Annotated[int, typer.Option("--max-game-plies", min=2)] = 160,
+    stockfish: Annotated[Path | None, typer.Option("--stockfish")] = None,
+    stockfish_nodes: Annotated[int, typer.Option("--stockfish-nodes", min=1)] = 500,
 ) -> None:
     """Evaluate a frozen checkpoint on its declared holdout seeds."""
 
-    if game != "runner":
-        raise typer.BadParameter(f"unsupported game: {game}")
     try:
         resolved = checkpoint.resolve()
-        manifest = RunnerCheckpointManifest.model_validate_json(
-            resolved.joinpath("manifest.json").read_text()
-        )
-        result = evaluate_runner(resolved, seeds=manifest.seeds.holdout)
-        if output is not None:
-            write_json_atomic(output, json.loads(result.model_dump_json()))
-    except (FileExistsError, FileNotFoundError, ValueError) as error:
+        if game == "runner":
+            manifest = RunnerCheckpointManifest.model_validate_json(
+                resolved.joinpath("manifest.json").read_text()
+            )
+            runner_result = evaluate_runner(resolved, seeds=manifest.seeds.holdout)
+            if output is not None:
+                write_json_atomic(output, json.loads(runner_result.model_dump_json()))
+            typer.echo(runner_result.model_dump_json())
+            return
+        else:
+            opponents = [random_opponent(), material_opponent()]
+            engine = resolve_stockfish(stockfish)
+            if engine is not None:
+                opponents.append(stockfish_opponent(engine, nodes=stockfish_nodes))
+            chess_result = evaluate_chess(
+                resolved,
+                opponents=tuple(opponents),
+                seeds=tuple(seed + index for index in range(games_per_opponent)),
+                search_simulations=search_simulations,
+                max_plies=max_game_plies,
+            )
+            if output is not None:
+                write_json_atomic(output, json.loads(chess_result.model_dump_json()))
+            typer.echo(chess_result.model_dump_json())
+            return
+    except (FileExistsError, FileNotFoundError, RuntimeError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
-    typer.echo(result.model_dump_json())
 
 
 @games_app.command("watch")
@@ -86,16 +156,36 @@ def watch_game(
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
     dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
     steps: Annotated[int, typer.Option("--steps", min=1)] = 120,
+    simulations: Annotated[int, typer.Option("--simulations", min=1)] = 16,
 ) -> None:
     """Watch an autonomous runner policy in a persistent local window."""
 
-    if game != "runner":
-        raise typer.BadParameter(f"unsupported game: {game}")
+    if game == "runner":
+        if dry_run:
+            result = run_runner_viewer_smoke(steps=steps, seed=seed, checkpoint=checkpoint)
+            typer.echo(result.model_dump_json())
+            return
+        raise typer.Exit(run_runner_viewer(ViewerConfig(checkpoint=checkpoint, seed=seed)))
+    if checkpoint is None:
+        raise typer.BadParameter("chess watch requires --checkpoint")
     if dry_run:
-        result = run_runner_viewer_smoke(steps=steps, seed=seed, checkpoint=checkpoint)
-        typer.echo(result.model_dump_json())
+        chess_result = run_chess_viewer_smoke(
+            checkpoint,
+            plies=steps,
+            seed=seed,
+            simulations=simulations,
+        )
+        typer.echo(chess_result.model_dump_json())
         return
-    raise typer.Exit(run_runner_viewer(ViewerConfig(checkpoint=checkpoint, seed=seed)))
+    raise typer.Exit(
+        run_chess_viewer(
+            ChessViewerConfig(
+                checkpoint=checkpoint,
+                seed=seed,
+                simulations=simulations,
+            )
+        )
+    )
 
 
 @games_app.command("play")
@@ -105,17 +195,38 @@ def play_game(
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
     dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
     steps: Annotated[int, typer.Option("--steps", min=1)] = 120,
+    simulations: Annotated[int, typer.Option("--simulations", min=1)] = 16,
 ) -> None:
     """Play the runner manually, with optional instant agent toggle."""
 
-    if game != "runner":
-        raise typer.BadParameter(f"unsupported game: {game}")
+    if game == "runner":
+        if dry_run:
+            result = run_runner_viewer_smoke(steps=steps, seed=seed, checkpoint=checkpoint)
+            typer.echo(result.model_dump_json())
+            return
+        raise typer.Exit(
+            run_runner_viewer(
+                ViewerConfig(checkpoint=checkpoint, seed=seed, human_control=True)
+            )
+        )
+    if checkpoint is None:
+        raise typer.BadParameter("chess play requires --checkpoint")
     if dry_run:
-        result = run_runner_viewer_smoke(steps=steps, seed=seed, checkpoint=checkpoint)
-        typer.echo(result.model_dump_json())
+        chess_result = run_chess_viewer_smoke(
+            checkpoint,
+            plies=steps,
+            seed=seed,
+            simulations=simulations,
+        )
+        typer.echo(chess_result.model_dump_json())
         return
     raise typer.Exit(
-        run_runner_viewer(
-            ViewerConfig(checkpoint=checkpoint, seed=seed, human_control=True)
+        run_chess_viewer(
+            ChessViewerConfig(
+                checkpoint=checkpoint,
+                seed=seed,
+                simulations=simulations,
+                human_play=True,
+            )
         )
     )
