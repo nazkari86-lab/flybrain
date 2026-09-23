@@ -60,6 +60,41 @@ the other seven; this is strong measured learning but not perfect mastery. Evalu
 checkpoint hash unchanged. This subsystem is engineered DQN reinforcement learning, not
 MaleCNS-generated biological intelligence and not direct automation of commercial Geometry Dash.
 
+### Train, watch, or play chess
+
+Chess uses `python-chess` for rules, a learned residual policy/value network, legal-move PUCT,
+optional Stockfish teacher targets, and self-play continuation. The teacher is recorded in every
+checkpoint and is not embedded in the deployed policy:
+
+```bash
+uv run flybrain games train --game chess \
+  --teacher-positions 128 --teacher-nodes 500 \
+  --self-play-games 1 --self-play-simulations 4 \
+  --max-game-plies 40 --epochs 3 --seed 7 \
+  --output artifacts/games/chess/seed7-v1
+
+uv run flybrain games evaluate --game chess \
+  --checkpoint artifacts/games/chess/seed7-v1/best \
+  --games-per-opponent 1 --search-simulations 4 \
+  --max-game-plies 40 --stockfish-nodes 100
+
+uv run flybrain games watch --game chess \
+  --checkpoint artifacts/games/chess/seed7-v1/best
+uv run flybrain games play --game chess \
+  --checkpoint artifacts/games/chess/seed7-v1/best
+```
+
+Click a source and destination square to move. `F` flips the board, `N` starts a new game, `U`
+undoes in human/analysis mode, `A` changes the human side, `P` pauses, `[`/`]` changes search, and
+`Q` quits.
+
+The bounded seed-7 artifact contains 128 Stockfish-500-node examples plus 32 self-play positions.
+Its six short evaluation games produced zero illegal moves, four max-ply draws, and two losses.
+The opponent-relative estimate was about `646` Elo with a very wide interval; it is not an official
+rating, and max-ply draws do not prove equal strength. The acceptance test separately verifies that
+training raises the target-move probability above `0.5`. This is a functional resumable learner,
+not yet strong chess and not evidence of general or biological intelligence.
+
 ## Run the tiny causal experiment
 
 Create the canonical snapshot:
