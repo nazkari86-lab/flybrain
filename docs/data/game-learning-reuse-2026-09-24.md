@@ -15,6 +15,8 @@
 | Stable-Baselines3 | 2.9.0 | MIT | Maintained DQN implementation, prediction, model and replay persistence |
 | PyTorch | 2.14.0 | BSD-style upstream license | Apple Silicon-compatible tensor and neural-network runtime |
 | pygame-ce | 2.x | LGPL-2.1-or-later | Local rendering, keyboard/mouse input, and headless surfaces |
+| python-chess | 1.999 | GPL-3.0-or-later | Complete chess rules, legal moves, FEN/PGN, and UCI integration |
+| Stockfish | 19, Homebrew ARM64 | GPL-3.0 | Optional visible teacher and fixed-strength benchmark |
 
 All selected packages declare Python 3.12-compatible version ranges. Stable-Baselines3 2.9.0 declares `gymnasium>=0.29.1,<2`, `torch>=2.8,<3`, and `numpy>=1.20,<3`, which is compatible with this project.
 
@@ -24,6 +26,17 @@ Upstream sources:
 - <https://github.com/DLR-RM/stable-baselines3>
 - <https://github.com/pytorch/pytorch>
 - <https://github.com/pygame-community/pygame-ce>
+- <https://github.com/niklasf/python-chess>
+- <https://github.com/official-stockfish/Stockfish>
+
+`python-chess` and Stockfish are optional game-layer GPL dependencies. Their versions and any
+teacher limits are recorded in chess artifacts. Stockfish output may bootstrap a model, but the
+engine is neither hidden in the learned policy nor evidence that the policy independently reached
+Stockfish strength.
+
+The installed Stockfish 19 binary resolved to
+`/opt/homebrew/Cellar/stockfish/19/bin/stockfish` with SHA-256
+`dc2f18c34ae962dff591b66147d220ec06e61d756b93d8a4f5e04fd8e55c251f`.
 
 ## Geometry-Dash-style prior art
 
