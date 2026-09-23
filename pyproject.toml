@@ -27,6 +27,12 @@ dev = [
 physics = [
     "flygym==2.1.0",
 ]
+games = [
+  "gymnasium>=1.3,<2",
+  "pygame-ce>=2.5,<3",
+  "stable-baselines3>=2.9,<3",
+  "torch>=2.14,<3",
+]
 
 [project.scripts]
 flybrain = "flybrain.cli:app"
