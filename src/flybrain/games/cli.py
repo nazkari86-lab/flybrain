@@ -33,6 +33,7 @@ from flybrain.games.runner_viewer import (
     run_runner_viewer,
     run_runner_viewer_smoke,
 )
+from flybrain.games.training_dashboard import run_training_dashboard
 
 GameName = Literal["runner", "chess"]
 
@@ -44,56 +45,78 @@ def train_game(
     output: Annotated[Path, typer.Option("--output")],
     game: Annotated[GameName, typer.Option("--game")] = "runner",
     steps: Annotated[int, typer.Option("--steps", min=1)] = 100_000,
-    checkpoint_every: Annotated[
-        int, typer.Option("--checkpoint-every", min=1)
-    ] = 10_000,
+    checkpoint_every: Annotated[int, typer.Option("--checkpoint-every", min=1)] = 10_000,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
     resume: Annotated[Path | None, typer.Option("--resume")] = None,
-    teacher_positions: Annotated[
-        int, typer.Option("--teacher-positions", min=0)
-    ] = 0,
+    teacher_positions: Annotated[int, typer.Option("--teacher-positions", min=0)] = 0,
     teacher_nodes: Annotated[int, typer.Option("--teacher-nodes", min=1)] = 2_000,
     self_play_games: Annotated[int, typer.Option("--self-play-games", min=0)] = 0,
-    self_play_simulations: Annotated[
-        int, typer.Option("--self-play-simulations", min=1)
-    ] = 16,
+    self_play_simulations: Annotated[int, typer.Option("--self-play-simulations", min=1)] = 16,
     max_game_plies: Annotated[int, typer.Option("--max-game-plies", min=2)] = 160,
     epochs: Annotated[int, typer.Option("--epochs", min=0)] = 3,
     stockfish: Annotated[Path | None, typer.Option("--stockfish")] = None,
+    visual: Annotated[
+        bool, typer.Option("--visual", help="Show learning and checkpoint play in a live window.")
+    ] = False,
 ) -> None:
     """Train or resume one persistent game policy."""
 
     try:
         if game == "runner":
-            runner_result = train_runner(
-                RunnerTrainingConfig(
-                    total_steps=steps,
-                    checkpoint_every=min(checkpoint_every, steps),
-                    seed=seed,
-                ),
-                output,
-                resume=resume,
+            runner_config = RunnerTrainingConfig(
+                total_steps=steps,
+                checkpoint_every=min(checkpoint_every, steps),
+                seed=seed,
             )
+            if visual:
+                dashboard = run_training_dashboard(
+                    "runner",
+                    lambda publish: train_runner(
+                        runner_config,
+                        output,
+                        resume=resume,
+                        on_checkpoint=lambda path, manifest: publish(path, manifest, None),
+                    ),
+                    seed=seed,
+                )
+                runner_result = dashboard.training_result
+            else:
+                runner_result = train_runner(runner_config, output, resume=resume)
             typer.echo(runner_result.model_dump_json())
             return
         else:
             teacher = resolve_stockfish(stockfish)
             if teacher_positions and teacher is None:
                 raise ValueError("teacher positions require a verified Stockfish binary")
-            chess_result = train_chess(
-                ChessTrainingConfig(
-                    seed=seed,
-                    teacher_positions=teacher_positions,
-                    teacher_nodes=teacher_nodes,
-                    self_play_games=self_play_games,
-                    self_play_simulations=self_play_simulations,
-                    max_game_plies=max_game_plies,
-                    epochs=epochs,
-                ),
-                output,
-                teacher=teacher,
-                resume=resume,
+            chess_config = ChessTrainingConfig(
+                seed=seed,
+                teacher_positions=teacher_positions,
+                teacher_nodes=teacher_nodes,
+                self_play_games=self_play_games,
+                self_play_simulations=self_play_simulations,
+                max_game_plies=max_game_plies,
+                epochs=epochs,
             )
+            if visual:
+                dashboard = run_training_dashboard(
+                    "chess",
+                    lambda publish: train_chess(
+                        chess_config,
+                        output,
+                        teacher=teacher,
+                        resume=resume,
+                        on_checkpoint=publish,
+                    ),
+                    seed=seed,
+                )
+                chess_result = dashboard.training_result
+            else:
+                chess_result = train_chess(
+                    chess_config,
+                    output,
+                    teacher=teacher,
+                    resume=resume,
+                )
             typer.echo(chess_result.model_dump_json())
             return
     except (FileExistsError, FileNotFoundError, RuntimeError, ValueError) as error:
@@ -105,13 +128,9 @@ def evaluate_game(
     checkpoint: Annotated[Path, typer.Option("--checkpoint")],
     game: Annotated[GameName, typer.Option("--game")] = "runner",
     output: Annotated[Path | None, typer.Option("--output")] = None,
-    games_per_opponent: Annotated[
-        int, typer.Option("--games-per-opponent", min=1)
-    ] = 2,
+    games_per_opponent: Annotated[int, typer.Option("--games-per-opponent", min=1)] = 2,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
-    search_simulations: Annotated[
-        int, typer.Option("--search-simulations", min=1)
-    ] = 16,
+    search_simulations: Annotated[int, typer.Option("--search-simulations", min=1)] = 16,
     max_game_plies: Annotated[int, typer.Option("--max-game-plies", min=2)] = 160,
     stockfish: Annotated[Path | None, typer.Option("--stockfish")] = None,
     stockfish_nodes: Annotated[int, typer.Option("--stockfish-nodes", min=1)] = 500,
@@ -205,9 +224,7 @@ def play_game(
             typer.echo(result.model_dump_json())
             return
         raise typer.Exit(
-            run_runner_viewer(
-                ViewerConfig(checkpoint=checkpoint, seed=seed, human_control=True)
-            )
+            run_runner_viewer(ViewerConfig(checkpoint=checkpoint, seed=seed, human_control=True))
         )
     if checkpoint is None:
         raise typer.BadParameter("chess play requires --checkpoint")

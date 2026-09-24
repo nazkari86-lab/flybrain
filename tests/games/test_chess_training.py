@@ -13,6 +13,7 @@ from flybrain.games.chess_training import (
     generate_self_play_game,
     generate_teacher_examples,
     load_chess_checkpoint,
+    load_chess_policy,
     make_training_state,
     save_chess_checkpoint,
     train_batches,
@@ -68,6 +69,21 @@ def test_checkpoint_restores_model_optimizer_counters_and_replay(tmp_path) -> No
     assert restored.optimizer.state_dict()["param_groups"] == state.optimizer.state_dict()[
         "param_groups"
     ]
+
+
+def test_policy_only_loader_preserves_training_rng(tmp_path) -> None:
+    state = make_training_state(ChessTrainingConfig(seed=11), examples=_examples())
+    checkpoint = save_chess_checkpoint(tmp_path / "checkpoint", state)
+    torch.manual_seed(1234)
+    before = torch.get_rng_state().clone()
+
+    loaded = load_chess_policy(checkpoint)
+
+    assert torch.equal(torch.get_rng_state(), before)
+    assert all(
+        torch.equal(loaded.state_dict()[name], state.model.state_dict()[name])
+        for name in state.model.state_dict()
+    )
 
 
 def test_real_teacher_and_self_play_emit_legal_examples() -> None:

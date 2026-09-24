@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Callable
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal
@@ -340,6 +341,7 @@ def train_runner(
     config: RunnerTrainingConfig,
     output: Path,
     resume: Path | None = None,
+    on_checkpoint: Callable[[Path, RunnerCheckpointManifest], None] | None = None,
 ) -> RunnerRun:
     """Train to an absolute timestep target and publish immutable checkpoints."""
 
@@ -421,6 +423,8 @@ def train_runner(
             )
             stream.flush()
             os.fsync(stream.fileno())
+        if on_checkpoint is not None:
+            on_checkpoint(checkpoint, manifest)
 
     latest = root / "latest"
     latest_manifest = _checkpoint_manifest(latest)

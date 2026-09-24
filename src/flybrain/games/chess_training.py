@@ -8,6 +8,7 @@ import math
 import os
 import random
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
@@ -179,7 +180,12 @@ def batch_loss(
     return torch.stack([_example_loss(model, example) for example in examples]).mean()
 
 
-def train_batches(state: ChessTrainingState, *, epochs: int | None = None) -> float:
+def train_batches(
+    state: ChessTrainingState,
+    *,
+    epochs: int | None = None,
+    on_epoch: Callable[[ChessTrainingState, float], None] | None = None,
+) -> float:
     """Run seeded single-example updates and return the final full-batch loss."""
 
     count = state.config.epochs if epochs is None else epochs
@@ -200,7 +206,11 @@ def train_batches(state: ChessTrainingState, *, epochs: int | None = None) -> fl
             cast(_BackwardTensor, loss).backward()
             torch.nn.utils.clip_grad_norm_(state.model.parameters(), max_norm=1.0)
             state.optimizer.step()
-    state.completed_epochs += count
+        state.completed_epochs += 1
+        if on_epoch is not None:
+            state.model.eval()
+            on_epoch(state, float(batch_loss(state.model, state.examples).detach().item()))
+            state.model.train()
     state.model.eval()
     return float(batch_loss(state.model, state.examples).detach().item())
 
@@ -304,9 +314,7 @@ def generate_self_play_game(
         )
         total = sum(result.visit_counts.values())
         policy = {
-            move.uci(): visits / total
-            for move, visits in result.visit_counts.items()
-            if visits > 0
+            move.uci(): visits / total for move, visits in result.visit_counts.items() if visits > 0
         }
         records.append((board.fen(), policy, board.turn))
         board.push(result.move)
@@ -407,6 +415,20 @@ def load_chess_checkpoint(path: Path) -> ChessTrainingState:
     return state
 
 
+def load_chess_policy(path: Path) -> ChessPolicyValueNet:
+    """Load a verified frozen policy without restoring optimizer or training RNG."""
+
+    root = path.resolve()
+    manifest = ChessCheckpointManifest.model_validate_json((root / "manifest.json").read_text())
+    model_file = root / "model.pt"
+    if _sha256(model_file) != manifest.model_sha256:
+        raise ValueError("chess checkpoint hash mismatch: model.pt")
+    model = ChessPolicyValueNet(manifest.config.network, seed=manifest.config.seed)
+    model.load_state_dict(cast(dict[str, Tensor], torch.load(model_file, weights_only=True)))
+    model.eval()
+    return model
+
+
 def _replace_symlink(link: Path, target: Path) -> None:
     with tempfile.TemporaryDirectory(dir=link.parent) as temporary:
         staged = Path(temporary) / link.name
@@ -420,6 +442,7 @@ def train_chess(
     *,
     teacher: StockfishInfo | None = None,
     resume: Path | None = None,
+    on_checkpoint: Callable[[Path, ChessCheckpointManifest, float | None], None] | None = None,
 ) -> ChessRun:
     """Run bounded teacher/self-play updates and publish a resumable checkpoint."""
 
@@ -472,18 +495,33 @@ def train_chess(
             stream.write(pgn + "\n")
     state.examples += new_examples
     state.self_play_games += config.self_play_games
-    if config.epochs and state.examples:
-        train_batches(state, epochs=config.epochs)
-
     checkpoints = root / "checkpoints"
     checkpoints.mkdir(exist_ok=True)
-    checkpoint = checkpoints / (
-        f"epochs-{state.completed_epochs:06d}-games-{state.self_play_games:06d}"
-    )
-    save_chess_checkpoint(checkpoint, state)
-    _replace_symlink(root / "latest", checkpoint)
-    if not root.joinpath("best").exists():
-        _replace_symlink(root / "best", checkpoint)
+
+    def publish(progress: ChessTrainingState, loss: float | None) -> Path:
+        checkpoint = checkpoints / (
+            f"epochs-{progress.completed_epochs:06d}-games-{progress.self_play_games:06d}"
+        )
+        save_chess_checkpoint(checkpoint, progress)
+        _replace_symlink(root / "latest", checkpoint)
+        if not root.joinpath("best").exists():
+            _replace_symlink(root / "best", checkpoint)
+        assert progress.manifest is not None
+        if on_checkpoint is not None:
+            on_checkpoint(checkpoint, progress.manifest, loss)
+        return checkpoint
+
+    if config.epochs and state.examples:
+        if on_checkpoint is None:
+            train_batches(state, epochs=config.epochs)
+        else:
+
+            def publish_epoch(progress: ChessTrainingState, loss: float) -> None:
+                publish(progress, loss)
+
+            train_batches(state, epochs=config.epochs, on_epoch=publish_epoch)
+    if on_checkpoint is None or not (config.epochs and state.examples):
+        publish(state, None)
     assert state.manifest is not None
     return ChessRun(
         output=root,
