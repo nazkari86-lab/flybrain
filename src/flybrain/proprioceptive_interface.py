@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from typing import Literal, Self
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flybrain.biological_registry import ResolvedRegistry
@@ -251,4 +252,63 @@ class ProprioceptiveEncoder:
                     channel=f"proprioception_{item.leg}",
                 )
             )
+        return tuple(events)
+
+    def encode_source_equivalent_spikes(
+        self,
+        observation: ProprioceptiveObservation,
+        *,
+        steps: int,
+        seed: int,
+        rate_hz: float = 150.0,
+        dt_ms: float = 0.1,
+    ) -> tuple[ExternalEvent, ...]:
+        """Encode mechanosensory drive as sparse per-neuron source spikes.
+
+        ``encode`` preserves the older population-voltage calibration. This method
+        models the declared proprioceptive cells as source-equivalent spike events:
+        drive changes event probability, while every selected cell receives the
+        same declared source voltage. It does not expose world state or a motor
+        command to the network.
+        """
+
+        if type(steps) is not int or steps <= 0:
+            raise ValueError("proprioceptive spike steps must be a positive integer")
+        if type(seed) is not int or seed < 0:
+            raise ValueError("proprioceptive spike seed must be non-negative")
+        if not math.isfinite(rate_hz) or rate_hz <= 0.0:
+            raise ValueError("proprioceptive spike rate must be finite and positive")
+        if not math.isfinite(dt_ms) or dt_ms <= 0.0:
+            raise ValueError("proprioceptive spike timestep must be finite and positive")
+        probability = rate_hz * dt_ms / 1000.0
+        if probability > 1.0:
+            raise ValueError("proprioceptive spike probability must not exceed one")
+        if observation.calibration != self.calibration:
+            raise ValueError("observation calibration differs from encoder calibration")
+
+        generator = np.random.default_rng(seed)
+        events: list[ExternalEvent] = []
+        for step in range(steps):
+            for item in observation.legs:
+                bank = self.mapping.bank(item.leg)
+                selected = generator.random(len(bank.neuron_ids)) < (
+                    probability * item.drive
+                )
+                if not np.any(selected):
+                    continue
+                selected_ids = tuple(
+                    neuron_id
+                    for neuron_id, include in zip(
+                        bank.neuron_ids, selected, strict=True
+                    )
+                    if include
+                )
+                events.append(
+                    ExternalEvent(
+                        step=step,
+                        neuron_ids=selected_ids,
+                        voltages=(self.calibration.total_voltage,) * len(selected_ids),
+                        channel=f"proprioception_spikes_{item.leg}",
+                    )
+                )
         return tuple(events)

@@ -73,7 +73,7 @@ def test_retained_malecns_audit_keeps_mbon_motor_anatomy_explicit() -> None:
         snapshot,
     )
     motor_registry = resolve_biological_registry(
-        load_biological_registry(Path("data/registry/hexapod-motor-registry-v1.json")),
+        load_biological_registry(Path("data/registry/hexapod-motor-registry-v2.json")),
         snapshot,
     )
 

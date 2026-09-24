@@ -16,6 +16,49 @@ uv sync --extra dev
 uv run flybrain --help
 ```
 
+## Run the fast practical autonomous fly
+
+This path prioritizes a working autonomous agent over a claim of biological fidelity. It combines
+threat and wall reflexes, food-seeking potential-field control, a tabular Q-learning residual, and
+FlyGym's official hybrid locomotion controller. Training and evaluation use different randomized
+arena layouts; the selected commands then drive 42 leg-joint degrees of freedom and six adhesion
+channels through MuJoCo, and the combined result is written atomically:
+
+```bash
+uv run flybrain experiment practical-autonomy \
+  --training-episodes 24 \
+  --evaluation-episodes 12 \
+  --max-steps 400 \
+  --seed 7 \
+  --output artifacts/practical-autonomy-v1-seed7.json \
+  --video artifacts/practical-autonomy-seed7.mp4
+```
+
+The verified seed-7 run reached food in 12/12 held-out arenas, made zero threat contacts, performed
+751 Q-value updates across 213 observed states, and executed 3,200 MuJoCo steps. The physical fly
+used all 42 official locomotion DOFs plus six adhesion channels, moved 3.36 mm horizontally, and
+finished stable at a 1.14 mm thorax height. This is an engineering demonstration with an assisted
+hybrid controller, not evidence that the MaleCNS connectome alone learned full fly intelligence.
+
+### Interactive MuJoCo application
+
+Open the persistent real-time viewer:
+
+```bash
+uv run flybrain interactive
+```
+
+The command automatically relaunches through `mjpython` on macOS. Controls are shown inside the
+window: `W/S` changes forward or reverse drive, `A/D` changes steering, `C` centers steering,
+`Space` stops, `R` resets the body, `P` toggles the autonomous demonstration, and `Q` exits. The
+overlay reports the current mode, forward command, turn command, and simulation time.
+
+Verify the physical controller without opening a window:
+
+```bash
+uv run flybrain interactive --dry-run --steps 200
+```
+
 ## Train and watch the autonomous game learner
 
 Install the optional learning stack without removing FlyGym/MuJoCo:
@@ -249,23 +292,26 @@ hashes, effects, resource use, and limitations.
 
 ## Run the evidence-bound hexapod motor assay
 
-The hexapod command resolves 24 exact flexor/extensor motor populations, six proprioceptive banks,
+The hexapod command resolves 36 exact thorax-coxa/trochanter/tibia motor populations, six proprioceptive banks,
 and six descending populations from one registry. It publishes direct motor calibration,
 phase-gait calibration, DN-to-motor, proprio-to-motor, and stateful neural-body feedback as
 separate result families; it never turns direct calibration into a sensory or locomotion claim.
 
 ```bash
 uv run flybrain experiment hexapod-motor artifacts/male-cns-v1.0-w5 \
-  --registry data/registry/hexapod-motor-registry-v1.json \
-  --steps 90 \
+  --registry data/registry/hexapod-motor-registry-v2.json \
+  --steps 180 \
   --seed 7 \
   --output artifacts/hexapod-motor-malecns-seed7.json
 ```
 
-The retained 90-step run calibrated all 24 direct antagonist groups, but phase-gait and all six
-DN-to-motor paths were null. Two of six proprioceptive banks passed, and the full feedback loop
-was directionally wrong under its explicit mirrored-interface control. These are recorded without
-retuning in [docs/data/male-cns-hexapod-motor.md](docs/data/male-cns-hexapod-motor.md). The assay
+The retained run calibrates all 36 direct antagonist groups. The phase protocol now demonstrates
+stable target-independent forward propulsion in the reference body, but it remains null as a
+tripod-walking claim because alternating support is not established. At the 180-step causal
+window, all six DN-to-motor paths are positive, four of six proprioceptive banks are positive,
+and the stateful closed loop is positive under its declared thresholds. These are recorded without
+turning sparse recruitment into a walking claim in
+[docs/data/male-cns-hexapod-motor-v2-180.md](docs/data/male-cns-hexapod-motor-v2-180.md). The assay
 is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
 
 ## Run the autonomous retained hexapod loop
@@ -273,7 +319,7 @@ is a sparse, causally tested motor foundation—not evidence of a walking or int
 The autonomous command removes the external conditioning schedule. Anonymous olfactory activity
 propagates through the retained graph, physical contact recruits registered DANs, sparse local
 KC-to-MBON plasticity updates existing positive edges, measured PPL101/PAM01 DANs contribute fast
-dopamine and slow nitric-oxide traces, all 24 motor groups remain available to the decoder, and
+dopamine and slow nitric-oxide traces, all 36 motor groups remain available to the decoder, and
 six-bank proprioception returns body state to the graph. No reward scalar, target coordinate,
 desired action, or hidden policy enters the controller.
 
@@ -306,8 +352,8 @@ Run the multi-condition behavior benchmark:
 uv run --extra physics flybrain experiment autonomous-behavior \
   artifacts/male-cns-v1.0-w5 \
   --training-episodes 1 \
-  --holdout-episodes 1 \
-  --steps 2 \
+  --holdout-episodes 3 \
+  --steps 20 \
   --seed 7 \
   --seeds 7,11,13 \
   --backend reference \
@@ -315,5 +361,64 @@ uv run --extra physics flybrain experiment autonomous-behavior \
 ```
 
 The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
-separate mutable state and publishes environment-only food/threat metrics. A positive claim requires
-multiple paired holdout observations; bootstrap resampling alone cannot unlock the claim gate.
+separate mutable state and publishes task-specific environment-only food/threat metrics.
+As of the 2026-09-23 audit, new results carry
+`evidence_protocol="measured-replay-persistent-memory-v5"` and per-episode evidence.
+Every training and evaluation episode is replayed from its pre-episode weights;
+evaluation freezes plasticity. Repeated seeds are rejected. Autonomous defaults
+disable the external sinusoidal leg drive; explicitly enabling it blocks the
+behavioral claim. DAN silencing and KC→MBON edge removal are distinct interventions.
+The v4/v5 gate fingerprints geometry and physical perturbations independently of
+variant names, rejects train/holdout world overlap, and requires at least two
+distinct unseen worlds for each of food and threat before a behavioral claim can
+pass. The retained default evaluates four holdout worlds spanning mirrored source
+geometry, shifted starts, mass/friction changes, and one delayed-motor condition.
+
+Artifacts predating v2 (without either measured-replay v2 or v3 evidence) remain historical diagnostics:
+their benchmark `replay_exact=true` was hard-coded and does **not** establish
+reproducibility. Their evaluation code also allowed within-episode weight updates.
+A positive narrow behavioral claim requires independent replicates, measured
+replay/graph checks, frozen evaluation weights, unassisted motor decoding and
+positive intervals against every declared control. Passing this benchmark alone
+would not establish full fly intelligence or biological equivalence.
+See [the evidence audit](docs/data/autonomy-evidence-audit-2026-09-23.md).
+The measured v5 smoke artifact and exact limits are documented in
+[the v5 learning/generalization audit](docs/data/autonomy-learning-generalization-v5-2026-09-23.md).
+
+The v3/v4/v5 protocols also carry fast plasticity traces and slow dopamine/NO memory
+between training episodes within each condition and seed. Holdout evaluation
+freezes this complete learning state as well as its effective weights. Immutable
+learning checkpoints support checked JSON round-trips and atomic file publication
+through `save_learning_memory` / `load_learning_memory`. Episode results include
+the resumable state; benchmark evidence records initial/final memory digests.
+The physical body and fast neural voltages still reset between episodes: this
+is learning-state continuation, not a checkpoint of the entire embodied agent.
+See [memory continuation](docs/data/learning-memory-continuation-2026-09-23.md).
+
+An earlier long-horizon diagnostic includes passive joint-restoring mechanics. It prevents
+the reference body from collapsing over six seconds, but the 3-seed/2-holdout/100-step artifact
+`artifacts/autonomous-behavior-reference-seeds7-11-13-train1-holdout2-steps100-passive-elasticity.json`
+still has `behavioral_claim_allowed=false`: every food and threat interval crosses zero. The next
+investigation includes bilateral olfactory evidence for steering. Arthropod navigation relies on comparing sensor signals and
+integrating them over time ([Steele, Lanz & Nagel, 2023](https://doi.org/10.1007/s00359-022-01611-9)).
+### External biological boundary for odor navigation
+
+The autonomous hexapod assay currently uses measured bilateral ORN IDs, but its
+arena odor field is still a model assumption: a distance-based concentration field
+with deterministic sinusoidal temporal modulation. This must not be described as a reconstructed fly plume.
+That distinction matters because arthropod odor navigation uses concentration
+comparisons integrated over time, while recent Drosophila work also implicates
+odor-motion cues, visual reafference, and compass-related descending control.
+
+External checks used for the design boundary:
+
+- Steele, Lanz & Nagel, *Olfactory navigation in arthropods*,
+  https://doi.org/10.1007/s00359-022-01611-9
+- Rayshubskiy et al., *DNa01/DNa02 steering*,
+  https://doi.org/10.7554/eLife.102230
+- Bates et al., *Distributed brain-and-cord control*,
+  https://doi.org/10.1038/s41586-026-10735-w
+
+Therefore `behavioral_claim_allowed` remains false until a causal benchmark
+with a temporally structured odor field, all declared controls, multiple seeds,
+and positive food and threat confidence intervals passes.

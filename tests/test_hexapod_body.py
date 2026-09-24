@@ -105,6 +105,20 @@ def test_joint_limits_hold_under_sustained_excess_torque() -> None:
         assert all(math.isfinite(value) for value in leg.joint_velocities_rad_s)
 
 
+def test_passive_joint_elasticity_restores_displaced_joint() -> None:
+    parameters = HexapodParameters(
+        dt_s=0.001,
+        joint_stiffness_nm_rad=(0.01, 0.01, 0.01),
+    )
+    simulator = ReferenceHexapod(parameters)
+    simulator.step(HexapodTorque.for_leg("left_fore", (0.01, 0.0, 0.0)))
+
+    restored = simulator.step(HexapodTorque.zero())
+
+    assert restored.leg("left_fore").joint_angles_rad[0] > 0.0
+    assert restored.leg("left_fore").applied_torques_nm[0] < 0.0
+
+
 def test_energy_is_nonnegative_monotonic_and_zero_at_rest() -> None:
     rest = ReferenceHexapod()
     initial = rest.observe()

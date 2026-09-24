@@ -15,7 +15,7 @@ from flybrain.biological_registry import (
 )
 from flybrain.graph import EventConnectome
 
-REAL_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
+REAL_REGISTRY = Path("data/registry/hexapod-motor-registry-v2.json")
 RETAINED_MALE_CNS = Path(
     "/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5"
 )
@@ -28,6 +28,8 @@ LEGS = (
     ("right_hind", "R", "T3", "MetaLN"),
 )
 JOINT_GROUPS = (
+    ("thorax_coxa_anterior", ("Sternal anterior rotator MN",)),
+    ("thorax_coxa_posterior", ("Sternal posterior rotator MN",)),
     ("trochanter_flexor", ("Tr flexor MN", "Acc. tr flexor MN")),
     ("trochanter_extensor", ("Tr extensor MN",)),
     ("tibia_flexor", ("Ti flexor MN", "Acc. ti flexor MN")),
@@ -35,6 +37,11 @@ JOINT_GROUPS = (
 )
 EXPECTED_REAL_NAMES = {
     *(f"{leg}_{group}" for leg, *_ in LEGS for group, _ in JOINT_GROUPS),
+    *(
+        f"{leg}_thorax_coxa_{direction}"
+        for leg, *_ in LEGS
+        for direction in ("anterior", "posterior")
+    ),
     *(f"{leg}_proprioception" for leg, *_ in LEGS),
     "d_na02_left",
     "d_na02_right",
@@ -42,6 +49,20 @@ EXPECTED_REAL_NAMES = {
     "d_ng13_right",
     "mdn_left",
     "mdn_right",
+}
+EXPECTED_THORAX_COXA = {
+    "left_fore_thorax_coxa_anterior": (806923, 919509),
+    "left_fore_thorax_coxa_posterior": (801915, 804851, 808640, 1050335829),
+    "right_fore_thorax_coxa_anterior": (801469, 801918),
+    "right_fore_thorax_coxa_posterior": (805410, 808011),
+    "left_middle_thorax_coxa_anterior": (832490, 903689),
+    "left_middle_thorax_coxa_posterior": (801768, 803226, 803704, 1051054875),
+    "right_middle_thorax_coxa_anterior": (801813, 801946),
+    "right_middle_thorax_coxa_posterior": (800962, 801761, 802521, 818996),
+    "left_hind_thorax_coxa_anterior": (801548, 802215),
+    "left_hind_thorax_coxa_posterior": (801492, 801715, 802964, 818399),
+    "right_hind_thorax_coxa_anterior": (800316, 906235),
+    "right_hind_thorax_coxa_posterior": (903642, 903643, 907256, 1050493413),
 }
 EXPECTED_DESCENDING = {
     "d_na02_left": (523769,),
@@ -226,7 +247,9 @@ def test_real_registry_declares_complete_exact_hexapod_interface() -> None:
         len(population.selector.expected_ids)
         for population in registry.populations
         if population.role == "motor"
-    ) == 148
+    ) == 182
+    for name, ids in EXPECTED_THORAX_COXA.items():
+        assert by_name[name].selector.expected_ids == ids
     for name, population in by_name.items():
         if population.role == "motor":
             assert population.selector.expected_ids
@@ -270,13 +293,13 @@ def test_real_registry_resolves_retained_malecns_snapshot() -> None:
             assert actual.neuron_ids == EXPECTED_DESCENDING[population.name]
 
 
-def test_fixture_resolves_24_motor_groups_and_six_root_side_banks(tmp_path: Path) -> None:
+def test_fixture_resolves_36_motor_groups_and_six_root_side_banks(tmp_path: Path) -> None:
     registry, rows = fixture_registry_and_rows()
     resolved = resolve_biological_registry(registry, write_snapshot(tmp_path, rows))
 
     motors = tuple(item for item in resolved.populations if item.role == "motor")
     sensory = tuple(item for item in resolved.populations if item.role == "sensory")
-    assert len(motors) == 24
+    assert len(motors) == 36
     assert len(sensory) == 6
     assert all("somaNeuromere" in item.selector.equals for item in motors)
     assert all("rootSide" in item.selector.equals for item in sensory)

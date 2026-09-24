@@ -50,7 +50,46 @@ def test_real_behavior_cli_publishes_all_controls_atomically(tmp_path: Path) -> 
         "rewired_control",
     }
     assert benchmark["graph_unchanged"] is True
+    assert benchmark["evidence_protocol"] == "measured-replay-persistent-memory-v5"
+    assert benchmark["generalization_verified"] is True
+    assert benchmark["replay_exact"] is True
+    assert benchmark["holdout_weights_frozen"] is True
+    assert benchmark["holdout_memory_frozen"] is True
+    assert benchmark["unassisted_motor_output"] is True
+    assert len(benchmark["episode_evidence"]) == 30
+    assert all(x["replay_performed"] and x["replay_exact"] for x in benchmark["episode_evidence"])
+    assert all(
+        x["weights_unchanged"] and not x["plasticity_enabled"]
+        for x in benchmark["episode_evidence"] if x["holdout"]
+    )
+    assert all(
+        sum(x["dan_spike_counts"].values()) == 0
+        for x in benchmark["holdout_neural_activity"]["dan_lesion"]
+    )
     assert benchmark["behavioral_claim_allowed"] is False
+    assert benchmark["odor_channel_model"] == "measured_bilateral_receptor_channels"
+    assert benchmark["odor_assignment"]["food_cell_types"] == ["ORN_DM1", "ORN_VA2"]
+    assert benchmark["odor_assignment"]["threat_cell_types"] == ["ORN_DA2"]
+    assert benchmark["odor_assignment"]["food_evidence_doi"] == "10.1038/nature07983"
+    assert (
+        benchmark["odor_assignment"]["threat_evidence_doi"]
+        == "10.1016/j.cell.2012.09.046"
+    )
+    assert len(benchmark["condition_observations"]["normal"]) == 4
+    assert benchmark["training_summaries"]["normal"]["appetitive_contacts"] > 0
+    assert benchmark["training_summaries"]["normal"]["aversive_contacts"] > 0
+    assert benchmark["training_summaries"]["normal"]["dan_events"] > 0
+    assert benchmark["training_summaries"]["dan_lesion"]["dan_events"] == 0
+    descending = benchmark["holdout_neural_activity"]["normal"][0]["descending_spikes"]
+    assert set(descending) == {
+        "d_na02_left",
+        "d_na02_right",
+        "d_ng13_left",
+        "d_ng13_right",
+        "mdn_left",
+        "mdn_right",
+    }
+    assert all(value >= 0 for value in descending.values())
     assert json.loads(invocation.stdout) == payload
 
     repeated = runner.invoke(

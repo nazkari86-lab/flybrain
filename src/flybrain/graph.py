@@ -152,6 +152,14 @@ class EventConnectome:
         if isinstance(scale, np.ndarray) and scale.shape != fired_indices.shape:
             raise ValueError("per-source scale must match fired indices")
 
+        if fired_indices.size >= 64:
+            scales = (
+                np.full(fired_indices.size, scale, dtype=np.float32)
+                if np.isscalar(scale)
+                else np.asarray(scale, dtype=np.float32)
+            )
+            return np.asarray(self.outgoing[fired_indices].T @ scales, dtype=np.float32).ravel()
+
         output = np.zeros(self.neuron_count, dtype=np.float32)
         for position, pre_index in enumerate(fired_indices):
             start = self.outgoing.indptr[pre_index]

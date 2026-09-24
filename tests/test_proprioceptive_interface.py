@@ -199,6 +199,42 @@ def test_encoding_normalizes_total_voltage_by_bank_size_and_replays_exactly() ->
         )
 
 
+def test_source_equivalent_spikes_use_sparse_full_voltage_events_and_replay() -> None:
+    mapping = proprioceptive_map()
+    calibration = ProprioceptiveCalibration(total_voltage=80.0)
+    observation = observe_proprioception(
+        body_with_leg_values(contact=True, load=calibration.load_scale_n),
+        HexapodParameters(),
+        calibration,
+    )
+    encoder = ProprioceptiveEncoder(mapping, calibration)
+
+    first = encoder.encode_source_equivalent_spikes(
+        observation,
+        steps=4,
+        seed=7,
+        rate_hz=10_000.0,
+        dt_ms=0.1,
+    )
+    second = encoder.encode_source_equivalent_spikes(
+        observation,
+        steps=4,
+        seed=7,
+        rate_hz=10_000.0,
+        dt_ms=0.1,
+    )
+
+    assert first == second
+    assert first
+    assert {event.channel for event in first} == {
+        f"proprioception_spikes_{leg}" for leg in LEG_NAMES
+    }
+    assert all(
+        set(event.voltages) == {calibration.total_voltage}
+        for event in first
+    )
+
+
 def test_map_rejects_overlap_incomplete_and_missing_graph_ids() -> None:
     with pytest.raises(ValidationError, match="overlap"):
         proprioceptive_map(overlap=True)
@@ -233,7 +269,7 @@ def test_real_registry_builds_six_disjoint_proprioceptive_banks() -> None:
         pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
     registry = resolve_biological_registry(
         load_biological_registry(
-            Path("data/registry/hexapod-motor-registry-v1.json")
+            Path("data/registry/hexapod-motor-registry-v2.json")
         ),
         RETAINED_MALE_CNS,
     )

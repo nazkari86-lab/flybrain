@@ -38,7 +38,7 @@ from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.shiu import ShiuParameters
 
 LEARNING_REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
-MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
+MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v2.json")
 
 
 class RetainedAssociativeMotorAssayResult(BaseModel, frozen=True):

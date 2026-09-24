@@ -24,7 +24,7 @@ from flybrain.shiu import ShiuParameters
 from flybrain.slow_memory import resolve_nitric_oxide_dans
 
 LEARNING_REGISTRY = Path("data/registry/autonomous-learning-registry-v1.json")
-MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v1.json")
+MOTOR_REGISTRY = Path("data/registry/hexapod-motor-registry-v2.json")
 
 
 def test_real_malecns_runs_contact_driven_hexapod_without_schedule() -> None:

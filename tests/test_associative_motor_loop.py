@@ -45,7 +45,7 @@ def proprio_map() -> ProprioceptiveMap:
 
 
 def graph() -> EventConnectome:
-    motor_ids = [100 + index for index in range(24)]
+    motor_ids = [100 + index for index in range(len(CANONICAL_MOTOR_GROUPS))]
     proprio_ids = [200 + index for index in range(6)]
     ids = np.array([1, 10, 20, 30, *motor_ids, *proprio_ids], dtype=np.uint64)
     index = {int(value): position for position, value in enumerate(ids)}
@@ -54,14 +54,21 @@ def graph() -> EventConnectome:
     values = np.array([400.0, 200.0, *([200.0] * len(motor_ids))], dtype=np.float32)
     return EventConnectome(
         neuron_ids=ids,
-        cell_types=("olfactory", "Kenyon_Cell", "MBON", "DAN", *("motor",) * 24, *("proprio",) * 6),
+        cell_types=(
+            "olfactory",
+            "Kenyon_Cell",
+            "MBON",
+            "DAN",
+            *("motor",) * len(motor_ids),
+            *("proprio",) * len(proprio_ids),
+        ),
         roles=(
             "learning_olfactory",
             "learning_kc",
             "learning_mbon",
             "dan_appetitive",
-            *("motor",) * 24,
-            *("sensory",) * 6,
+            *("motor",) * len(motor_ids),
+            *("sensory",) * len(proprio_ids),
         ),
         transmitters=("acetylcholine",) * len(ids),
         superclasses=("fixture",) * len(ids),
@@ -73,7 +80,7 @@ def binding() -> PlasticEdgeBinding:
     return PlasticEdgeBinding(
         overlay=PlasticWeightOverlay.create(
             edge_indices=np.array([1], dtype=np.int64),
-            canonical_edge_count=26,
+            canonical_edge_count=38,
         ),
         pre_ids=np.array([10], dtype=np.uint64),
         post_ids=np.array([20], dtype=np.uint64),

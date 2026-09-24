@@ -5,7 +5,7 @@ from flybrain import hexapod_neural_protocols as neural_protocols
 from flybrain.descending_interface import DescendingMap
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_body import LEG_NAMES
-from flybrain.hexapod_motor import HexapodMotorMap, MotorGroup
+from flybrain.hexapod_motor import CANONICAL_MOTOR_GROUPS, HexapodMotorMap, MotorGroup
 from flybrain.hexapod_neural_protocols import run_dn_to_motor_protocols
 from flybrain.proprioceptive_interface import ProprioceptiveBank, ProprioceptiveMap
 
@@ -14,20 +14,18 @@ def fixture(*, connected: bool) -> tuple[EventConnectome, DescendingMap, Hexapod
     descending = DescendingMap((1,), (2,), (3,), (4,), (5,), (6,))
     groups = []
     next_id = 100
-    for leg in LEG_NAMES:
-        for joint in ("trochanter", "tibia"):
-            for direction in ("flexor", "extensor"):
-                ids = (next_id,)
-                next_id += 1
-                groups.append(
-                    MotorGroup(
-                        name=f"{leg}_{joint}_{direction}",
-                        leg=leg,
-                        joint=joint,
-                        direction=direction,
-                        neuron_ids=ids,
-                    )
-                )
+    for name, leg, joint, direction in CANONICAL_MOTOR_GROUPS:
+        ids = (next_id,)
+        next_id += 1
+        groups.append(
+            MotorGroup(
+                name=name,
+                leg=leg,
+                joint=joint,
+                direction=direction,
+                neuron_ids=ids,
+            )
+        )
     motor = HexapodMotorMap(groups=tuple(groups))
     ids = np.array(
         [1, 2, 3, 4, 5, 6, *(group.neuron_ids[0] for group in groups)],
@@ -72,19 +70,17 @@ def proprio_fixture(
     proprio = ProprioceptiveMap(banks=banks)
     groups = []
     next_id = 100
-    for leg in LEG_NAMES:
-        for joint in ("trochanter", "tibia"):
-            for direction in ("flexor", "extensor"):
-                groups.append(
-                    MotorGroup(
-                        name=f"{leg}_{joint}_{direction}",
-                        leg=leg,
-                        joint=joint,
-                        direction=direction,
-                        neuron_ids=(next_id,),
-                    )
-                )
-                next_id += 1
+    for name, leg, joint, direction in CANONICAL_MOTOR_GROUPS:
+        groups.append(
+            MotorGroup(
+                name=name,
+                leg=leg,
+                joint=joint,
+                direction=direction,
+                neuron_ids=(next_id,),
+            )
+        )
+        next_id += 1
     motor = HexapodMotorMap(groups=tuple(groups))
     ids = np.array(
         [

@@ -29,6 +29,62 @@ def test_flygym_backend_implements_shared_torque_observation_contract() -> None:
     assert all(math.isfinite(value) for leg in stepped.legs for value in leg.joint_angles_rad)
 
 
+def test_flygym_backend_uses_flygym_physics_scale_and_substeps_body_windows() -> None:
+    backend = FlyGymBackend(HexapodParameters(dt_s=0.01))
+
+    assert backend._physics_substeps == 100
+    assert backend._physics_dt_s == pytest.approx(0.0001)
+    assert (backend._simulation.mj_model.actuator_forcerange[:, 1] <= 65.0).all()
+
+
+def test_flygym_backend_preserves_six_distinct_foot_positions() -> None:
+    body = FlyGymBackend(HexapodParameters(dt_s=0.001)).observe()
+
+    assert len({leg.foot_position_m for leg in body.legs}) == 6
+
+
+def test_flygym_backend_honors_world_initial_position_in_meters() -> None:
+    origin = FlyGymBackend(HexapodParameters(dt_s=0.001)).observe()
+    shifted = FlyGymBackend(
+        HexapodParameters(
+            dt_s=0.001,
+            initial_thorax_position_m=(0.003, -0.002),
+        )
+    ).observe()
+
+    assert shifted.thorax_position_m[0] - origin.thorax_position_m[0] == pytest.approx(0.003)
+    assert shifted.thorax_position_m[1] - origin.thorax_position_m[1] == pytest.approx(-0.002)
+
+
+def test_flygym_backend_reports_measured_clipped_torque_and_work() -> None:
+    backend = FlyGymBackend(HexapodParameters(dt_s=0.001))
+    body = backend.step(HexapodTorque.for_leg("left_fore", (0.001, 0.0, 0.0)))
+
+    assert body.leg("left_fore").applied_torques_nm[0] == pytest.approx(65e-6)
+    requested_work_estimate = 0.001 * abs(
+        body.leg("left_fore").joint_velocities_rad_s[0]
+    ) * 0.001
+    assert 0.0 < body.energy_j < requested_work_estimate / 10.0
+
+
+def test_flygym_backend_applies_mass_and_friction_holdout_perturbations() -> None:
+    baseline = FlyGymBackend(HexapodParameters(dt_s=0.001))
+    changed = FlyGymBackend(
+        HexapodParameters(
+            dt_s=0.001,
+            body_mass_kg=0.00105,
+            friction_coefficient=0.27,
+        )
+    )
+
+    baseline_mass = baseline._simulation.mj_model.body_mass.sum()
+    changed_mass = changed._simulation.mj_model.body_mass.sum()
+    assert changed_mass / baseline_mass == pytest.approx(1.05)
+    baseline_friction = baseline._simulation.mj_model.geom_friction[0, 0]
+    changed_friction = changed._simulation.mj_model.geom_friction[0, 0]
+    assert changed_friction / baseline_friction == pytest.approx(0.9)
+
+
 def test_flygym_backend_reset_and_replay_are_exact_on_same_platform() -> None:
     parameters = HexapodParameters(dt_s=0.001)
     schedule = (

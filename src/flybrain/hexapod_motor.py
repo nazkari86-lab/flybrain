@@ -11,19 +11,25 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from flybrain.biological_registry import ResolvedRegistry
+from flybrain.descending_interface import DescendingMap
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_body import LEG_NAMES, HexapodTorque, LegName, Vec3
 
-MotorJoint = Literal["trochanter", "tibia"]
-MotorDirection = Literal["flexor", "extensor"]
+MotorJoint = Literal["thorax_coxa", "trochanter", "tibia"]
+MotorDirection = Literal["anterior", "posterior", "flexor", "extensor"]
 
 
 def _canonical_descriptors() -> tuple[tuple[str, LegName, MotorJoint, MotorDirection], ...]:
+    joint_directions: tuple[tuple[MotorJoint, tuple[MotorDirection, MotorDirection]], ...] = (
+        ("thorax_coxa", ("anterior", "posterior")),
+        ("trochanter", ("flexor", "extensor")),
+        ("tibia", ("flexor", "extensor")),
+    )
     return tuple(
         (f"{leg}_{joint}_{direction}", leg, joint, direction)
         for leg in LEG_NAMES
-        for joint in ("trochanter", "tibia")
-        for direction in ("flexor", "extensor")
+        for joint, directions in joint_directions
+        for direction in directions
     )
 
 
@@ -63,12 +69,12 @@ class MotorGroup(BaseModel, frozen=True):
 
 
 class PhaseEnvelopeAssumption(BaseModel, frozen=True):
-    """Explicit model-only thorax-coxa oscillator assumptions."""
+    """Optional model-only thorax-coxa calibration oscillator."""
 
     model_config = ConfigDict(extra="forbid")
 
     evidence_kind: Literal["model_assumption"] = "model_assumption"
-    amplitude_nm: float = Field(default=0.004, ge=0.0)
+    amplitude_nm: float = Field(default=0.0, ge=0.0)
     waveform: Literal["sine"] = "sine"
     tripod_phase_offsets: tuple[float, float, float, float, float, float] = (
         0.0,
@@ -95,7 +101,7 @@ class PhaseEnvelopeAssumption(BaseModel, frozen=True):
 
 
 class HexapodMotorMap(BaseModel, frozen=True):
-    """Complete, disjoint 24-channel motor map in canonical order."""
+    """Complete, disjoint 36-channel motor map in canonical order."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -167,8 +173,10 @@ class MotorActivationState(BaseModel, frozen=True):
     leg_phases: tuple[float, float, float, float, float, float]
     activation_time_constant_s: float = Field(gt=0.0)
     saturation_rate_hz: float = Field(gt=0.0)
-    neural_authority_nm: tuple[float, float]
+    neural_authority_nm: tuple[float, float, float]
     phase_envelope: PhaseEnvelopeAssumption
+    descending_phase_gain: float = Field(gt=0.0)
+    descending_phase_bias: float
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:
@@ -187,6 +195,8 @@ class MotorActivationState(BaseModel, frozen=True):
             self.activation_time_constant_s,
             self.saturation_rate_hz,
             *self.neural_authority_nm,
+            self.descending_phase_gain,
+            self.descending_phase_bias,
         )
         if any(not math.isfinite(value) for value in scalars):
             raise ValueError("motor activation state must be finite")
@@ -198,6 +208,10 @@ class MotorActivationState(BaseModel, frozen=True):
             raise ValueError("leg phases must lie in [0, 1)")
         if any(value <= 0.0 for value in self.neural_authority_nm):
             raise ValueError("neural torque authority must be positive")
+        if not 0.5 <= self.descending_phase_gain <= 1.5:
+            raise ValueError("descending phase gain must lie in [0.5, 1.5]")
+        if not -0.25 <= self.descending_phase_bias <= 0.25:
+            raise ValueError("descending phase bias must lie in [-0.25, 0.25]")
         return self
 
     def rate_hz(self, name: str) -> float:
@@ -214,9 +228,9 @@ class MotorActivationState(BaseModel, frozen=True):
 
 
 class HexapodMotorDecoder:
-    """Decode only exact motor IDs into bounded antagonist and model torques."""
+    """Decode motor spikes with bounded descending modulation of neural drive."""
 
-    version = "hexapod-motor-decoder-v1"
+    version = "hexapod-motor-decoder-v3"
 
     def __init__(
         self,
@@ -224,8 +238,9 @@ class HexapodMotorDecoder:
         *,
         activation_time_constant_s: float = 0.02,
         saturation_rate_hz: float = 100.0,
-        neural_authority_nm: tuple[float, float] = (0.01, 0.01),
+        neural_authority_nm: tuple[float, float, float] = (0.01, 0.01, 0.01),
         phase_envelope: PhaseEnvelopeAssumption | None = None,
+        descending_map: DescendingMap | None = None,
     ) -> None:
         parameters = (
             activation_time_constant_s,
@@ -240,9 +255,36 @@ class HexapodMotorDecoder:
         self.neural_authority_nm = (
             float(neural_authority_nm[0]),
             float(neural_authority_nm[1]),
+            float(neural_authority_nm[2]),
         )
         self.phase_envelope = phase_envelope or PhaseEnvelopeAssumption()
+        self.descending_map = descending_map
         self._activations = (0.0,) * len(mapping.groups)
+
+    def _descending_phase_modulation(
+        self, spikes: tuple[int, ...], *, window_s: float
+    ) -> tuple[float, float]:
+        if self.descending_map is None:
+            return 1.0, 0.0
+        counts = Counter(spikes)
+
+        def rate(ids: tuple[int, ...]) -> float:
+            hz = sum(counts[value] for value in ids) / (len(ids) * window_s)
+            return min(hz / self.saturation_rate_hz, 1.0)
+
+        na_left = rate(self.descending_map.d_na02_left)
+        na_right = rate(self.descending_map.d_na02_right)
+        ng_left = rate(self.descending_map.d_ng13_left)
+        ng_right = rate(self.descending_map.d_ng13_right)
+        mdn_left = rate(self.descending_map.mdn_left)
+        mdn_right = rate(self.descending_map.mdn_right)
+        lateral_drive = 0.25 * (
+            (na_left - na_right) + (ng_left - ng_right)
+        ) + 0.125 * (mdn_left - mdn_right)
+        phase_bias = float(np.clip(lateral_drive, -0.25, 0.25))
+        retreat_drive = 0.25 * (mdn_left + mdn_right)
+        phase_gain = float(np.clip(1.0 + retreat_drive, 0.5, 1.5))
+        return phase_gain, phase_bias
 
     def decode(
         self,
@@ -262,6 +304,9 @@ class HexapodMotorDecoder:
             raise ValueError("spikes must contain positive integer neuron IDs")
 
         counts = Counter(spikes)
+        descending_phase_gain, descending_phase_bias = (
+            self._descending_phase_modulation(spikes, window_s=window_s)
+        )
         rates = tuple(
             sum(counts[neuron_id] for neuron_id in group.neuron_ids)
             / (len(group.neuron_ids) * window_s)
@@ -280,18 +325,33 @@ class HexapodMotorDecoder:
         }
         torque_values: list[Vec3] = []
         for leg_index, leg in enumerate(LEG_NAMES):
+            side_sign = 1.0 if leg.startswith("left") else -1.0
+            lateral_neural_gain = 1.0 + side_sign * descending_phase_bias
+            phase = (
+                leg_phases[leg_index] + side_sign * descending_phase_bias
+            ) % 1.0
             phase_torque = self.phase_envelope.amplitude_nm * math.sin(
-                2.0 * math.pi * leg_phases[leg_index]
+                2.0 * math.pi * phase
+            ) * descending_phase_gain
+            thorax_coxa = phase_torque + (
+                descending_phase_gain
+                * lateral_neural_gain
+                * side_sign
+                * self.neural_authority_nm[0]
+                * (
+                    activation_by_name[f"{leg}_thorax_coxa_anterior"]
+                    - activation_by_name[f"{leg}_thorax_coxa_posterior"]
+                )
             )
-            trochanter = self.neural_authority_nm[0] * (
+            trochanter = descending_phase_gain * self.neural_authority_nm[1] * (
                 activation_by_name[f"{leg}_trochanter_extensor"]
                 - activation_by_name[f"{leg}_trochanter_flexor"]
             )
-            tibia = self.neural_authority_nm[1] * (
+            tibia = descending_phase_gain * self.neural_authority_nm[2] * (
                 activation_by_name[f"{leg}_tibia_extensor"]
                 - activation_by_name[f"{leg}_tibia_flexor"]
             )
-            torque_values.append((phase_torque, trochanter, tibia))
+            torque_values.append((thorax_coxa, trochanter, tibia))
         state = MotorActivationState(
             group_names=tuple(group.name for group in self.mapping.groups),
             rates_hz=rates,
@@ -303,6 +363,8 @@ class HexapodMotorDecoder:
             saturation_rate_hz=self.saturation_rate_hz,
             neural_authority_nm=self.neural_authority_nm,
             phase_envelope=self.phase_envelope,
+            descending_phase_gain=descending_phase_gain,
+            descending_phase_bias=descending_phase_bias,
         )
         return state
 

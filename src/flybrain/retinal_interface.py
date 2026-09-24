@@ -63,8 +63,6 @@ def _wrap_angle(value: float) -> float:
 
 def _angular_delta(current: float, previous: float) -> float:
     raw = current - previous
-    if math.isclose(abs(raw), math.pi, rel_tol=0.0, abs_tol=1e-12):
-        raise ValueError("visual bearing jump of exactly pi is ambiguous")
     return _wrap_angle(raw)
 
 
@@ -77,6 +75,29 @@ def _disc_features(body: FlyBody, disc: VisualDisc) -> tuple[float, float]:
     bearing = _wrap_angle(math.atan2(dy, dx) - body.heading_rad)
     half_width = math.asin(min(1.0, disc.radius / distance))
     return bearing, half_width
+
+
+def rebase_overlapping_history(
+    body: FlyBody,
+    previous: tuple[VisualDisc, ...],
+    current: tuple[VisualDisc, ...],
+) -> tuple[VisualDisc, ...]:
+    """Reset only invalid temporal baselines after ego-motion crosses a disc.
+
+    Scenes are stored in world coordinates, while the retinal projection is
+    evaluated at the current body pose.  A fast body step can therefore make
+    an otherwise valid previous disc overlap the body.  Reusing the current
+    disc for that channel gives a conservative zero-motion baseline; the
+    strict validation in :func:`observe_retina` remains unchanged.
+    """
+
+    if len(previous) != len(current):
+        raise ValueError("previous and current visual scenes must have equal length")
+    rebased: list[VisualDisc] = []
+    for old_disc, new_disc in zip(previous, current, strict=True):
+        distance = math.hypot(old_disc.x - body.x, old_disc.y - body.y)
+        rebased.append(new_disc if distance <= old_disc.radius else old_disc)
+    return tuple(rebased)
 
 
 def observe_retina(
@@ -153,6 +174,49 @@ class VisualInterfaceMap:
         flattened = [value for group in groups for value in group]
         if len(set(flattened)) != len(flattened):
             raise ValueError("visual interface populations must be disjoint")
+
+
+@dataclass(frozen=True)
+class VisualLoomingMap:
+    """Exact projection and descending populations for a looming calibration."""
+
+    left_lc4_ids: tuple[int, ...]
+    right_lc4_ids: tuple[int, ...]
+    left_lplc2_ids: tuple[int, ...]
+    right_lplc2_ids: tuple[int, ...]
+    left_dnp01_ids: tuple[int, ...]
+    right_dnp01_ids: tuple[int, ...]
+    left_dnp02_ids: tuple[int, ...]
+    right_dnp02_ids: tuple[int, ...]
+
+    def validate_disjoint_nonempty(self) -> None:
+        names = (
+            "left_lc4_ids",
+            "right_lc4_ids",
+            "left_lplc2_ids",
+            "right_lplc2_ids",
+            "left_dnp01_ids",
+            "right_dnp01_ids",
+            "left_dnp02_ids",
+            "right_dnp02_ids",
+        )
+        groups = tuple(_validate_ids(getattr(self, name), name) for name in names)
+        flattened = [value for group in groups for value in group]
+        if len(set(flattened)) != len(flattened):
+            raise ValueError("looming interface populations must be disjoint")
+
+    def populations(self) -> dict[str, tuple[int, ...]]:
+        self.validate_disjoint_nonempty()
+        return {
+            "lc4_left": self.left_lc4_ids,
+            "lc4_right": self.right_lc4_ids,
+            "lplc2_left": self.left_lplc2_ids,
+            "lplc2_right": self.right_lplc2_ids,
+            "dnp01_left": self.left_dnp01_ids,
+            "dnp01_right": self.right_dnp01_ids,
+            "dnp02_left": self.left_dnp02_ids,
+            "dnp02_right": self.right_dnp02_ids,
+        }
 
 
 class VisualInterfaceEncoder:

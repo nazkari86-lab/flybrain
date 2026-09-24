@@ -237,16 +237,16 @@ def _build_phase_gait_schedule(
                 offsets[leg_index] + step * parameters.phase_rate_hz * parameters.dt_s
             ) % 1.0
             if phase < 0.5:
-                names = (
-                    f"{leg}_trochanter_flexor",
-                    f"{leg}_tibia_extensor",
-                )
+                # Low-duty stance drive keeps the foot moving rearward without
+                # accumulating the vertical-joint instability of the old pulse.
+                name = f"{leg}_thorax_coxa_anterior"
+                if step % 4 == 0:
+                    spikes.append(mapping.group(name).neuron_ids[0])
             else:
-                names = (
-                    f"{leg}_trochanter_extensor",
-                    f"{leg}_tibia_flexor",
-                )
-            for name in names:
+                # The swing half-cycle uses the mirrored antagonist at full
+                # population strength; no target coordinate or desired action
+                # enters this calibration schedule.
+                name = f"{leg}_thorax_coxa_posterior"
                 spikes.extend(mapping.group(name).neuron_ids)
         spike_steps.append(tuple(spikes))
     return MotorSpikeSchedule.build(
@@ -380,7 +380,13 @@ def _mirror_group(mapping: HexapodMotorMap, group: MotorGroup) -> MotorGroup:
 
 
 def _opposite_group(mapping: HexapodMotorMap, group: MotorGroup) -> MotorGroup:
-    opposite = "extensor" if group.direction == "flexor" else "flexor"
+    opposites = {
+        "flexor": "extensor",
+        "extensor": "flexor",
+        "anterior": "posterior",
+        "posterior": "anterior",
+    }
+    opposite = opposites[group.direction]
     return mapping.group(f"{group.leg}_{group.joint}_{opposite}")
 
 
@@ -404,10 +410,21 @@ def _direct_classification(
     assert lesion.joint_motion_rad is not None
     effect = normal.joint_motion_rad
     lesion_effect = _lesion_fraction(effect, lesion.joint_motion_rad)
-    expected_sign = -1.0 if group.direction == "flexor" else 1.0
+    if group.joint == "thorax_coxa":
+        anatomical_sign = -1.0 if group.direction == "posterior" else 1.0
+        side_sign = 1.0 if group.leg.startswith("left") else -1.0
+        expected_sign = anatomical_sign * side_sign
+    else:
+        expected_sign = -1.0 if group.direction == "flexor" else 1.0
     directional_values = tuple(
         item.joint_motion_rad
         for item in (normal, mirror, perturbation, holdout)
+    )
+    directional_signs = (
+        expected_sign,
+        -expected_sign if group.joint == "thorax_coxa" else expected_sign,
+        expected_sign,
+        expected_sign,
     )
     if normal.motor_spikes < thresholds.minimum_motor_spikes:
         classification: Literal[
@@ -415,9 +432,8 @@ def _direct_classification(
         ] = "underpowered"
         reasons = ("direct motor spike count is below the fixed threshold",)
     elif any(
-        value is None
-        or expected_sign * value < thresholds.minimum_joint_motion_rad
-        for value in directional_values
+        value is None or sign * value < thresholds.minimum_joint_motion_rad
+        for value, sign in zip(directional_values, directional_signs, strict=True)
     ):
         classification = "directionally_wrong"
         reasons = ("normal, mirror, perturbation, or holdout joint sign is wrong",)

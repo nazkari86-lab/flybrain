@@ -23,9 +23,9 @@ def test_real_malecns_hexapod_motor_assay(tmp_path: Path) -> None:
             "hexapod-motor",
             snapshot,
             "--registry",
-            "data/registry/hexapod-motor-registry-v1.json",
+            "data/registry/hexapod-motor-registry-v2.json",
             "--steps",
-            "90",
+            "180",
             "--seed",
             "7",
             "--output",
@@ -42,7 +42,7 @@ def test_real_malecns_hexapod_motor_assay(tmp_path: Path) -> None:
     assert families["direct_motor_and_gait"]["graph_edges"] == 6_240_402
     assert families["direct_motor_and_gait"]["calibration_passed"] is True
     assert all(
-        claim["classification"] in valid
+        claim["classification"] == "positive"
         for claim in families["dn_to_motor"]["claims"].values()
     )
     assert all(

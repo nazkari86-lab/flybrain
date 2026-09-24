@@ -41,6 +41,17 @@ def test_looming_is_monotonic_with_angular_expansion() -> None:
     assert 0.0 < far.looming < near.looming <= 1.0
 
 
+def test_exact_pi_bearing_change_is_a_bounded_motion_event() -> None:
+    observation = observe_retina(
+        BODY,
+        (VisualDisc(8.0, 5.0, 0.2),),
+        (VisualDisc(2.0, 5.0, 0.2),),
+    )
+
+    assert observation.left_motion == pytest.approx(0.0)
+    assert observation.right_motion == pytest.approx(1.0)
+
+
 def test_photoreceptor_events_never_contain_motion_or_looming_channels() -> None:
     events = ENCODER.encode_photoreceptors(OBSERVATION, step=3)
     assert {event.channel for event in events} <= {
@@ -92,6 +103,22 @@ def test_observation_has_no_object_labels_or_coordinates() -> None:
 def test_invalid_scenes_fail_closed(previous, current, error: str) -> None:
     with pytest.raises(ValueError, match=error):
         observe_retina(BODY, previous, current)
+
+
+def test_visual_history_rebases_when_body_crosses_previous_disc() -> None:
+    from flybrain import retinal_interface
+
+    previous = (VisualDisc(5.1, 5.0, 0.2),)
+    current = (VisualDisc(5.5, 5.0, 0.1),)
+    moved_body = FlyBody(5.1, 5.0, 0.0, 0.0, 0.0, 1.0, (False,) * 6)
+    rebase = getattr(retinal_interface, "rebase_overlapping_history", None)
+    assert rebase is not None
+
+    rebased = rebase(moved_body, previous, current)
+
+    assert rebased == current
+    observation = observe_retina(moved_body, rebased, current)
+    assert observation.looming == 0.0
 
 
 def test_mapping_rejects_overlap_and_bad_ids() -> None:

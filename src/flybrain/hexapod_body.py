@@ -186,6 +186,7 @@ class HexapodParameters(BaseModel, frozen=True):
     initial_thorax_position_m: tuple[float, float] = (0.0, 0.0)
     joint_inertia_kg_m2: Vec3 = (2.0e-5, 3.0e-5, 2.0e-5)
     joint_damping_nm_s_rad: Vec3 = (2.0e-4, 3.0e-4, 2.0e-4)
+    joint_stiffness_nm_rad: Vec3 = (0.002, 0.002, 0.002)
     max_torque_nm: Vec3 = (0.02, 0.03, 0.03)
     link_lengths_m: Vec3 = (0.12, 0.40, 0.40)
     hip_offsets_m: tuple[Vec3, ...] = (
@@ -218,6 +219,7 @@ class HexapodParameters(BaseModel, frozen=True):
             self.initial_joint_angles_rad,
             self.joint_inertia_kg_m2,
             self.joint_damping_nm_s_rad,
+            self.joint_stiffness_nm_rad,
             self.max_torque_nm,
             self.link_lengths_m,
             self.joint_mirror_signs,
@@ -242,6 +244,8 @@ class HexapodParameters(BaseModel, frozen=True):
             raise ValueError("joint inertia must be positive")
         if any(value < 0.0 for value in self.joint_damping_nm_s_rad):
             raise ValueError("joint damping cannot be negative")
+        if any(value < 0.0 for value in self.joint_stiffness_nm_rad):
+            raise ValueError("joint stiffness cannot be negative")
         if any(value <= 0.0 for value in self.max_torque_nm):
             raise ValueError("maximum torque must be positive")
         if any(value <= 0.0 for value in self.link_lengths_m):
@@ -478,16 +482,28 @@ class ReferenceHexapod:
             old_leg = previous.legs[index]
             requested = requested_torque.values[index]
             limits = self.parameters.max_torque_nm
-            applied: Vec3 = (
+            commanded: Vec3 = (
                 _clamp(requested[0], -limits[0], limits[0]),
                 _clamp(requested[1], -limits[1], limits[1]),
                 _clamp(requested[2], -limits[2], limits[2]),
             )
             velocity_values = []
             angle_values = []
+            applied_values = []
             for joint in range(3):
+                applied_joint = _clamp(
+                    commanded[joint]
+                    + self.parameters.joint_stiffness_nm_rad[joint]
+                    * (
+                        self.parameters.initial_joint_angles_rad[joint]
+                        - old_leg.joint_angles_rad[joint]
+                    ),
+                    -limits[joint],
+                    limits[joint],
+                )
+                applied_values.append(applied_joint)
                 acceleration = (
-                    applied[joint]
+                    applied_joint
                     - self.parameters.joint_damping_nm_s_rad[joint]
                     * old_leg.joint_velocities_rad_s[joint]
                 ) / self.parameters.joint_inertia_kg_m2[joint]
@@ -503,12 +519,17 @@ class ReferenceHexapod:
                     velocity = 0.0
                 velocity_values.append(velocity)
                 angle_values.append(angle)
-                energy_delta += abs(applied[joint] * velocity) * dt
+                energy_delta += abs(applied_joint * velocity) * dt
             angles: Vec3 = (angle_values[0], angle_values[1], angle_values[2])
             velocities: Vec3 = (
                 velocity_values[0],
                 velocity_values[1],
                 velocity_values[2],
+            )
+            applied: Vec3 = (
+                applied_values[0],
+                applied_values[1],
+                applied_values[2],
             )
             old_raw = _raw_foot_position(
                 previous.thorax_position_m,

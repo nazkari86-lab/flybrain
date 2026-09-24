@@ -37,6 +37,8 @@ _FLYGYM_LEG_INDEX = {name: index for index, name in enumerate(("lf", "lm", "lh",
 _NM_TO_FLYGYM_TORQUE = 1e6
 _FLYGYM_FORCE_TO_N = 1e-3
 _MM_TO_M = 1e-3
+_FLYGYM_MAX_PHYSICS_DT_S = 1e-4
+_FLYGYM_ACTUATOR_FORCE_LIMIT = 65.0
 
 
 class FlyGymAvailability(BaseModel, frozen=True):
@@ -112,21 +114,32 @@ class FlyGymBackend:
         self._anatomy = importlib.import_module("flygym.anatomy")
         self._math = importlib.import_module("flygym.utils.math")
         self._mujoco = importlib.import_module("mujoco")
+        self._physics_substeps = max(
+            1, math.ceil(self._parameters.dt_s / _FLYGYM_MAX_PHYSICS_DT_S)
+        )
+        self._physics_dt_s = self._parameters.dt_s / self._physics_substeps
         self._build()
 
     def _build(self) -> None:
         fly = self._compose.NeuroMechFly(name="flybrain")
+        axis_order = self._anatomy.AxisOrder.YAW_PITCH_ROLL
         skeleton = self._anatomy.Skeleton(
-            axis_order=self._anatomy.AxisOrder.YAW_ROLL_PITCH,
-            joint_preset=self._anatomy.JointPreset.LEGS_ACTIVE_ONLY,
+            axis_order=axis_order,
+            joint_preset=self._anatomy.JointPreset.LEGS_ONLY,
         )
-        fly.add_joints(skeleton, self._compose.KinematicPosePreset.NEUTRAL)
+        neutral_pose = self._compose.KinematicPosePreset.NEUTRAL.get_pose_by_axis_order(
+            axis_order
+        )
+        fly.add_joints(skeleton, neutral_pose)
         by_name = {item.name: item for item in fly.get_jointdofs_order()}
         missing = sorted(set(self._dof_names) - set(by_name))
         if missing:
             raise RuntimeError(f"FlyGym joint map is incomplete: {missing}")
         selected = [by_name[name] for name in self._dof_names]
-        largest_authority = max(self._parameters.max_torque_nm) * _NM_TO_FLYGYM_TORQUE
+        largest_authority = min(
+            max(self._parameters.max_torque_nm) * _NM_TO_FLYGYM_TORQUE,
+            _FLYGYM_ACTUATOR_FORCE_LIMIT,
+        )
         fly.add_actuators(
             selected,
             self._compose.ActuatorType.MOTOR,
@@ -135,14 +148,29 @@ class FlyGymBackend:
         world = self._compose.FlatGroundWorld()
         world.add_fly(
             fly,
-            (0.0, 0.0, 0.5),
+            (
+                self._parameters.initial_thorax_position_m[0] / _MM_TO_M,
+                self._parameters.initial_thorax_position_m[1] / _MM_TO_M,
+                0.5,
+            ),
             self._math.Rotation3D("quat", (1.0, 0.0, 0.0, 0.0)),
         )
         self._fly = fly
         self._simulation = self._flygym.Simulation(
             world,
-            timestep=self._parameters.dt_s,
+            timestep=self._physics_dt_s,
         )
+        default_parameters = HexapodParameters()
+        mass_ratio = self._parameters.body_mass_kg / default_parameters.body_mass_kg
+        friction_ratio = (
+            self._parameters.friction_coefficient
+            / default_parameters.friction_coefficient
+        )
+        model = self._simulation.mj_model
+        model.body_mass[:] *= mass_ratio
+        model.body_inertia[:] *= mass_ratio
+        model.geom_friction[:, 0] *= friction_ratio
+        self._mujoco.mj_setConst(model, self._simulation.mj_data)
         self._all_dof_names = tuple(item.name for item in fly.get_jointdofs_order())
         self._joint_indices = tuple(self._all_dof_names.index(name) for name in self._dof_names)
         body_names = tuple(item.name for item in fly.get_bodysegs_order())
@@ -256,16 +284,24 @@ class FlyGymBackend:
             flattened,
         )
         before = self.observe()
-        self._simulation.step()
+        for _ in range(self._physics_substeps):
+            self._simulation.step()
+            forces_nm = (
+                self._simulation.get_actuator_forces(
+                    "flybrain", self._compose.ActuatorType.MOTOR
+                )
+                / _NM_TO_FLYGYM_TORQUE
+            )
+            velocities = self._simulation.get_joint_velocities("flybrain")
+            self._energy_j += sum(
+                abs(float(force) * float(velocities[index])) * self._physics_dt_s
+                for force, index in zip(forces_nm, self._joint_indices, strict=True)
+            )
         self._time_s += self._parameters.dt_s
-        self._last_torque = torque
-        velocities = self._simulation.get_joint_velocities("flybrain")
-        self._energy_j += sum(
-            abs(value * float(velocities[index])) * self._parameters.dt_s
-            for value, index in zip(
-                (item for vector in torque.values for item in vector),
-                self._joint_indices,
-                strict=True,
+        self._last_torque = HexapodTorque(
+            values=tuple(
+                _vec3(forces_nm[start : start + 3])
+                for start in range(0, len(forces_nm), 3)
             )
         )
         self._previous_position_m = before.thorax_position_m

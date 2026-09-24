@@ -41,6 +41,19 @@ V1_POPULATION_NAMES = {
     "mdn_right",
 }
 
+V2_EXACT_POPULATION_IDS = {
+    "dnp01_left": (10010,),
+    "dnp01_right": (10001,),
+    "dnp02_left": (10197,),
+    "dnp02_right": (10117,),
+}
+V2_COUNT_POPULATIONS = {
+    "lc4_left": 71,
+    "lc4_right": 55,
+    "lplc2_left": 94,
+    "lplc2_right": 91,
+}
+
 
 def annotation_snapshot(
     root: Path,
@@ -89,6 +102,47 @@ def test_v1_registry_declares_exact_documented_populations() -> None:
     assert by_name["lc16_left"].selector.expected_count == 88
     assert by_name["lc16_right"].selector.expected_count == 94
     assert set(by_name) == V1_POPULATION_NAMES
+
+
+def test_v2_registry_declares_looming_projection_populations() -> None:
+    registry = load_biological_registry(
+        Path("data/registry/biological-interface-registry-v2.json")
+    )
+    by_name = {item.name: item for item in registry.populations}
+
+    assert registry.registry_version == "male-cns-biological-interface-v2"
+    for name, ids in V2_EXACT_POPULATION_IDS.items():
+        assert by_name[name].selector.expected_ids == ids
+        assert by_name[name].selector.expected_count == len(ids)
+    for name, count in V2_COUNT_POPULATIONS.items():
+        assert by_name[name].selector.expected_count == count
+    assert {
+        "lc4_left",
+        "lc4_right",
+        "lplc2_left",
+        "lplc2_right",
+        "dnp01_left",
+        "dnp01_right",
+        "dnp02_left",
+        "dnp02_right",
+    } <= set(by_name)
+
+
+def test_v2_registry_resolves_looming_populations_against_retained_snapshot() -> None:
+    if not RETAINED_MALE_CNS.is_dir():
+        pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
+
+    resolved = resolve_biological_registry(
+        load_biological_registry(
+            Path("data/registry/biological-interface-registry-v2.json")
+        ),
+        RETAINED_MALE_CNS,
+    )
+
+    for name, ids in V2_EXACT_POPULATION_IDS.items():
+        assert resolved.population(name).neuron_ids == ids
+    for name, count in V2_COUNT_POPULATIONS.items():
+        assert len(resolved.population(name).neuron_ids) == count
 
 
 def test_v1_registry_resolves_against_retained_full_snapshot() -> None:

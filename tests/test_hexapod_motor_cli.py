@@ -79,9 +79,10 @@ def cli_fixture(root: Path) -> tuple[Path, Path]:
     pq.write_table(pa.Table.from_pylist(neurons), snapshot / "neurons.parquet")
     proprio_ids = [row["bodyId"] for row in rows if row["superclass"] == "vnc_sensory"]
     motor_ids = [row["bodyId"] for row in rows if row["superclass"] == "vnc_motor"]
+    motor_stride = len(motor_ids) // len(proprio_ids)
     edges = [
         {"pre_id": pre, "post_id": post, "synapse_count": 500, "sign": 1}
-        for pre, post in zip(proprio_ids, motor_ids[::6], strict=True)
+        for pre, post in zip(proprio_ids, motor_ids[::motor_stride], strict=True)
     ]
     edges.extend(
         {"pre_id": neuron_id, "post_id": motor_ids[index], "synapse_count": 500, "sign": 1}

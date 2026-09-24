@@ -24,7 +24,7 @@ from flybrain.bundle import write_bundle
 from flybrain.descending_interface import DescendingMap
 from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episode
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
-from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody
+from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody, MotorCommand
 from flybrain.experiment import ExperimentConfig, run_experiment
 from flybrain.games.cli import games_app
 from flybrain.graph import EventConnectome, SparseConnectome
@@ -42,12 +42,21 @@ from flybrain.importers.csv_edges import import_csv_snapshot
 from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.mb_association import run_mb_association
+from flybrain.mbon_descending_assay import run_retained_mbon_descending_assay
+from flybrain.practical_autonomy import PracticalAutonomyConfig, run_practical_autonomy
+from flybrain.practical_flygym import run_practical_flygym
+from flybrain.practical_interactive import (
+    launch_interactive_process,
+    run_interactive_smoke,
+)
 from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.provenance import snapshot_content_sha256
+from flybrain.retinal_interface import VisualLoomingMap
 from flybrain.schema import SnapshotMetadata
 from flybrain.shiu_experiment import run_shiu_smoke
 from flybrain.shiu_plastic_experiment import run_shiu_plastic_integration
 from flybrain.steering_benchmark import run_causal_steering_benchmark
+from flybrain.visual_looming_assay import run_visual_looming_assay
 
 app = typer.Typer(help="Reproducible sparse connectome experiments.")
 manifest_app = typer.Typer(help="Validate immutable source declarations.")
@@ -59,6 +68,21 @@ app.add_typer(data_app, name="data")
 app.add_typer(snapshot_app, name="snapshot")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(games_app, name="games")
+
+
+@app.command("interactive")
+def interactive_command(
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 200,
+) -> None:
+    """Open the keyboard-controlled real-time FlyGym/MuJoCo application."""
+
+    if dry_run:
+        typer.echo(run_interactive_smoke(steps=steps).model_dump_json())
+        return
+    exit_code = launch_interactive_process()
+    if exit_code != 0:
+        raise typer.Exit(exit_code)
 
 
 @manifest_app.command("validate")
@@ -260,12 +284,71 @@ def biological_steering_command(
     typer.echo(result.model_dump_json())
 
 
+@experiment_app.command("visual-looming")
+def visual_looming_command(
+    snapshot: Path,
+    registry: Annotated[Path, typer.Option("--registry")],
+    output: Annotated[Path, typer.Option("--output")],
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 40,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+) -> None:
+    """Publish a causal LC4/LPLC2-to-DNp01/DNp02 looming assay."""
+
+    output_final = output.resolve()
+    snapshot_final = snapshot.resolve()
+    registry_final = registry.resolve()
+    if output_final in {snapshot_final, registry_final} or output_final.is_relative_to(
+        snapshot_final
+    ):
+        raise typer.BadParameter(
+            "--output must differ from inputs and be outside snapshot"
+        )
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+
+    declared = load_biological_registry(registry_final)
+    resolved = resolve_biological_registry(declared, snapshot_final)
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot_final))
+    resolved.validate_graph(graph)
+    mapping = VisualLoomingMap(
+        left_lc4_ids=resolved.population("lc4_left").neuron_ids,
+        right_lc4_ids=resolved.population("lc4_right").neuron_ids,
+        left_lplc2_ids=resolved.population("lplc2_left").neuron_ids,
+        right_lplc2_ids=resolved.population("lplc2_right").neuron_ids,
+        left_dnp01_ids=resolved.population("dnp01_left").neuron_ids,
+        right_dnp01_ids=resolved.population("dnp01_right").neuron_ids,
+        left_dnp02_ids=resolved.population("dnp02_left").neuron_ids,
+        right_dnp02_ids=resolved.population("dnp02_right").neuron_ids,
+    )
+    result = run_visual_looming_assay(
+        graph,
+        mapping,
+        steps=steps,
+        seed=seed,
+    ).model_copy(
+        update={
+            "registry": resolved.model_dump(mode="json"),
+            "snapshot": str(snapshot_final),
+        }
+    )
+
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(result.model_dump_json())
+
+
 @experiment_app.command("hexapod-motor")
 def hexapod_motor_command(
     snapshot: Path,
     registry: Annotated[Path, typer.Option("--registry")],
     output: Annotated[Path, typer.Option("--output")],
-    steps: Annotated[int, typer.Option("--steps", min=1)] = 40,
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 180,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
 ) -> None:
     """Publish provenance-bound direct, neural, and closed-loop hexapod assays."""
@@ -350,6 +433,56 @@ def hexapod_motor_command(
     typer.echo(serialized)
 
 
+@experiment_app.command("mbon-descending")
+def mbon_descending_command(
+    snapshot: Path,
+    output: Annotated[Path, typer.Option("--output")],
+    learning_registry: Annotated[
+        Path, typer.Option("--learning-registry")
+    ] = DEFAULT_LEARNING_REGISTRY,
+    motor_registry: Annotated[
+        Path, typer.Option("--motor-registry")
+    ] = DEFAULT_MOTOR_REGISTRY,
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 500,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    max_hops: Annotated[int, typer.Option("--max-hops", min=1)] = 4,
+) -> None:
+    """Publish the retained MBON-to-descending causal pathway assay."""
+
+    snapshot_final = snapshot.resolve()
+    output_final = output.resolve()
+    learning_final = learning_registry.resolve()
+    motor_final = motor_registry.resolve()
+    overlaps_input = output_final in {
+        snapshot_final,
+        learning_final,
+        motor_final,
+    }
+    if overlaps_input or output_final.is_relative_to(snapshot_final):
+        raise typer.BadParameter(
+            "--output must differ from inputs and be outside snapshot"
+        )
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    result = run_retained_mbon_descending_assay(
+        snapshot_final,
+        learning_registry_path=learning_final,
+        motor_registry_path=motor_final,
+        steps=steps,
+        seed=seed,
+        max_hops=max_hops,
+    )
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(result.model_dump_json())
+
+
 @experiment_app.command("autonomous-hexapod")
 def autonomous_hexapod_command(
     snapshot: Path,
@@ -365,6 +498,9 @@ def autonomous_hexapod_command(
     ] = "reference",
     steps: Annotated[int, typer.Option("--steps", min=1)] = 2,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    proprioceptive_spike_rate_hz: Annotated[
+        float, typer.Option("--proprioceptive-spike-rate-hz", min=0.001)
+    ] = 150.0,
 ) -> None:
     """Publish a retained schedule-free contact-learning hexapod episode."""
 
@@ -386,6 +522,7 @@ def autonomous_hexapod_command(
         backend=backend,
         body_steps=steps,
         seed=seed,
+        proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
     )
     serialized = result.model_dump_json()
     output_final.parent.mkdir(parents=True, exist_ok=True)
@@ -417,6 +554,9 @@ def autonomous_behavior_command(
     steps: Annotated[int, typer.Option("--steps", min=1)] = 2,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
     seeds: Annotated[str | None, typer.Option("--seeds")] = None,
+    proprioceptive_spike_rate_hz: Annotated[
+        float, typer.Option("--proprioceptive-spike-rate-hz", min=0.001)
+    ] = 150.0,
 ) -> None:
     """Publish the retained multi-condition autonomous behavior benchmark."""
 
@@ -446,6 +586,7 @@ def autonomous_behavior_command(
         body_steps=steps,
         seed=seed,
         seeds=parsed_seeds,
+        proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
     )
     output_final.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
@@ -555,6 +696,68 @@ def embodied_loop_command(
         source_manifest_sha256=source_manifest,
         snapshot_content_sha256=snapshot_content_sha256(snapshot),
     )
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("practical-autonomy")
+def practical_autonomy_command(
+    output: Annotated[Path, typer.Option("--output")],
+    video: Annotated[Path | None, typer.Option("--video")] = None,
+    training_episodes: Annotated[
+        int, typer.Option("--training-episodes", min=1, max=10_000)
+    ] = 24,
+    evaluation_episodes: Annotated[
+        int, typer.Option("--evaluation-episodes", min=1, max=1_000)
+    ] = 12,
+    max_steps: Annotated[int, typer.Option("--max-steps", min=10, max=100_000)] = 400,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    physics: Annotated[bool, typer.Option("--physics/--no-physics")] = True,
+    physics_command_duration_s: Annotated[
+        float, typer.Option("--physics-command-duration-s", min=0.001, max=1.0)
+    ] = 0.02,
+) -> None:
+    """Train and evaluate the fast hybrid autonomous-fly engineering demo."""
+
+    output_final = output.resolve()
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    video_final = video.resolve() if video is not None else None
+    if video_final == output_final:
+        raise typer.BadParameter("--video must differ from --output")
+    if video_final is not None and not physics:
+        raise typer.BadParameter("--video requires --physics")
+    if video_final is not None and video_final.exists():
+        raise typer.BadParameter(f"video output already exists: {video_final}")
+    output_final.parent.mkdir(parents=True, exist_ok=True)
+    result = run_practical_autonomy(
+        PracticalAutonomyConfig(
+            training_episodes=training_episodes,
+            evaluation_episodes=evaluation_episodes,
+            max_steps=max_steps,
+            seed=seed,
+        )
+    )
+    if physics:
+        commands = tuple(
+            MotorCommand(forward=item.command[0], turn=item.command[1])
+            for item in result.representative_trace
+        )
+        result = result.model_copy(
+            update={
+                "physics": run_practical_flygym(
+                    commands,
+                    duration_per_command_s=physics_command_duration_s,
+                    video_path=video_final,
+                )
+            }
+        )
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
         stage = Path(temporary) / output_final.name
         with stage.open("xb") as stream:

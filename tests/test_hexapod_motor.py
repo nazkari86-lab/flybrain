@@ -10,9 +10,11 @@ from flybrain.biological_registry import (
     load_biological_registry,
     resolve_biological_registry,
 )
+from flybrain.descending_interface import DescendingMap
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_body import LEG_NAMES
 from flybrain.hexapod_motor import (
+    CANONICAL_MOTOR_GROUPS,
     HexapodMotorDecoder,
     HexapodMotorMap,
     MotorActivationState,
@@ -26,12 +28,24 @@ RETAINED_MALE_CNS = Path(
 )
 
 
+def test_canonical_motor_map_includes_neural_thorax_coxa_antagonists() -> None:
+    assert len(CANONICAL_MOTOR_GROUPS) == 36
+    names = {name for name, *_ in CANONICAL_MOTOR_GROUPS}
+    for leg in LEG_NAMES:
+        assert f"{leg}_thorax_coxa_anterior" in names
+        assert f"{leg}_thorax_coxa_posterior" in names
+
+
 def motor_map(*, overlap: bool = False) -> HexapodMotorMap:
     groups = []
     next_id = 1
     for leg in LEG_NAMES:
-        for joint in ("trochanter", "tibia"):
-            for direction in ("flexor", "extensor"):
+        for joint, directions in (
+            ("thorax_coxa", ("anterior", "posterior")),
+            ("trochanter", ("flexor", "extensor")),
+            ("tibia", ("flexor", "extensor")),
+        ):
+            for direction in directions:
                 size = 1 if direction == "extensor" else 2 + leg.startswith("right")
                 ids = tuple(range(next_id, next_id + size))
                 next_id += size
@@ -86,15 +100,15 @@ def test_motor_map_builds_only_from_resolved_real_registry() -> None:
         pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
     registry = resolve_biological_registry(
         load_biological_registry(
-            Path("data/registry/hexapod-motor-registry-v1.json")
+            Path("data/registry/hexapod-motor-registry-v2.json")
         ),
         RETAINED_MALE_CNS,
     )
 
     mapping = HexapodMotorMap.from_registry(registry)
 
-    assert len(mapping.groups) == 24
-    assert sum(len(group.neuron_ids) for group in mapping.groups) == 148
+    assert len(mapping.groups) == 36
+    assert sum(len(group.neuron_ids) for group in mapping.groups) == 182
 
 
 def test_population_size_normalizes_rate_and_not_motor_authority() -> None:
@@ -134,6 +148,46 @@ def test_flexor_and_extensor_spikes_produce_opposite_joint_signs() -> None:
     )
 
 
+def test_anterior_and_posterior_rotator_spikes_drive_thorax_coxa() -> None:
+    mapping = motor_map()
+    anterior = mapping.group("left_fore_thorax_coxa_anterior")
+    posterior = mapping.group("left_fore_thorax_coxa_posterior")
+    advanced = HexapodMotorDecoder(mapping).decode(
+        anterior.neuron_ids,
+        window_s=0.01,
+        leg_phases=(0.0,) * 6,
+    )
+    retracted = HexapodMotorDecoder(mapping).decode(
+        posterior.neuron_ids,
+        window_s=0.01,
+        leg_phases=(0.0,) * 6,
+    )
+
+    assert advanced.torques.values[0][0] > 0.0
+    assert retracted.torques.values[0][0] < 0.0
+    assert advanced.torques.values[0][0] == pytest.approx(
+        -retracted.torques.values[0][0]
+    )
+
+
+def test_homologous_thorax_coxa_rotators_produce_mirrored_joint_torque() -> None:
+    mapping = motor_map()
+    left = HexapodMotorDecoder(mapping).decode(
+        mapping.group("left_fore_thorax_coxa_anterior").neuron_ids,
+        window_s=0.01,
+        leg_phases=(0.0,) * 6,
+    )
+    right = HexapodMotorDecoder(mapping).decode(
+        mapping.group("right_fore_thorax_coxa_anterior").neuron_ids,
+        window_s=0.01,
+        leg_phases=(0.0,) * 6,
+    )
+
+    assert left.torques.values[0][0] > 0.0
+    assert right.torques.values[1][0] < 0.0
+    assert left.torques.values[0][0] == pytest.approx(-right.torques.values[1][0])
+
+
 def test_activation_is_bounded_low_pass_and_replayable() -> None:
     mapping = motor_map()
     group = mapping.group("left_hind_tibia_extensor")
@@ -171,6 +225,108 @@ def test_phase_envelope_is_serialized_and_modulates_only_thorax_coxa() -> None:
     assert all(torque[1:] == (0.0, 0.0) for torque in state.torques.values)
     assert state.torques.values[0][0] == pytest.approx(0.004)
     assert state.torques.values[1][0] == pytest.approx(-0.004)
+
+
+def test_declared_descending_spikes_modulate_phase_without_target_commands() -> None:
+    mapping = motor_map()
+    descending = DescendingMap(
+        d_na02_left=(1001,),
+        d_na02_right=(1002,),
+        d_ng13_left=(1003,),
+        d_ng13_right=(1004,),
+        mdn_left=(1005,),
+        mdn_right=(1006,),
+    )
+    left_decoder = HexapodMotorDecoder(
+        mapping,
+        phase_envelope=PhaseEnvelopeAssumption(amplitude_nm=0.004),
+        descending_map=descending,
+    )
+    right_decoder = HexapodMotorDecoder(
+        mapping,
+        phase_envelope=PhaseEnvelopeAssumption(amplitude_nm=0.004),
+        descending_map=descending,
+    )
+
+    left = left_decoder.decode(
+        (1001,), window_s=0.01, leg_phases=(0.125,) * 6
+    )
+    right = right_decoder.decode(
+        (1002,), window_s=0.01, leg_phases=(0.125,) * 6
+    )
+
+    assert left.descending_phase_bias > 0.0
+    assert right.descending_phase_bias < 0.0
+    assert left.torques.values[0][0] > right.torques.values[0][0]
+
+
+def test_descending_spikes_modulate_neural_torque_without_external_phase_drive() -> None:
+    mapping = motor_map()
+    descending = DescendingMap(
+        d_na02_left=(1001,),
+        d_na02_right=(1002,),
+        d_ng13_left=(1003,),
+        d_ng13_right=(1004,),
+        mdn_left=(1005,),
+        mdn_right=(1006,),
+    )
+    decoder = HexapodMotorDecoder(mapping, descending_map=descending)
+    anterior = mapping.group("left_fore_thorax_coxa_anterior")
+    motor_only = decoder.decode(
+        anterior.neuron_ids, window_s=0.01, leg_phases=(0.125,) * 6
+    )
+    decoder = HexapodMotorDecoder(mapping, descending_map=descending)
+    motor_with_mdn = decoder.decode(
+        (*anterior.neuron_ids, 1005), window_s=0.01, leg_phases=(0.125,) * 6
+    )
+
+    assert motor_with_mdn.torques.values[0][0] != pytest.approx(
+        motor_only.torques.values[0][0]
+    )
+
+
+def test_lateral_descending_spikes_modulate_existing_neural_torque_without_phase_drive() -> None:
+    mapping = motor_map()
+    descending = DescendingMap(
+        d_na02_left=(1001,), d_na02_right=(1002,),
+        d_ng13_left=(1003,), d_ng13_right=(1004,),
+        mdn_left=(1005,), mdn_right=(1006,),
+    )
+    motor_id = mapping.group("left_fore_thorax_coxa_anterior").neuron_ids[0]
+
+    def decode(spikes):
+        return HexapodMotorDecoder(mapping, descending_map=descending).decode(
+            spikes, window_s=0.01, leg_phases=(0.0,) * 6
+        )
+
+    motor_only = decode((motor_id,))
+    left_drive = decode((motor_id, 1001, 1003))
+    right_drive = decode((motor_id, 1002, 1004))
+    na_left = decode((motor_id, 1001))
+    ng_left = decode((motor_id, 1003))
+    dn_only = decode((1001, 1003))
+
+    assert left_drive.phase_envelope.amplitude_nm == 0.0
+    assert left_drive.torques.values[0][0] > motor_only.torques.values[0][0]
+    assert right_drive.torques.values[0][0] < motor_only.torques.values[0][0]
+    assert na_left.torques.values[0][0] > motor_only.torques.values[0][0]
+    assert ng_left.torques.values[0][0] > motor_only.torques.values[0][0]
+    assert dn_only.torques.values == ((0.0, 0.0, 0.0),) * 6
+
+
+def test_descending_phase_modulation_uses_rate_not_raw_spike_count() -> None:
+    descending = DescendingMap(
+        d_na02_left=(1001,), d_na02_right=(1002,),
+        d_ng13_left=(1003,), d_ng13_right=(1004,),
+        mdn_left=(1005,), mdn_right=(1006,),
+    )
+    decoder = HexapodMotorDecoder(motor_map(), descending_map=descending)
+
+    state = decoder.decode(
+        (1001,), window_s=0.02, leg_phases=(0.0,) * 6
+    )
+
+    assert state.descending_phase_bias == pytest.approx(0.125)
 
 
 def test_motor_state_has_no_direct_body_command_or_privileged_fields() -> None:

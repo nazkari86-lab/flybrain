@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Self
+import hashlib
+import json
+import math
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -34,6 +37,7 @@ class BehaviorVariant(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1)
+    evaluation_target: Literal["food", "threat", "both"] = "both"
     food_position_m: tuple[float, float]
     threat_position_m: tuple[float, float]
     initial_position_m: tuple[float, float] = (0.0, 0.0)
@@ -44,7 +48,21 @@ class BehaviorVariant(BaseModel, frozen=True):
         values = (*self.food_position_m, *self.threat_position_m, *self.initial_position_m)
         if any(not isinstance(value, (int, float)) for value in values):
             raise ValueError("behavior positions must be numeric")
+        if any(not math.isfinite(float(value)) for value in values):
+            raise ValueError("behavior positions must be finite")
         return self
+
+
+def world_digest(variant: BehaviorVariant) -> str:
+    """Return a stable identity for geometry and physics, excluding score labels."""
+
+    payload = variant.model_dump(
+        mode="json", exclude={"name", "evaluation_target"}
+    )
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def apply_perturbation(

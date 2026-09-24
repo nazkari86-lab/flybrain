@@ -70,7 +70,7 @@ def build_condition(
         condition=condition,
         overlay=overlay,
         learning=learning,
-        dan_enabled=condition not in {"dan_lesion", "kc_mbon_lesion"},
+        dan_enabled=condition != "dan_lesion",
         plasticity_enabled=condition not in {"no_plasticity", "kc_mbon_lesion"},
         rewired=condition == "rewired_control",
         pre_ids=pre_ids,
