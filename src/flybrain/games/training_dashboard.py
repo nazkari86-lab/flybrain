@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import queue
+import random
 import threading
 import time
 from collections import deque
@@ -24,6 +25,14 @@ from flybrain.games.runner_learning import RunnerCheckpointManifest, load_runner
 GameName = Literal["runner", "chess"]
 Manifest = RunnerCheckpointManifest | ChessCheckpointManifest
 Publish = Callable[[Path, Manifest, float | None], None]
+
+
+@dataclass
+class _DashboardUpdate:
+    path: Path
+    manifest: Manifest
+    loss: float | None
+    demonstrated: threading.Event
 
 
 @dataclass(frozen=True)
@@ -58,6 +67,20 @@ def _chart(surface: Any, points: list[float], *, area: tuple[int, int, int, int]
         pygame.draw.circle(surface, (248, 211, 112), point, 4)
 
 
+def _load_runner_policy_without_rng_side_effects(path: Path, env: RunnerEnv) -> Any:
+    """Load SB3's policy while preserving the trainer's process-wide RNG state."""
+
+    python_state = random.getstate()
+    numpy_state = np.random.get_state()
+    torch_state = torch.get_rng_state()
+    try:
+        return load_runner_model(path, env)
+    finally:
+        random.setstate(python_state)
+        np.random.set_state(numpy_state)
+        torch.set_rng_state(torch_state)
+
+
 def run_training_dashboard(
     game: GameName,
     train: Callable[[Publish], Any],
@@ -73,12 +96,14 @@ def run_training_dashboard(
     if demo_frames < 1:
         raise ValueError("demo_frames must be positive")
     pygame.init()
-    updates: queue.SimpleQueue[tuple[Path, Manifest, float | None]] = queue.SimpleQueue()
+    updates: queue.SimpleQueue[_DashboardUpdate] = queue.SimpleQueue()
     result: list[Any] = []
     errors: list[BaseException] = []
 
     def publish(path: Path, manifest: Manifest, loss: float | None = None) -> None:
-        updates.put((path, manifest, loss))
+        update = _DashboardUpdate(path, manifest, loss, threading.Event())
+        updates.put(update)
+        update.demonstrated.wait()
 
     def worker() -> None:
         try:
@@ -104,7 +129,8 @@ def run_training_dashboard(
         demonstrated = 0
         played_frames = 0
         frames_since_switch = 0
-        pending: deque[tuple[Path, Manifest, float | None]] = deque()
+        pending: deque[_DashboardUpdate] = deque()
+        current_update: _DashboardUpdate | None = None
         last_move = 0.0
         running = True
         paused = False
@@ -121,7 +147,7 @@ def run_training_dashboard(
             while not updates.empty():
                 update = updates.get_nowait()
                 pending.append(update)
-                _, manifest, loss = update
+                manifest, loss = update.manifest, update.loss
                 seen += 1
                 if game == "runner":
                     assert isinstance(manifest, RunnerCheckpointManifest)
@@ -130,12 +156,14 @@ def run_training_dashboard(
                     points.append(loss)
 
             if pending and (current is None or frames_since_switch >= demo_frames):
-                path, current, _ = pending.popleft()
+                update = pending.popleft()
+                path, current = update.path, update.manifest
                 demonstrated += 1
                 frames_since_switch = 0
+                current_update = update
                 if game == "runner":
                     assert runner_env is not None
-                    model = load_runner_model(path, runner_env)
+                    model = _load_runner_policy_without_rng_side_effects(path, runner_env)
                     runner_observation, runner_info = runner_env.reset(
                         seed=seed, options={"mode": "play"}
                     )
@@ -231,16 +259,25 @@ def run_training_dashboard(
 
             pygame.display.flip()
             clock.tick(30)
+            if (
+                current_update is not None
+                and not current_update.demonstrated.is_set()
+                and frames_since_switch >= demo_frames
+            ):
+                current_update.demonstrated.set()
             if errors and not thread.is_alive():
                 running = False
             if (
                 max_frames is not None
                 and not thread.is_alive()
+                and updates.empty()
                 and not pending
                 and frames_since_switch >= demo_frames
                 and played_frames >= max_frames
             ):
                 running = False
+        if current_update is not None:
+            current_update.demonstrated.set()
         thread.join()
         if errors:
             raise RuntimeError("game training failed") from errors[0]

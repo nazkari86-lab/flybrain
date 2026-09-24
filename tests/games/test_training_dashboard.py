@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import torch
 
 from flybrain.games.chess_training import ChessTrainingConfig, train_chess
-from flybrain.games.runner_learning import RunnerTrainingConfig, train_runner
+from flybrain.games.runner_learning import RunnerTrainingConfig, load_runner_model, train_runner
 from flybrain.games.training_dashboard import Publish, run_training_dashboard
 
 
@@ -72,3 +73,28 @@ def test_dashboard_reports_training_failure_without_waiting_for_checkpoint(
         run_training_dashboard("runner", fail, max_frames=3, demo_frames=3)
 
     assert isinstance(error.value.__cause__, ValueError)
+
+
+def test_visual_playback_does_not_change_runner_learning(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setenv("SDL_VIDEODRIVER", "dummy")
+    config = RunnerTrainingConfig(total_steps=1_024, checkpoint_every=512, seed=23)
+    headless = train_runner(config, tmp_path / "headless")
+    control = train_runner(config, tmp_path / "control")
+    baseline = load_runner_model(headless.latest).policy.state_dict()
+    second = load_runner_model(control.latest).policy.state_dict()
+    assert all(torch.equal(baseline[name], second[name]) for name in baseline)
+    visual = run_training_dashboard(
+        "runner",
+        lambda publish: train_runner(
+            config,
+            tmp_path / "visual",
+            on_checkpoint=lambda checkpoint, manifest: publish(checkpoint, manifest, None),
+        ),
+        seed=23,
+        max_frames=12,
+        demo_frames=3,
+    )
+
+    expected = load_runner_model(headless.latest).policy.state_dict()
+    actual = load_runner_model(visual.training_result.latest).policy.state_dict()
+    assert all(torch.equal(expected[name], actual[name]) for name in expected)
