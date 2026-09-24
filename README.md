@@ -28,6 +28,10 @@ Train the procedural one-button runner, then continue the same replay buffer and
 atomic checkpoint:
 
 ```bash
+uv run flybrain games train --game runner --visual --steps 100000 \
+  --checkpoint-every 10000 --seed 7 \
+  --output artifacts/games/runner/my-visual-run
+
 uv run flybrain games train --game runner --steps 100000 --seed 7 \
   --output artifacts/games/runner/seed7-v1
 
@@ -48,10 +52,14 @@ uv run flybrain games play --game runner \
   --checkpoint artifacts/games/runner/seed7-v1/best
 ```
 
-Runner controls are `Space/Up` to jump, `A` to switch human/agent, `P` to pause, `R` to reset,
-`N` for the next seed, `[`/`]` for speed, and `Q` to quit. Training is headless; the viewer can be
-opened separately at any time. Each run stores immutable step checkpoints, full replay state,
-`latest` and validation-selected `best` pointers, metrics, and holdout reports.
+During `train --visual`, the game runs beside a graph of validation distance. Every completed
+checkpoint is demonstrated on the same level for a short interval, then the next checkpoint is
+shown. `P` pauses playback while training continues; `Q` closes the window and lets training
+finish in the terminal. Without `--visual`, training runs without a window. The separate watch and
+play windows use `Space/Up` to jump, `A` to switch human/agent, `P` to pause, `R` to reset,
+`N` for the next seed, `[`/`]` for speed, and `Q` to quit. Each run stores immutable step
+checkpoints, full replay state, `latest` and validation-selected `best` pointers, metrics, and
+holdout reports.
 
 The verified 100,000-step seed-7 checkpoint reached mean normalized distance `0.9668` on eight
 unseen procedural levels, versus `0.1119` for seeded random play and `0.0889` for the untrained
@@ -67,6 +75,12 @@ optional Stockfish teacher targets, and self-play continuation. The teacher is r
 checkpoint and is not embedded in the deployed policy:
 
 ```bash
+uv run flybrain games train --game chess --visual \
+  --teacher-positions 128 --teacher-nodes 500 \
+  --self-play-games 1 --self-play-simulations 4 \
+  --max-game-plies 40 --epochs 3 --seed 7 \
+  --output artifacts/games/chess/my-visual-run
+
 uv run flybrain games train --game chess \
   --teacher-positions 128 --teacher-nodes 500 \
   --self-play-games 1 --self-play-simulations 4 \
