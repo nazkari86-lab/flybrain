@@ -114,6 +114,7 @@ class MbonDescendingCondition(BaseModel, frozen=True):
     source_spikes: int = Field(ge=0)
     descending_spikes: dict[str, int]
     selected_descending_spikes: int = Field(ge=0)
+    annotated_descending_spikes: int = Field(ge=0)
     motor_spikes: int = Field(ge=0)
     decoded_torque_l1_nm_s: float = Field(ge=0.0)
     active_motor_groups: int = Field(ge=0)
@@ -135,6 +136,7 @@ class MbonDescendingCausalAssayResult(BaseModel, frozen=True):
     conditions: dict[str, MbonDescendingCondition]
     gates: dict[str, bool]
     causal_mbon_to_descending_claim_allowed: bool
+    annotated_descending_motor_causality_observed: bool
     specific_mbon_dn_motor_claim_allowed: bool
     autonomous_behavior_claim_allowed: Literal[False] = False
     replay_exact: bool
@@ -456,12 +458,18 @@ def _run_condition(
     silence_mask = np.isin(graph.neuron_ids, np.asarray(silenced_ids, dtype=np.uint64))
     descending_populations = descending.named_populations()
     descending_counts = dict.fromkeys(descending_populations, 0)
+    annotated_descending_ids = {
+        int(graph.neuron_ids[index])
+        for index, superclass in enumerate(graph.superclasses)
+        if superclass == "descending_neuron"
+    }
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
     source_set = set(stimulated_mbon_ids)
     source_spikes = 0
     motor_spikes = 0
+    annotated_descending_spikes = 0
     total_spikes = 0
     active_motor_groups: set[str] = set()
     motor_decoder = HexapodMotorDecoder(motor, descending_map=descending)
@@ -487,6 +495,9 @@ def _run_condition(
         source_spikes += sum(value in source_set for value in fired)
         for population, ids in descending_populations.items():
             descending_counts[population] += sum(value in ids for value in fired)
+        annotated_descending_spikes += sum(
+            value in annotated_descending_ids for value in fired
+        )
         for value in fired:
             group = motor_owner.get(value)
             if group is not None:
@@ -514,6 +525,7 @@ def _run_condition(
         source_spikes=source_spikes,
         descending_spikes=descending_counts,
         selected_descending_spikes=sum(descending_counts.values()),
+        annotated_descending_spikes=annotated_descending_spikes,
         motor_spikes=motor_spikes,
         decoded_torque_l1_nm_s=decoded_torque_l1_nm_s,
         active_motor_groups=len(active_motor_groups),
@@ -555,6 +567,11 @@ def run_mbon_descending_causal_assay(
             for value in values
         )
     )
+    all_annotated_descending_ids = tuple(
+        int(graph.neuron_ids[index])
+        for index, superclass in enumerate(graph.superclasses)
+        if superclass == "descending_neuron"
+    )
 
     def run(
         name: str,
@@ -578,6 +595,9 @@ def run_mbon_descending_causal_assay(
         "normal": run("normal", sources),
         "source_lesion": run("source_lesion", sources, sources),
         "descending_lesion": run("descending_lesion", sources, descending_ids),
+        "all_descending_lesion": run(
+            "all_descending_lesion", sources, all_annotated_descending_ids
+        ),
         "restored": run("restored", sources),
         "replay": run("replay", sources),
         "matched_control": run("matched_control", controls),
@@ -595,6 +615,9 @@ def run_mbon_descending_causal_assay(
         "selected_descending_recruited": (
             normal.selected_descending_spikes > static.selected_descending_spikes
         ),
+        "annotated_descending_recruited": (
+            normal.annotated_descending_spikes > static.annotated_descending_spikes
+        ),
         "motor_recruited": normal.motor_spikes > static.motor_spikes,
         "source_lesion_blocks_descending": (
             source_lesion.selected_descending_spikes
@@ -603,6 +626,9 @@ def run_mbon_descending_causal_assay(
         "source_lesion_blocks_motor": source_lesion.motor_spikes == static.motor_spikes,
         "descending_lesion_reduces_motor": (
             descending_lesion.motor_spikes < normal.motor_spikes
+        ),
+        "all_descending_lesion_blocks_motor": (
+            conditions["all_descending_lesion"].motor_spikes == static.motor_spikes
         ),
         "matched_control_has_less_motor": matched.motor_spikes < normal.motor_spikes,
         "restoration_exact": restoration_exact,
@@ -626,7 +652,20 @@ def run_mbon_descending_causal_assay(
             "motor_recruited",
             "source_lesion_blocks_motor",
             "descending_lesion_reduces_motor",
+            "all_descending_lesion_blocks_motor",
             "matched_control_has_less_motor",
+        )
+    )
+    annotated_motor_causality = graph_unchanged and all(
+        gates[name]
+        for name in (
+            "source_recruited",
+            "annotated_descending_recruited",
+            "motor_recruited",
+            "source_lesion_blocks_motor",
+            "all_descending_lesion_blocks_motor",
+            "restoration_exact",
+            "replay_exact",
         )
     )
     return MbonDescendingCausalAssayResult(
@@ -635,6 +674,7 @@ def run_mbon_descending_causal_assay(
         conditions=conditions,
         gates=gates,
         causal_mbon_to_descending_claim_allowed=causal,
+        annotated_descending_motor_causality_observed=annotated_motor_causality,
         specific_mbon_dn_motor_claim_allowed=specific_motor,
         replay_exact=replay_exact,
         restoration_exact=restoration_exact,

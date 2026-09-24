@@ -96,3 +96,36 @@ and 0.0001948 N·m·s. Source silencing reduced both measures to zero. Thus
 stimulation reaches descending neurons, but the selected MBON→DN→motor
 specificity gate remains false. Decoded moment is a model readout, not
 measured muscle force or evidence of a learned gait.
+
+## Whole descending-layer causal diagnostic
+
+The six registered DN groups are a small slice of the 1,314 neurons annotated
+as `descending_neuron` in this retained graph. The MBON assay now counts all
+annotated DN spikes and includes a lesion of that full annotated population.
+Latest artifact: `artifacts/mbon-descending-all-dn-v2-seed7-500.json`. In the
+four-source 500-step assay, the normal condition produced 705 annotated
+DN spikes and 49 motor spikes. Silencing the full annotated DN layer removed
+all motor spikes; silencing only the six registered groups removed their 24
+spikes but increased total motor output to 66. Replay and restoration were
+exact, and the graph was unchanged. The new model-level gate
+`annotated_descending_motor_causality_observed` is true, while
+`specific_mbon_dn_motor_claim_allowed` remains false because the pooled
+stimulus failed the matched-control and six-group specificity gates.
+
+An exploratory single-source probe found that direct fixed-rate stimulation
+of avoidance MBON 519128 recruited 468 annotated DN spikes and 40 motor spikes;
+silencing its registered six DN groups reduced motor spikes to 23, and
+silencing all annotated DNs reduced them to zero. Three different `seed`
+values gave identical traces because this assay's direct pulse train is fixed
+and does not consume the simulator RNG. Those runs are deterministic repeats,
+not independent stochastic replicates. MBON 519128 also did not fire in the
+existing 10-step or 100-step sensory holdouts. This establishes an
+experimentally recruitable route in the model, but not a naturally accessible
+learned route.
+
+The DN-class diagnostic found DNg33, DNa06, DNge033, DNb02 and several other
+populations among the most active responses to direct MBON stimulation. The
+current motor decoder represents only DNa02, DNg13 and MDN. Extending its
+descending interface requires cell-specific pathway and output validation;
+mapping every annotated DN to a motor command would overfit anatomy into a
+hand-built controller.

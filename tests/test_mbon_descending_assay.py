@@ -134,6 +134,7 @@ def test_causal_assay_requires_lesion_restoration_replay_and_motor_specificity()
     )
 
     assert result.conditions["normal"].selected_descending_spikes > 0
+    assert result.conditions["normal"].annotated_descending_spikes > 0
     assert result.conditions["normal"].motor_spikes > 0
     assert result.conditions["normal"].decoded_torque_l1_nm_s > 0.0
     assert result.conditions["source_lesion"].selected_descending_spikes == 0
@@ -141,8 +142,11 @@ def test_causal_assay_requires_lesion_restoration_replay_and_motor_specificity()
     assert result.conditions["source_lesion"].decoded_torque_l1_nm_s == 0.0
     assert result.conditions["descending_lesion"].motor_spikes == 0
     assert result.conditions["descending_lesion"].decoded_torque_l1_nm_s == 0.0
+    assert result.conditions["all_descending_lesion"].annotated_descending_spikes == 0
+    assert result.conditions["all_descending_lesion"].motor_spikes == 0
     assert result.conditions["matched_control"].motor_spikes == 0
     assert result.causal_mbon_to_descending_claim_allowed is True
+    assert result.annotated_descending_motor_causality_observed is True
     assert result.specific_mbon_dn_motor_claim_allowed is True
     assert result.autonomous_behavior_claim_allowed is False
     assert result.replay_exact is True
