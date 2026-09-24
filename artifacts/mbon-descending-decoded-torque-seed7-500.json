@@ -1,0 +1,2076 @@
+{
+  "protocol": "retained-mbon-descending-assay-v1",
+  "evidence_kind": "simulation_observation",
+  "snapshot_content_sha256": "9b7d4594216c8b37b5ffc4199f2b5cd448a77d0b1daadfbb3de8b322738a2f1f",
+  "learning_registry_sha256": "7953875f6df1c655876090b3cd32ca71601e3463f8e5d7789e9f1c47e30c7750",
+  "motor_registry_sha256": "bd51ac1a9af8f582c66033a2cc7e15d595b799f22f500983ba7d0198f2b2de01",
+  "graph_neurons": 166606,
+  "graph_edges": 6240402,
+  "pathways": {
+    "protocol": "mbon-descending-pathway-audit-v1",
+    "evidence_kind": "dataset_measurement",
+    "max_hops": 4,
+    "learned_mbon_count": 91,
+    "approach_mbon_count": 49,
+    "avoidance_mbon_count": 42,
+    "direct_selected_dn_edge_count": 16,
+    "direct_selected_dn_sign_counts": {
+      "-1": 10,
+      "0": 0,
+      "1": 6
+    },
+    "excitatory_direct_mbon_ids": [
+      10599,
+      508595,
+      519128,
+      524893
+    ],
+    "matched_control_mbon_ids": [
+      11176,
+      12726,
+      11990,
+      11785
+    ],
+    "matched_controls": [
+      {
+        "source_mbon_id": 10599,
+        "control_mbon_id": 11176,
+        "transmitter_matched": true
+      },
+      {
+        "source_mbon_id": 508595,
+        "control_mbon_id": 12726,
+        "transmitter_matched": true
+      },
+      {
+        "source_mbon_id": 519128,
+        "control_mbon_id": 11990,
+        "transmitter_matched": true
+      },
+      {
+        "source_mbon_id": 524893,
+        "control_mbon_id": 11785,
+        "transmitter_matched": true
+      }
+    ],
+    "profiles": [
+      {
+        "mbon_id": 10013,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 184,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10079,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 135,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10267,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 66,
+        "outgoing_weight_magnitude": 1223.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10495,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 160,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10599,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 213,
+        "outgoing_weight_magnitude": 5564.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 11074,
+            "target_population": "d_ng13_left",
+            "sign": 1,
+            "weight_magnitude": 42.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "excitatory_direct"
+      },
+      {
+        "mbon_id": 10704,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 141,
+        "outgoing_weight_magnitude": 4236.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10804,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 282,
+        "outgoing_weight_magnitude": 5247.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 10816,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 130,
+        "outgoing_weight_magnitude": 2717.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 523769,
+            "target_population": "d_na02_left",
+            "sign": -1,
+            "weight_magnitude": 28.0
+          },
+          {
+            "target_id": 10360,
+            "target_population": "d_na02_right",
+            "sign": -1,
+            "weight_magnitude": 25.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "inhibitory_direct"
+      },
+      {
+        "mbon_id": 10826,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 147,
+        "outgoing_weight_magnitude": 3000.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11145,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 319,
+        "outgoing_weight_magnitude": 5654.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11176,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 167,
+        "outgoing_weight_magnitude": 5482.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11402,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 132,
+        "outgoing_weight_magnitude": 4359.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11455,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 98,
+        "outgoing_weight_magnitude": 3322.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 10360,
+            "target_population": "d_na02_right",
+            "sign": -1,
+            "weight_magnitude": 49.0
+          },
+          {
+            "target_id": 12348,
+            "target_population": "mdn_left",
+            "sign": -1,
+            "weight_magnitude": 9.0
+          },
+          {
+            "target_id": 10763,
+            "target_population": "mdn_right",
+            "sign": -1,
+            "weight_magnitude": 8.0
+          },
+          {
+            "target_id": 11332,
+            "target_population": "mdn_right",
+            "sign": -1,
+            "weight_magnitude": 5.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "inhibitory_direct"
+      },
+      {
+        "mbon_id": 11777,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 35,
+        "outgoing_weight_magnitude": 337.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11785,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 173,
+        "outgoing_weight_magnitude": 4812.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0,
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11805,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 119,
+        "outgoing_weight_magnitude": 2756.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 10360,
+            "target_population": "d_na02_right",
+            "sign": -1,
+            "weight_magnitude": 80.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "inhibitory_direct"
+      },
+      {
+        "mbon_id": 11873,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 77,
+        "outgoing_weight_magnitude": 1333.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 11990,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 125,
+        "outgoing_weight_magnitude": 1909.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 12690,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 157,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 12726,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 220,
+        "outgoing_weight_magnitude": 4349.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 12859,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 63,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 12918,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 130,
+        "outgoing_weight_magnitude": 2042.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 13728,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 261,
+        "outgoing_weight_magnitude": 4629.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 13768,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 255,
+        "outgoing_weight_magnitude": 4632.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 14221,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 133,
+        "outgoing_weight_magnitude": 2405.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 15626,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 56,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 15708,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 69,
+        "outgoing_weight_magnitude": 1321.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 17946,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 72,
+        "outgoing_weight_magnitude": 1201.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 18406,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 69,
+        "outgoing_weight_magnitude": 1219.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 18603,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 63,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 18713,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 124,
+        "outgoing_weight_magnitude": 2947.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 19267,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 121,
+        "outgoing_weight_magnitude": 2669.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 19366,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 65,
+        "outgoing_weight_magnitude": 1170.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 20835,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 67,
+        "outgoing_weight_magnitude": 1240.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 21242,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 131,
+        "outgoing_weight_magnitude": 2720.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 26485,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 77,
+        "outgoing_weight_magnitude": 1230.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 26853,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 53,
+        "outgoing_weight_magnitude": 760.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 28622,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 67,
+        "outgoing_weight_magnitude": 1168.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 31016,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 74,
+        "outgoing_weight_magnitude": 960.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 31083,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 49,
+        "outgoing_weight_magnitude": 428.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 33617,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 56,
+        "outgoing_weight_magnitude": 859.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 36094,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 46,
+        "outgoing_weight_magnitude": 685.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 38853,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 37,
+        "outgoing_weight_magnitude": 451.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 38859,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 51,
+        "outgoing_weight_magnitude": 520.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 39608,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 23,
+        "outgoing_weight_magnitude": 256.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 41692,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 78,
+        "outgoing_weight_magnitude": 1015.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 44619,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 56,
+        "outgoing_weight_magnitude": 568.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 47551,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 48,
+        "outgoing_weight_magnitude": 710.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 58401,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 30,
+        "outgoing_weight_magnitude": 395.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 70924,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 29,
+        "outgoing_weight_magnitude": 371.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 87077,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 58,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 110448,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 48,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 133427,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 23,
+        "outgoing_weight_magnitude": 226.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 160320,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 51,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 187741,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 43,
+        "outgoing_weight_magnitude": 407.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 394860,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 50,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 508595,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 208,
+        "outgoing_weight_magnitude": 4969.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 512006,
+            "target_population": "d_ng13_right",
+            "sign": 1,
+            "weight_magnitude": 34.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "excitatory_direct"
+      },
+      {
+        "mbon_id": 512788,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 132,
+        "outgoing_weight_magnitude": 2432.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 512789,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 62,
+        "outgoing_weight_magnitude": 1180.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 513174,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 207,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 513387,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 60,
+        "outgoing_weight_magnitude": 700.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 513391,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 64,
+        "outgoing_weight_magnitude": 699.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 514853,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 222,
+        "outgoing_weight_magnitude": 3673.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 515015,
+        "learned_role": "approach",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 187,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 515034,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 110,
+        "outgoing_weight_magnitude": 1826.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 515338,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 71,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 519128,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 120,
+        "outgoing_weight_magnitude": 1789.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 12348,
+            "target_population": "mdn_left",
+            "sign": 1,
+            "weight_magnitude": 5.0
+          },
+          {
+            "target_id": 10763,
+            "target_population": "mdn_right",
+            "sign": 1,
+            "weight_magnitude": 12.0
+          },
+          {
+            "target_id": 11332,
+            "target_population": "mdn_right",
+            "sign": 1,
+            "weight_magnitude": 5.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "excitatory_direct"
+      },
+      {
+        "mbon_id": 519131,
+        "learned_role": "approach",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 96,
+        "outgoing_weight_magnitude": 3659.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 523769,
+            "target_population": "d_na02_left",
+            "sign": -1,
+            "weight_magnitude": 55.0
+          },
+          {
+            "target_id": 11288,
+            "target_population": "mdn_left",
+            "sign": -1,
+            "weight_magnitude": 9.0
+          },
+          {
+            "target_id": 12348,
+            "target_population": "mdn_left",
+            "sign": -1,
+            "weight_magnitude": 7.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "inhibitory_direct"
+      },
+      {
+        "mbon_id": 519368,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 225,
+        "outgoing_weight_magnitude": 3898.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 519371,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 186,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 519373,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 100,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 519619,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 100,
+        "outgoing_weight_magnitude": 1718.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 520151,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 211,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 520186,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 62,
+        "outgoing_weight_magnitude": 1063.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 520395,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 35,
+        "outgoing_weight_magnitude": 456.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 521086,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 248,
+        "outgoing_weight_magnitude": 4227.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 521526,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 103,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 522444,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 117,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 522749,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 105,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 523043,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 155,
+        "outgoing_weight_magnitude": 4475.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 523060,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 160,
+        "outgoing_weight_magnitude": 3328.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 523628,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 147,
+        "outgoing_weight_magnitude": 2763.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 523987,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 102,
+        "outgoing_weight_magnitude": 1616.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 524733,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 32,
+        "outgoing_weight_magnitude": 329.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          -1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 524893,
+        "learned_role": "avoidance",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 183,
+        "outgoing_weight_magnitude": 5899.0,
+        "direct_selected_dn_edges": [
+          {
+            "target_id": 523769,
+            "target_population": "d_na02_left",
+            "sign": 1,
+            "weight_magnitude": 6.0
+          }
+        ],
+        "selected_dn_shortest_hops": 1,
+        "selected_dn_shortest_signs": [
+          1
+        ],
+        "motor_shortest_hops": 2,
+        "motor_shortest_signs": [
+          1
+        ],
+        "authority_class": "excitatory_direct"
+      },
+      {
+        "mbon_id": 525780,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 222,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 530875,
+        "learned_role": "avoidance",
+        "transmitter": "glutamate",
+        "outgoing_edge_count": 212,
+        "outgoing_weight_magnitude": 0.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 2,
+        "selected_dn_shortest_signs": [
+          0
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          0
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 531829,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 27,
+        "outgoing_weight_magnitude": 311.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 558665,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 20,
+        "outgoing_weight_magnitude": 222.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 562782,
+        "learned_role": "approach",
+        "transmitter": "acetylcholine",
+        "outgoing_edge_count": 71,
+        "outgoing_weight_magnitude": 1294.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 3,
+        "motor_shortest_signs": [
+          -1,
+          1
+        ],
+        "authority_class": "multihop_only"
+      },
+      {
+        "mbon_id": 579919,
+        "learned_role": "avoidance",
+        "transmitter": "gaba",
+        "outgoing_edge_count": 18,
+        "outgoing_weight_magnitude": 201.0,
+        "direct_selected_dn_edges": [],
+        "selected_dn_shortest_hops": 3,
+        "selected_dn_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "motor_shortest_hops": 4,
+        "motor_shortest_signs": [
+          -1,
+          0,
+          1
+        ],
+        "authority_class": "multihop_only"
+      }
+    ],
+    "audit_sha256": "b5c7133079bf2dc0b03bb9e4e76a4fcd89a9fe841949c97f3a6e718d7d7c63af"
+  },
+  "causal": {
+    "protocol": "mbon-descending-causal-assay-v1",
+    "evidence_kind": "simulation_observation",
+    "steps": 500,
+    "seed": 7,
+    "conditions": {
+      "static": {
+        "name": "static",
+        "stimulated_mbon_ids": [],
+        "silenced_ids": [],
+        "source_voltage_events": 0,
+        "source_spikes": 0,
+        "descending_spikes": {
+          "d_na02_left": 0,
+          "d_na02_right": 0,
+          "d_ng13_left": 0,
+          "d_ng13_right": 0,
+          "mdn_left": 0,
+          "mdn_right": 0
+        },
+        "selected_descending_spikes": 0,
+        "motor_spikes": 0,
+        "decoded_torque_l1_nm_s": 0.0,
+        "active_motor_groups": 0,
+        "total_spikes": 0,
+        "trace_digest": "a141fd23b9db8af5b9481d9e10af7ebad417c2f6e55b40704c3baff0e49f1182"
+      },
+      "normal": {
+        "name": "normal",
+        "stimulated_mbon_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "silenced_ids": [],
+        "source_voltage_events": 96,
+        "source_spikes": 96,
+        "descending_spikes": {
+          "d_na02_left": 6,
+          "d_na02_right": 1,
+          "d_ng13_left": 4,
+          "d_ng13_right": 4,
+          "mdn_left": 5,
+          "mdn_right": 4
+        },
+        "selected_descending_spikes": 24,
+        "motor_spikes": 49,
+        "decoded_torque_l1_nm_s": 0.0001810491675385495,
+        "active_motor_groups": 18,
+        "total_spikes": 18514,
+        "trace_digest": "17117c7ec1d3f4052771bf02aa630780736806ac7a5279c9bd1833b393f766f3"
+      },
+      "source_lesion": {
+        "name": "source_lesion",
+        "stimulated_mbon_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "silenced_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "source_voltage_events": 96,
+        "source_spikes": 0,
+        "descending_spikes": {
+          "d_na02_left": 0,
+          "d_na02_right": 0,
+          "d_ng13_left": 0,
+          "d_ng13_right": 0,
+          "mdn_left": 0,
+          "mdn_right": 0
+        },
+        "selected_descending_spikes": 0,
+        "motor_spikes": 0,
+        "decoded_torque_l1_nm_s": 0.0,
+        "active_motor_groups": 0,
+        "total_spikes": 0,
+        "trace_digest": "a141fd23b9db8af5b9481d9e10af7ebad417c2f6e55b40704c3baff0e49f1182"
+      },
+      "descending_lesion": {
+        "name": "descending_lesion",
+        "stimulated_mbon_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "silenced_ids": [
+          10360,
+          10763,
+          11074,
+          11288,
+          11332,
+          12348,
+          512006,
+          523769
+        ],
+        "source_voltage_events": 96,
+        "source_spikes": 96,
+        "descending_spikes": {
+          "d_na02_left": 0,
+          "d_na02_right": 0,
+          "d_ng13_left": 0,
+          "d_ng13_right": 0,
+          "mdn_left": 0,
+          "mdn_right": 0
+        },
+        "selected_descending_spikes": 0,
+        "motor_spikes": 66,
+        "decoded_torque_l1_nm_s": 0.00018676841052842823,
+        "active_motor_groups": 17,
+        "total_spikes": 19214,
+        "trace_digest": "493ddd4d501addabf39354caa57608c79b341eeec25855d1ca4bcf2c55ba2193"
+      },
+      "restored": {
+        "name": "restored",
+        "stimulated_mbon_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "silenced_ids": [],
+        "source_voltage_events": 96,
+        "source_spikes": 96,
+        "descending_spikes": {
+          "d_na02_left": 6,
+          "d_na02_right": 1,
+          "d_ng13_left": 4,
+          "d_ng13_right": 4,
+          "mdn_left": 5,
+          "mdn_right": 4
+        },
+        "selected_descending_spikes": 24,
+        "motor_spikes": 49,
+        "decoded_torque_l1_nm_s": 0.0001810491675385495,
+        "active_motor_groups": 18,
+        "total_spikes": 18514,
+        "trace_digest": "17117c7ec1d3f4052771bf02aa630780736806ac7a5279c9bd1833b393f766f3"
+      },
+      "replay": {
+        "name": "replay",
+        "stimulated_mbon_ids": [
+          10599,
+          508595,
+          519128,
+          524893
+        ],
+        "silenced_ids": [],
+        "source_voltage_events": 96,
+        "source_spikes": 96,
+        "descending_spikes": {
+          "d_na02_left": 6,
+          "d_na02_right": 1,
+          "d_ng13_left": 4,
+          "d_ng13_right": 4,
+          "mdn_left": 5,
+          "mdn_right": 4
+        },
+        "selected_descending_spikes": 24,
+        "motor_spikes": 49,
+        "decoded_torque_l1_nm_s": 0.0001810491675385495,
+        "active_motor_groups": 18,
+        "total_spikes": 18514,
+        "trace_digest": "17117c7ec1d3f4052771bf02aa630780736806ac7a5279c9bd1833b393f766f3"
+      },
+      "matched_control": {
+        "name": "matched_control",
+        "stimulated_mbon_ids": [
+          11176,
+          12726,
+          11990,
+          11785
+        ],
+        "silenced_ids": [],
+        "source_voltage_events": 96,
+        "source_spikes": 96,
+        "descending_spikes": {
+          "d_na02_left": 8,
+          "d_na02_right": 1,
+          "d_ng13_left": 3,
+          "d_ng13_right": 0,
+          "mdn_left": 5,
+          "mdn_right": 4
+        },
+        "selected_descending_spikes": 21,
+        "motor_spikes": 57,
+        "decoded_torque_l1_nm_s": 0.00019483034876595994,
+        "active_motor_groups": 18,
+        "total_spikes": 10752,
+        "trace_digest": "dc6d98e9f09e6381b2768d1276c2afb3a6eafb76f3cbd6c81f6e1519539960a3"
+      }
+    },
+    "gates": {
+      "source_recruited": true,
+      "selected_descending_recruited": true,
+      "motor_recruited": true,
+      "source_lesion_blocks_descending": true,
+      "source_lesion_blocks_motor": true,
+      "descending_lesion_reduces_motor": false,
+      "matched_control_has_less_motor": false,
+      "restoration_exact": true,
+      "replay_exact": true,
+      "graph_unchanged": true
+    },
+    "causal_mbon_to_descending_claim_allowed": true,
+    "specific_mbon_dn_motor_claim_allowed": false,
+    "autonomous_behavior_claim_allowed": false,
+    "replay_exact": true,
+    "restoration_exact": true,
+    "graph_unchanged": true
+  },
+  "autonomous_behavior_claim_allowed": false
+}
