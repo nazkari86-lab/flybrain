@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
+from scipy.sparse import csr_array
 
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
 from flybrain.behavioral_controls import CONDITIONS, ControlCondition, build_condition
+from flybrain.graph import EventConnectome
 from flybrain.plastic_edge_binding import PlasticEdgeBinding
 from flybrain.plastic_overlay import PlasticWeightOverlay
 
@@ -35,7 +37,7 @@ def test_conditions_are_independent_and_explicit(condition: ControlCondition) ->
     assert result.condition == condition
     assert result.rewired is (condition == "rewired_control")
     if condition == "rewired_control":
-        assert result.post_ids != (20, 21, 22)
+        assert result.post_ids == (20, 21, 22)
 
 
 def test_controls_have_expected_effects() -> None:
@@ -62,3 +64,72 @@ def test_controls_declare_whether_their_overlay_may_learn() -> None:
     assert dan_lesion.plasticity_enabled is True
     assert kc_lesion.plasticity_enabled is False
     assert route_permutation.plasticity_enabled is True
+
+
+def test_rewired_control_changes_real_edges_without_mutating_canonical_graph() -> None:
+    from flybrain.behavioral_controls import rewire_plastic_edges
+
+    graph = EventConnectome(
+        neuron_ids=np.array([10, 11, 20, 21], dtype=np.uint64),
+        cell_types=("KC", "KC", "MBON", "MBON"),
+        roles=("learning_kc", "learning_kc", "learning_mbon", "learning_mbon"),
+        transmitters=("acetylcholine",) * 4,
+        superclasses=("fixture",) * 4,
+        outgoing=csr_array(
+            (np.array([2.0, 3.0], dtype=np.float32),
+             (np.array([0, 1]), np.array([2, 3]))),
+            shape=(4, 4),
+        ),
+    )
+    binding = PlasticEdgeBinding(
+        overlay=PlasticWeightOverlay.create(
+            edge_indices=np.array([0, 1], dtype=np.int64), canonical_edge_count=2
+        ),
+        pre_ids=np.array([10, 11], dtype=np.uint64),
+        post_ids=np.array([20, 21], dtype=np.uint64),
+    )
+    canonical_indices = graph.outgoing.indices.copy()
+    original_indegree = np.bincount(graph.outgoing.indices, minlength=4)
+
+    result = rewire_plastic_edges(graph, binding, seed=7)
+
+    assert result.changed_edges == 2
+    assert result.graph.outgoing.indices.tolist() == [3, 2]
+    assert result.binding.post_ids.tolist() == [21, 20]
+    np.testing.assert_array_equal(graph.outgoing.indices, canonical_indices)
+    np.testing.assert_array_equal(result.graph.outgoing.data, graph.outgoing.data)
+    np.testing.assert_array_equal(result.graph.outgoing.indptr, graph.outgoing.indptr)
+    np.testing.assert_array_equal(
+        np.bincount(result.graph.outgoing.indices, minlength=4), original_indegree
+    )
+
+
+def test_rewired_control_rejects_swaps_that_duplicate_nonplastic_edges() -> None:
+    from flybrain.behavioral_controls import rewire_plastic_edges
+
+    graph = EventConnectome(
+        neuron_ids=np.array([10, 11, 20, 21], dtype=np.uint64),
+        cell_types=("KC", "KC", "MBON", "MBON"),
+        roles=("learning_kc", "learning_kc", "learning_mbon", "learning_mbon"),
+        transmitters=("acetylcholine",) * 4,
+        superclasses=("fixture",) * 4,
+        outgoing=csr_array(
+            (
+                np.ones(4, dtype=np.float32),
+                (np.array([0, 0, 1, 1]), np.array([2, 3, 2, 3])),
+            ),
+            shape=(4, 4),
+        ),
+    )
+    binding = PlasticEdgeBinding(
+        overlay=PlasticWeightOverlay.create(
+            edge_indices=np.array([0, 3], dtype=np.int64), canonical_edge_count=4
+        ),
+        pre_ids=np.array([10, 11], dtype=np.uint64),
+        post_ids=np.array([20, 21], dtype=np.uint64),
+    )
+
+    result = rewire_plastic_edges(graph, binding, seed=7)
+
+    assert result.changed_edges == 0
+    assert result.graph is graph

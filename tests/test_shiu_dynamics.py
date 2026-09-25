@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import pytest
 from scipy.sparse import csr_array
 
 from flybrain.graph import EventConnectome, SparseConnectome
@@ -133,6 +134,79 @@ def test_presynaptic_transmitter_multiplier_scales_outgoing_conductance() -> Non
     )
 
     assert scaled.conductance_mv[1] == normal.conductance_mv[1] * 0.5
+
+
+def test_sparse_plastic_overlay_matches_effective_graph_propagation() -> None:
+    graph = event_graph(
+        np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [100.0, 0.0, 0.0],
+                [50.0, 0.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
+    )
+    params = ShiuParameters(dt_ms=0.5, refractory_ms=2.0, synaptic_delay_ms=0.5)
+    edge_index = int(graph.outgoing.indptr[0])
+    multipliers = np.ones(graph.edge_count, dtype=np.float32)
+    multipliers[edge_index] = 0.25
+    effective = EventConnectome(
+        neuron_ids=graph.neuron_ids,
+        cell_types=graph.cell_types,
+        roles=graph.roles,
+        transmitters=graph.transmitters,
+        superclasses=graph.superclasses,
+        outgoing=graph.outgoing.copy(),
+    )
+    effective.outgoing.data[edge_index] *= multipliers[edge_index]
+    events = {0: (np.array([0]), np.array([8.0], dtype=np.float32))}
+    sparse_state = ShiuState.initial(3, params=params, seed=4)
+    effective_state = ShiuState.initial(3, params=params, seed=4)
+    sparse_batches = list(
+        simulate_shiu(
+            graph,
+            params,
+            steps=8,
+            external_voltage_events=events,
+            state=sparse_state,
+            plastic_edge_indices=np.asarray([edge_index], dtype=np.int64),
+            plastic_edge_multipliers=np.asarray([0.25], dtype=np.float32),
+        )
+    )
+    effective_batches = list(
+        simulate_shiu(
+            effective,
+            params,
+            steps=8,
+            external_voltage_events=events,
+            state=effective_state,
+        )
+    )
+    assert [batch.neuron_ids.tolist() for batch in sparse_batches] == [
+        batch.neuron_ids.tolist() for batch in effective_batches
+    ]
+    np.testing.assert_array_equal(sparse_state.voltage_mv, effective_state.voltage_mv)
+    np.testing.assert_array_equal(
+        sparse_state.conductance_mv, effective_state.conductance_mv
+    )
+    np.testing.assert_array_equal(
+        sparse_state.delayed_conductance_mv, effective_state.delayed_conductance_mv
+    )
+
+
+def test_sparse_overlay_is_checked_even_when_no_neuron_fires() -> None:
+    graph = event_graph(np.array([[0.0, 0.0], [1.0, 0.0]], dtype=np.float32))
+    with pytest.raises(ValueError, match="overlay"):
+        list(
+            simulate_shiu(
+                graph,
+                ShiuParameters(),
+                steps=1,
+                plastic_edge_indices=np.array([graph.edge_count], dtype=np.int64),
+                plastic_edge_multipliers=np.array([1.0], dtype=np.float32),
+            )
+        )
 
 
 def test_poisson_target_can_be_exempt_from_refractory_like_source_model() -> None:

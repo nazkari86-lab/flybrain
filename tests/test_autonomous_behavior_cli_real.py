@@ -39,7 +39,7 @@ def test_real_behavior_cli_publishes_all_controls_atomically(tmp_path: Path) -> 
     assert invocation.exit_code == 0, invocation.output
     payload = json.loads(output.read_text(encoding="utf-8"))
     benchmark = payload["benchmark"]
-    assert payload["protocol"] == "retained-autonomous-behavior-benchmark-v1"
+    assert payload["protocol"] == "retained-autonomous-behavior-benchmark-v2"
     assert payload["graph_neurons"] == 166_606
     assert payload["graph_edges"] == 6_240_402
     assert set(benchmark["condition_observations"]) == {
@@ -50,12 +50,15 @@ def test_real_behavior_cli_publishes_all_controls_atomically(tmp_path: Path) -> 
         "rewired_control",
     }
     assert benchmark["graph_unchanged"] is True
-    assert benchmark["evidence_protocol"] == "measured-replay-persistent-memory-v5"
+    assert benchmark["evidence_protocol"] == "measured-replay-persistent-memory-v6"
     assert benchmark["generalization_verified"] is True
     assert benchmark["replay_exact"] is True
     assert benchmark["holdout_weights_frozen"] is True
     assert benchmark["holdout_memory_frozen"] is True
     assert benchmark["unassisted_motor_output"] is True
+    assert benchmark["rewired_control_effective"] is True
+    assert len(benchmark["rewired_control_evidence"]) == 1
+    assert benchmark["rewired_control_evidence"][0]["changed_edges"] > 0
     assert len(benchmark["episode_evidence"]) == 30
     assert all(x["replay_performed"] and x["replay_exact"] for x in benchmark["episode_evidence"])
     assert all(

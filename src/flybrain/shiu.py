@@ -10,7 +10,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from flybrain.dynamics import SpikeBatch
-from flybrain.graph import EventConnectome
+from flybrain.graph import EventConnectome, validate_sparse_edge_overlay
 
 
 @dataclass(frozen=True)
@@ -140,6 +140,8 @@ def simulate_shiu(
     silenced: NDArray[np.bool_] | None = None,
     refractory_exempt: NDArray[np.bool_] | None = None,
     presynaptic_transmitter_multipliers: Mapping[str, float] | None = None,
+    plastic_edge_indices: NDArray[np.int64] | None = None,
+    plastic_edge_multipliers: NDArray[np.float32] | None = None,
 ) -> Iterator[SpikeBatch]:
     """Advance analytic alpha-synapse LIF dynamics with delayed sparse events."""
 
@@ -168,6 +170,12 @@ def simulate_shiu(
         raise ValueError("refractory exemption mask must match graph neuron count")
     voltage_events = external_voltage_events or {}
     transmitter_multipliers = presynaptic_transmitter_multipliers or {}
+    if (plastic_edge_indices is None) != (plastic_edge_multipliers is None):
+        raise ValueError("plastic edge indices and multipliers must be provided together")
+    if plastic_edge_indices is not None and plastic_edge_multipliers is not None:
+        validate_sparse_edge_overlay(
+            plastic_edge_indices, plastic_edge_multipliers, graph.edge_count
+        )
     if any(
         not isinstance(name, str) or not np.isfinite(value) or value < 0.0
         for name, value in transmitter_multipliers.items()
@@ -243,7 +251,10 @@ def simulate_shiu(
                 dtype=np.float32,
             )
             active_state.delayed_conductance_mv[arrival_index] += graph.propagate_indices(
-                fired_indices, scale=scales
+                fired_indices,
+                scale=scales,
+                edge_indices=plastic_edge_indices,
+                edge_multipliers=plastic_edge_multipliers,
             )
 
         active_state.step += 1

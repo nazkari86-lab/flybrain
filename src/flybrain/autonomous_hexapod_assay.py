@@ -107,8 +107,8 @@ class RetainedAutonomousBehaviorBenchmark(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    protocol: Literal["retained-autonomous-behavior-benchmark-v1"] = (
-        "retained-autonomous-behavior-benchmark-v1"
+    protocol: Literal["retained-autonomous-behavior-benchmark-v2"] = (
+        "retained-autonomous-behavior-benchmark-v2"
     )
     snapshot_content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     learning_registry_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")

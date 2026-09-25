@@ -73,6 +73,8 @@ def test_benchmark_persists_isolated_conditions_and_preserves_graph() -> None:
         "kc_mbon_lesion",
         "rewired_control",
     }
+    assert result.protocol == "autonomous-behavior-benchmark-v2"
+    assert result.evidence_protocol == "measured-replay-persistent-memory-v6"
     assert result.graph_unchanged is True
     assert result.replay_exact is True
     assert result.holdout_weights_frozen is True
@@ -91,6 +93,9 @@ def test_benchmark_persists_isolated_conditions_and_preserves_graph() -> None:
         item.paired_holdout_episodes == 4
         for item in result.causal_diagnostics.values()
     )
+    assert len(result.rewired_control_evidence) == 2
+    assert all(item.changed_edges == 0 for item in result.rewired_control_evidence)
+    assert result.rewired_control_effective is False
     assert len(result.episode_evidence) == 40
     assert all(item.replay_performed and item.replay_exact for item in result.episode_evidence)
     assert all(

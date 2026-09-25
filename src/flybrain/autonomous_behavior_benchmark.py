@@ -24,6 +24,7 @@ from flybrain.behavioral_controls import (
     ConditionBinding,
     ControlCondition,
     build_condition,
+    rewire_plastic_edges,
 )
 from flybrain.behavioral_metrics import (
     EpisodeObservation,
@@ -225,6 +226,17 @@ class CausalStageDiagnostic(BaseModel, frozen=True):
     first_measurable_stage: CausalStage
 
 
+class RewiredControlEvidence(BaseModel, frozen=True):
+    """Measured identity and size of a degree-preserving structural control."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    replicate_seed: int = Field(ge=0)
+    graph_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    plastic_edges: int = Field(gt=0)
+    changed_edges: int = Field(ge=0)
+
+
 class EpisodeEvidence(BaseModel, frozen=True):
     """Measured verification for every training and evaluation episode."""
 
@@ -252,8 +264,8 @@ class BehaviorBenchmarkResult(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    protocol: Literal["autonomous-behavior-benchmark-v1"] = (
-        "autonomous-behavior-benchmark-v1"
+    protocol: Literal["autonomous-behavior-benchmark-v2"] = (
+        "autonomous-behavior-benchmark-v2"
     )
     evidence_kind: Literal["simulation_observation"] = "simulation_observation"
     behavioral_claim_allowed: bool
@@ -278,11 +290,13 @@ class BehaviorBenchmarkResult(BaseModel, frozen=True):
     training_summaries: dict[str, TrainingSummary]
     holdout_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]]
     comparisons: dict[str, PairedComparison]
-    evidence_protocol: Literal["measured-replay-persistent-memory-v5"]
+    evidence_protocol: Literal["measured-replay-persistent-memory-v6"]
     world_split: GeneralizationEvidence
     generalization_verified: bool
     behavioral_horizon_adequate: bool
     causal_diagnostics: dict[str, CausalStageDiagnostic]
+    rewired_control_evidence: tuple[RewiredControlEvidence, ...]
+    rewired_control_effective: bool
     episode_evidence: tuple[EpisodeEvidence, ...]
     holdout_weights_frozen: bool
     holdout_memory_frozen: bool
@@ -359,10 +373,12 @@ def _run_condition(
     TrainingSummary,
     tuple[NeuralActivitySummary, ...],
     tuple[EpisodeEvidence, ...],
+    tuple[RewiredControlEvidence, ...],
 ]:
     observations: list[EpisodeObservation] = []
     holdout_neural_activity: list[NeuralActivitySummary] = []
     evidence: list[EpisodeEvidence] = []
+    rewired_evidence: list[RewiredControlEvidence] = []
     appetitive_contacts = 0
     aversive_contacts = 0
     dan_events = 0
@@ -377,6 +393,19 @@ def _run_condition(
             pre_ids=np.asarray(condition_binding.pre_ids, dtype=np.uint64),
             post_ids=np.asarray(condition_binding.post_ids, dtype=np.uint64),
         )
+        condition_graph = graph
+        if condition_binding.rewired:
+            rewired = rewire_plastic_edges(graph, condition_state, seed=replicate_seed)
+            condition_graph = rewired.graph
+            condition_state = rewired.binding
+            rewired_evidence.append(
+                RewiredControlEvidence(
+                    replicate_seed=replicate_seed,
+                    graph_digest=_graph_digest(condition_graph),
+                    plastic_edges=condition_state.pre_ids.size,
+                    changed_edges=rewired.changed_edges,
+                )
+            )
         episode_plan = tuple(
             (False, variant)
             for _ in range(config.training_episodes)
@@ -392,7 +421,7 @@ def _run_condition(
             plasticity_enabled = condition_binding.plasticity_enabled and not holdout
             initial_memory_digest = memory.digest if memory is not None else None
             result = run_autonomous_hexapod_episode(
-                graph,
+                condition_graph,
                 condition_state,
                 AutonomousHexapodConfig(
                     body_steps=config.body_steps,
@@ -491,6 +520,7 @@ def _run_condition(
         ),
         tuple(holdout_neural_activity),
         tuple(evidence),
+        tuple(rewired_evidence),
     )
 
 
@@ -585,9 +615,10 @@ def run_behavior_benchmark(
     training_summaries: dict[str, TrainingSummary] = {}
     holdout_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]] = {}
     evidence: list[EpisodeEvidence] = []
+    rewired_evidence: tuple[RewiredControlEvidence, ...] = ()
     for condition in ("normal", *config.controls):
         (condition_observations, training_summary,
-         condition_neural_activity, condition_evidence) = _run_condition(
+         condition_neural_activity, condition_evidence, condition_rewired) = _run_condition(
             condition,
             graph,
             binding,
@@ -603,6 +634,8 @@ def run_behavior_benchmark(
         training_summaries[condition] = training_summary
         holdout_neural_activity[condition] = condition_neural_activity
         evidence.extend(condition_evidence)
+        if condition == "rewired_control":
+            rewired_evidence = condition_rewired
     normal = observations["normal"]
     comparisons: dict[str, PairedComparison] = {}
     for condition in config.controls:
@@ -651,6 +684,14 @@ def run_behavior_benchmark(
         world_split.unseen_worlds and world_split.sufficient_world_diversity
     )
     behavioral_horizon_adequate = config.body_steps >= config.minimum_behavior_steps
+    rewired_control_effective = (
+        len(rewired_evidence) == len(config.seeds)
+        and all(
+            item.graph_digest != before
+            and 2 * item.changed_edges >= item.plastic_edges
+            for item in rewired_evidence
+        )
+    )
     causal_diagnostics: dict[str, CausalStageDiagnostic] = {
         condition: _causal_stage_diagnostic(
             condition,
@@ -666,6 +707,7 @@ def run_behavior_benchmark(
             and holdout_weights_frozen and holdout_memory_frozen
             and holdout_physical_stability_verified
             and behavioral_horizon_adequate
+            and rewired_control_effective
             and config.reinforcement_source == "contact_gated_neural_dan"
             and config.phase_envelope.amplitude_nm == 0.0
         ) and claim_gate(
@@ -693,11 +735,13 @@ def run_behavior_benchmark(
         training_summaries=training_summaries,
         holdout_neural_activity=holdout_neural_activity,
         comparisons=comparisons,
-        evidence_protocol="measured-replay-persistent-memory-v5",
+        evidence_protocol="measured-replay-persistent-memory-v6",
         world_split=world_split,
         generalization_verified=generalization_verified,
         behavioral_horizon_adequate=behavioral_horizon_adequate,
         causal_diagnostics=causal_diagnostics,
+        rewired_control_evidence=rewired_evidence,
+        rewired_control_effective=rewired_control_effective,
         episode_evidence=tuple(evidence),
         holdout_weights_frozen=holdout_weights_frozen,
         holdout_memory_frozen=holdout_memory_frozen,

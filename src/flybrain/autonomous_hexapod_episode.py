@@ -13,7 +13,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from flybrain.associative_motor_loop import BackendFactory
 from flybrain.autonomous_learning_benchmark import (
     AssociativeCalibrationConfig,
-    _effective_graph,
 )
 from flybrain.behavioral_perturbations import BodyPerturbation, apply_perturbation
 from flybrain.descending_interface import DescendingMap
@@ -763,7 +762,7 @@ def _run(
         }
         batches = tuple(
             simulate_shiu(
-                _effective_graph(graph, binding),
+                graph,
                 learning.shiu_parameters,
                 steps=learning.neural_chunk_steps,
                 external_voltage_events=external,
@@ -772,6 +771,8 @@ def _run(
                 presynaptic_transmitter_multipliers=(
                     learning.presynaptic_transmitter_multipliers
                 ),
+                plastic_edge_indices=binding.overlay.edge_indices,
+                plastic_edge_multipliers=binding.overlay.multipliers,
             )
         )
         fired_ids = tuple(

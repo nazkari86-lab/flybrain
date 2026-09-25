@@ -418,13 +418,18 @@ uv run --extra physics flybrain experiment autonomous-behavior \
 
 The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
 separate mutable state and publishes task-specific environment-only food/threat metrics.
-As of the 2026-09-23 audit, new results carry
-`evidence_protocol="measured-replay-persistent-memory-v5"` and per-episode evidence.
+Current results carry `evidence_protocol="measured-replay-persistent-memory-v6"` and
+per-episode evidence. The v6 rewired control swaps KC→MBON targets on an isolated
+graph copy, preserves source and target edge degrees, rejects duplicate edges,
+records how many edges changed, and cannot support a behavioral claim unless at
+least half the declared plastic edges were actually rewired in every replicate.
+Pre-v6 artifacts only shuffled plasticity-routing labels; they did **not** test a
+structurally rewired graph and cannot establish superiority to that control.
 Every training and evaluation episode is replayed from its pre-episode weights;
 evaluation freezes plasticity. Repeated seeds are rejected. Autonomous defaults
 disable the external sinusoidal leg drive; explicitly enabling it blocks the
 behavioral claim. DAN silencing and KC→MBON edge removal are distinct interventions.
-The v4/v5 gate fingerprints geometry and physical perturbations independently of
+The v4–v6 gate fingerprints geometry and physical perturbations independently of
 variant names, rejects train/holdout world overlap, and requires at least two
 distinct unseen worlds for each of food and threat before a behavioral claim can
 pass. The retained default evaluates four holdout worlds spanning mirrored source
@@ -440,8 +445,10 @@ would not establish full fly intelligence or biological equivalence.
 See [the evidence audit](docs/data/autonomy-evidence-audit-2026-09-23.md).
 The measured v5 smoke artifact and exact limits are documented in
 [the v5 learning/generalization audit](docs/data/autonomy-learning-generalization-v5-2026-09-23.md).
+The v6 structural-control change and retained smoke evidence are documented in
+[the v6 structural-control audit](docs/data/autonomy-structural-control-v6-2026-09-25.md).
 
-The v3/v4/v5 protocols also carry fast plasticity traces and slow dopamine/NO memory
+The v3–v6 protocols also carry fast plasticity traces and slow dopamine/NO memory
 between training episodes within each condition and seed. Holdout evaluation
 freezes this complete learning state as well as its effective weights. Immutable
 learning checkpoints support checked JSON round-trips and atomic file publication
