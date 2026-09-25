@@ -526,6 +526,50 @@ def test_autonomous_episode_reports_environment_trace_under_perturbation() -> No
     assert result.first_threat_contact_step is None
 
 
+def test_motor_diagnostic_records_applied_torque_after_delay_and_damage() -> None:
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        config(),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        perturbation=BodyPerturbation(delay_steps=1, damaged_legs=(0,)),
+        capture_motor_trace=True,
+    )
+
+    assert result.replay_exact is True
+    assert result.motor_trace is not None
+    assert len(result.motor_trace) == 2
+    first, second = result.motor_trace
+    assert len(first.activations) == 36
+    assert first.applied_torque_nm.values == ((0.0, 0.0, 0.0),) * 6
+    assert second.applied_torque_nm.values[0] == (0.0, 0.0, 0.0)
+    assert second.applied_torque_nm.values[1:] == first.decoded_torque_nm.values[1:]
+    assert second.thorax_position_m == result.final_body.thorax_position_m
+    assert second.thorax_yaw_rad == result.final_body.thorax_yaw_rad
+    assert second.support_count == result.final_body.support_count
+
+
+def test_motor_diagnostic_is_off_by_default() -> None:
+    result = run_autonomous_hexapod_episode(
+        graph(),
+        binding(),
+        config(),
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+
+    assert result.motor_trace is None
+
+
 @pytest.mark.skipif(
     not flygym_availability().available,
     reason=flygym_availability().reason,

@@ -71,3 +71,27 @@ def test_real_cli_atomically_publishes_autonomous_hexapod_artifact(tmp_path: Pat
         ],
     )
     assert repeated.exit_code != 0
+
+
+def test_real_cli_can_publish_motor_diagnostics(tmp_path: Path) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "motor-trace.json"
+
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-hexapod", snapshot,
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--motor-trace", "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    trace = payload["episode"]["motor_trace"]
+    assert payload["episode"]["replay_exact"] is True
+    assert len(trace) == 2
+    assert len(trace[0]["activations"]) == 36
+    assert trace[-1]["thorax_position_m"] == payload["episode"]["final_body"]["thorax_position_m"]

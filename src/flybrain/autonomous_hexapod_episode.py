@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal, Self, cast
 
 import numpy as np
@@ -178,6 +178,20 @@ class DescendingSpikeSummary(BaseModel, frozen=True):
     mdn_right: int = Field(ge=0)
 
 
+class MotorBodyTraceStep(BaseModel, frozen=True):
+    """Observed neural activation, issued torque and physical body response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    activations: tuple[float, ...]
+    decoded_torque_nm: HexapodTorque
+    applied_torque_nm: HexapodTorque
+    thorax_position_m: tuple[float, float, float]
+    thorax_yaw_rad: float
+    support_count: int = Field(ge=0, le=6)
+    fallen: bool
+
+
 def _approach_mbon_ids(
     learning: AssociativeCalibrationConfig,
     reinforcement: ReinforcementInterface,
@@ -265,6 +279,7 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     time_to_clear_threat_steps: int | None
     final_body: HexapodBody
     trace_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    motor_trace: tuple[MotorBodyTraceStep, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -303,10 +318,14 @@ class _Trace:
     time_to_clear_threat_steps: int | None
     final_body: HexapodBody
     body_digest: str
+    motor_trace: tuple[MotorBodyTraceStep, ...] | None = field(default=None, repr=False)
 
     @property
     def digest(self) -> str:
-        return hashlib.sha256(repr(self).encode("utf-8")).hexdigest()
+        payload = repr(self)
+        if self.motor_trace is not None:
+            payload += repr(self.motor_trace)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _clone_binding(binding: PlasticEdgeBinding) -> PlasticEdgeBinding:
@@ -437,6 +456,7 @@ def _run(
     plasticity_enabled: bool,
     learning_memory: AutonomousLearningMemory | None,
     memory_context: str,
+    capture_motor_trace: bool,
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -612,6 +632,7 @@ def _run(
     plastic_kc_spikes = 0
     mbon_spikes = 0
     body_trace = []
+    motor_trace: list[MotorBodyTraceStep] | None = [] if capture_motor_trace else None
     distance_to_food: list[float] = []
     distance_to_threat: list[float] = []
     first_food_contact_step: int | None = None
@@ -812,6 +833,18 @@ def _run(
                 values[leg_index] = (0.0, 0.0, 0.0)
             applied_torque = HexapodTorque(values=tuple(values))
         next_body = backend.step(applied_torque)
+        if motor_trace is not None:
+            motor_trace.append(
+                MotorBodyTraceStep(
+                    activations=activation.activations,
+                    decoded_torque_nm=activation.torques,
+                    applied_torque_nm=applied_torque,
+                    thorax_position_m=next_body.thorax_position_m,
+                    thorax_yaw_rad=next_body.thorax_yaw_rad,
+                    support_count=next_body.support_count,
+                    fallen=next_body.fallen,
+                )
+            )
         body_trace.append(next_body.model_dump(mode="json"))
         distance_to_food.append(_distance(next_body, config.arena.food_position_m))
         distance_to_threat.append(_distance(next_body, config.arena.threat_position_m))
@@ -953,6 +986,7 @@ def _run(
         time_to_clear_threat_steps=time_to_clear_threat_steps,
         final_body=final_body,
         body_digest=hashlib.sha256(repr(body_trace).encode("utf-8")).hexdigest(),
+        motor_trace=tuple(motor_trace) if motor_trace is not None else None,
     )
 
 
@@ -973,6 +1007,7 @@ def run_autonomous_hexapod_episode(
     dan_enabled: bool = True,
     plasticity_enabled: bool = True,
     learning_memory: AutonomousLearningMemory | None = None,
+    capture_motor_trace: bool = False,
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
@@ -1008,6 +1043,7 @@ def run_autonomous_hexapod_episode(
         plasticity_enabled=plasticity_enabled,
         learning_memory=learning_memory,
         memory_context=memory_context,
+        capture_motor_trace=capture_motor_trace,
     )
     replay_trace = None
     if replay_binding is not None:
@@ -1026,6 +1062,7 @@ def run_autonomous_hexapod_episode(
             plasticity_enabled=plasticity_enabled,
             learning_memory=learning_memory,
             memory_context=memory_context,
+            capture_motor_trace=capture_motor_trace,
         )
     return AutonomousHexapodResult(
         odor_channel_model=(
@@ -1094,4 +1131,5 @@ def run_autonomous_hexapod_episode(
         time_to_clear_threat_steps=first.time_to_clear_threat_steps,
         final_body=first.final_body,
         trace_digest=first.digest,
+        motor_trace=first.motor_trace,
     )

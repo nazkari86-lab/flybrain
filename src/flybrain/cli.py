@@ -501,6 +501,9 @@ def autonomous_hexapod_command(
     proprioceptive_spike_rate_hz: Annotated[
         float, typer.Option("--proprioceptive-spike-rate-hz", min=0.001)
     ] = 150.0,
+    motor_trace: Annotated[
+        bool, typer.Option("--motor-trace", help="Record per-step motor and body diagnostics")
+    ] = False,
 ) -> None:
     """Publish a retained schedule-free contact-learning hexapod episode."""
 
@@ -523,6 +526,7 @@ def autonomous_hexapod_command(
         body_steps=steps,
         seed=seed,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
+        capture_motor_trace=motor_trace,
     )
     serialized = result.model_dump_json()
     output_final.parent.mkdir(parents=True, exist_ok=True)
