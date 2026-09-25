@@ -370,6 +370,22 @@ turning sparse recruitment into a walking claim in
 [docs/data/male-cns-hexapod-motor-v2-180.md](docs/data/male-cns-hexapod-motor-v2-180.md). The assay
 is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
 
+### Experimental single-leg muscle bridge
+
+The installed FlyGym 2.1.0 also includes FlyMimic's Hill-type muscle body. The
+`flybrain.muscle_probe` assay routes four name-matched MaleCNS motor populations
+to four of its 15 left-front-leg muscles; the other 11 stay at minimum control.
+Published no-lesion and all-motor-lesioned MaleCNS traces produce different
+muscle forces and joint angles in matched 100-ms open-loop replays. The body is
+tethered, the other legs are not muscle-driven, and the cross-sex mapping is a
+declared model assumption. It is **not** six-leg locomotion or learned autonomy.
+
+```bash
+FLYBRAIN_MUSCLE_ASSET_TESTS=1 .venv/bin/pytest tests/test_muscle_probe.py -q
+```
+
+See the [reuse audit and reproducible muscle result](docs/data/motor-muscle-reuse-audit-2026-09-25.md).
+
 ## Run the autonomous retained hexapod loop
 
 The autonomous command removes the external conditioning schedule. Anonymous olfactory activity
