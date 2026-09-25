@@ -67,3 +67,6 @@ Any intervention must remain an explicit biological lesion/diagnostic, not
 a hidden gait policy. Independently, lengthen contact-gated learning episodes
 until recruited DAN spiking is actually observed before testing whether
 plasticity changes food and threat behavior against lesions and rewired controls.
+The [100-step FlyGym lesion control](flygym-motor-lesion-causal-2026-09-25.md)
+now measures this first intervention on one seed and keeps the behavioral
+claim disabled.
