@@ -62,6 +62,20 @@ artifact byte-for-byte after canonical JSON normalization. It again rewires
 returns zero food and threat differences with `behavioral_claim_allowed=false`.
 This artifact establishes reproducibility of the short protocol run, not learning.
 
+A clean-revision 20-step diagnostic is published as
+[`artifacts/autonomous-behavior-v6-diagnostic-04cd81c-seed7-steps20.json`](../../artifacts/autonomous-behavior-v6-diagnostic-04cd81c-seed7-steps20.json)
+(SHA-256 `aa6b626df0dbab35c71b3d5f08ea4727927580c66e58715d4806060ce17d56e9`).
+Its `software_revision` is `3751973a34b6b29dce5bbb1feb14ae7f673d01a9`.
+Canonical-JSON hashes of normal observations, neural activity and training
+summaries match the pre-v6 20-step diagnostic, as do comparisons to no
+plasticity, DAN lesion and KC→MBON lesion. The new structural control rewired
+30,964/33,496 plastic edges. Normal-minus-no-plasticity food and threat scores
+were -0.000238 and -0.000840; normal-minus-structural-control scores were
+-0.000553 and -0.000125. All 30 episodes replayed exactly, holdout plasticity
+and memory were frozen, and the canonical graph was unchanged. These are
+negative, single-seed diagnostic effects at 20 steps, below the prespecified
+100-step minimum; they do not support learned autonomous behavior.
+
 ## Next scientific gate
 
 Before a positive learning claim, run a preregistered v6 protocol with independent
