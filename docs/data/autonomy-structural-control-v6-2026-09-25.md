@@ -50,10 +50,17 @@ were frozen, and the canonical graph was unchanged. All food and threat deltas
 were zero; `behavioral_claim_allowed=false`. Two steps and one seed are only a
 protocol smoke test.
 
-The artifacts were generated from a dirty working tree before the source commit;
-their `software_revision` field says so. The SHA-256 values identify the local
-files, and the committed source plus tests identify the code revision. A clean-
-revision retained artifact remains a reproducibility task.
+The two artifacts above were generated from a dirty working tree before the
+source commit; their `software_revision` field says so. A fresh run from clean
+source revision `04cd81c66bd4f72ef9f7932a33615e478f2ab20a` is published as
+[`artifacts/autonomous-behavior-v6-clean-04cd81c-seed7-steps2.json`](../../artifacts/autonomous-behavior-v6-clean-04cd81c-seed7-steps2.json)
+(SHA-256 `2010f71654614b64403997d9a67276eba7c8e97e58ead6b3d9e35e2065cc59e4`).
+Its `software_revision` is that exact commit without a dirty suffix. The normal
+observations, neural summaries and training summaries match the earlier v6 smoke
+artifact byte-for-byte after canonical JSON normalization. It again rewires
+30,964/33,496 edges, replays exactly, freezes holdout weights and memory, and
+returns zero food and threat differences with `behavioral_claim_allowed=false`.
+This artifact establishes reproducibility of the short protocol run, not learning.
 
 ## Next scientific gate
 
