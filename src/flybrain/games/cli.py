@@ -39,6 +39,7 @@ from flybrain.games.universal import (
     UniversalGameConfig,
     UniversalGameRun,
     env_id_factory,
+    evaluate_universal_game,
     load_factory,
     run_universal_dashboard,
     train_universal_game,
@@ -63,6 +64,7 @@ def connect_game(
     steps: Annotated[int, typer.Option("--steps", min=1)] = 100_000,
     checkpoint_every: Annotated[int, typer.Option("--checkpoint-every", min=1)] = 10_000,
     seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    resume: Annotated[Path | None, typer.Option("--resume")] = None,
     visual: Annotated[
         bool,
         typer.Option("--visual", help="Show the connected game and learning telemetry."),
@@ -88,6 +90,7 @@ def connect_game(
                 env_name=resolved.name,
                 config=config,
                 output=output,
+                resume=resume,
                 on_snapshot=publish,
             )
 
@@ -99,12 +102,13 @@ def connect_game(
                     env_name=resolved.name,
                     config=config,
                     output=output,
+                    resume=resume,
                     on_snapshot=publish,
                     close_env=False,
                 )
 
             result = run_universal_dashboard(
-                resolved.factory,
+                resolved.visual_factory,
                 visual_train,
                 env_name=resolved.name,
                 seed=seed,
@@ -114,6 +118,33 @@ def connect_game(
         else:
             result = train(lambda _path, _manifest: None)
         typer.echo(result.model_dump_json())
+    except (FileExistsError, FileNotFoundError, ImportError, RuntimeError, ValueError) as error:
+        raise typer.BadParameter(str(error)) from error
+
+
+@games_app.command("connect-evaluate")
+def evaluate_connected_game(
+    checkpoint: Annotated[Path, typer.Option("--checkpoint")],
+    env_id: Annotated[
+        str | None,
+        typer.Option("--env-id", help="Registered Gymnasium environment id."),
+    ] = None,
+    factory: Annotated[
+        str | None,
+        typer.Option("--factory", help="Local environment factory as module:callable."),
+    ] = None,
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+) -> None:
+    """Evaluate a connected checkpoint on its frozen holdout seed schedule."""
+
+    if (env_id is None) == (factory is None):
+        raise typer.BadParameter("provide exactly one of --env-id or --factory")
+    try:
+        resolved = env_id_factory(env_id) if env_id is not None else load_factory(factory or "")
+        evaluation = evaluate_universal_game(checkpoint, resolved.factory)
+        if output is not None:
+            write_json_atomic(output, json.loads(evaluation.model_dump_json()))
+        typer.echo(evaluation.model_dump_json())
     except (FileExistsError, FileNotFoundError, ImportError, RuntimeError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
 

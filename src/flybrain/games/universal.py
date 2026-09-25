@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 
 import gymnasium as gym
 import numpy as np
@@ -28,38 +28,53 @@ from pydantic import BaseModel, ConfigDict, Field
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import BaseCallback
 
-from flybrain.games.artifacts import publish_directory_atomic, write_json_atomic
+from flybrain.games.artifacts import (
+    SeedSchedule,
+    publish_directory_atomic,
+    write_json_atomic,
+)
 
 EnvFactory = Callable[[], gym.Env[Any, Any]]
 SnapshotCallback = Callable[[Path, "UniversalCheckpointManifest"], None]
 
 
 class UniversalGameConfig(BaseModel, frozen=True):
-    """Reproducible configuration for one generic discrete-action game."""
+    """Complete reproducible configuration for one generic discrete-action game."""
 
     model_config = ConfigDict(extra="forbid")
 
     total_steps: int = Field(default=100_000, ge=1, le=100_000_000)
     checkpoint_every: int = Field(default=10_000, ge=1, le=10_000_000)
     seed: int = Field(default=7, ge=0)
+    training_seed_count: int = Field(default=32, ge=1, le=100_000)
+    validation_seed_count: int = Field(default=4, ge=1, le=10_000)
+    holdout_seed_count: int = Field(default=8, ge=1, le=10_000)
     buffer_size: int = Field(default=50_000, ge=128, le=5_000_000)
     learning_starts: int = Field(default=500, ge=0, le=5_000_000)
     batch_size: int = Field(default=64, ge=1, le=4096)
+    evaluation_max_steps: int = Field(default=10_000, ge=1, le=10_000_000)
 
 
 class UniversalCheckpointManifest(BaseModel, frozen=True):
-    """Identity and measured progress for one generic-game checkpoint."""
+    """Identity and complete continuation metadata for one generic-game checkpoint."""
 
     model_config = ConfigDict(extra="forbid")
 
-    protocol: str = "universal-gym-dqn-v1"
+    protocol: Literal["universal-gym-dqn-v2"] = "universal-gym-dqn-v2"
+    algorithm: Literal["stable-baselines3-dqn"] = "stable-baselines3-dqn"
     env_name: str = Field(min_length=1)
     completed_steps: int = Field(ge=0)
+    training_seed_index: int = Field(ge=0)
+    config: UniversalGameConfig
+    seeds: SeedSchedule
     episodes: int = Field(ge=0)
     action_count: int = Field(ge=2)
     observation_size: int = Field(ge=1)
+    space_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     recent_mean_reward: float
+    validation_mean_reward: float
     model_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    replay_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     dependencies: dict[str, str]
 
 
@@ -75,10 +90,38 @@ class UniversalGameRun(BaseModel, frozen=True):
     checkpoints: int = Field(ge=1)
 
 
+class UniversalEpisodeResult(BaseModel, frozen=True):
+    """One frozen-policy episode from a generic connected environment."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seed: int = Field(ge=0)
+    episode_return: float
+    steps: int = Field(ge=1)
+    terminated: bool
+    truncated: bool
+
+
+class UniversalEvaluation(BaseModel, frozen=True):
+    """Immutable holdout evaluation for a generic connected environment."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["universal-evaluation-v1"] = "universal-evaluation-v1"
+    episodes: int = Field(ge=1)
+    mean_return: float
+    confidence_low: float
+    confidence_high: float
+    model_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    training_mutated: bool
+    per_seed: tuple[UniversalEpisodeResult, ...]
+
+
 @dataclass(frozen=True)
 class _FactorySpec:
     factory: EnvFactory
     name: str
+    visual_factory: EnvFactory
 
 
 def load_factory(spec: str) -> _FactorySpec:
@@ -91,7 +134,7 @@ def load_factory(spec: str) -> _FactorySpec:
     factory = getattr(module, attribute, None)
     if not callable(factory):
         raise ValueError(f"factory is not callable: {spec}")
-    return _FactorySpec(factory=factory, name=spec)
+    return _FactorySpec(factory=factory, name=spec, visual_factory=factory)
 
 
 def env_id_factory(env_id: str) -> _FactorySpec:
@@ -101,12 +144,37 @@ def env_id_factory(env_id: str) -> _FactorySpec:
         raise ValueError("env_id must not be empty")
 
     def factory() -> gym.Env[Any, Any]:
+        return gym.make(env_id)
+
+    def visual_factory() -> gym.Env[Any, Any]:
         try:
             return gym.make(env_id, render_mode="rgb_array")
         except TypeError:
             return gym.make(env_id)
 
-    return _FactorySpec(factory=factory, name=env_id)
+    return _FactorySpec(factory=factory, name=env_id, visual_factory=visual_factory)
+
+
+class _SeedCyclingEnv(gym.Wrapper[Any, Any, Any, Any]):
+    """Feed deterministic, non-overlapping episode seeds into a Gymnasium env."""
+
+    def __init__(self, env: gym.Env[Any, Any], seeds: tuple[int, ...], start_index: int = 0):
+        super().__init__(env)
+        if not seeds:
+            raise ValueError("training seed schedule must not be empty")
+        self.episode_seeds = seeds
+        self.seed_index = start_index
+
+    def reset(
+        self,
+        *,
+        seed: int | None = None,
+        options: dict[str, Any] | None = None,
+    ) -> tuple[Any, dict[str, Any]]:
+        if seed is None:
+            seed = self.episode_seeds[self.seed_index % len(self.episode_seeds)]
+            self.seed_index += 1
+        return self.env.reset(seed=seed, options=options)
 
 
 def _prepare_env(factory: EnvFactory, *, seed: int | None = None) -> gym.Env[Any, Any]:
@@ -147,6 +215,98 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _hash_tree(path: Path) -> str:
+    root = path.resolve()
+    digest = hashlib.sha256()
+    for item in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
+        digest.update(str(item.relative_to(root)).encode())
+        digest.update(bytes.fromhex(_sha256(item)))
+    return digest.hexdigest()
+
+
+def _space_sha256(env: gym.Env[Any, Any]) -> str:
+    payload = {
+        "action_space": repr(env.action_space),
+        "observation_space": repr(env.observation_space),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def _schedule(config: UniversalGameConfig) -> SeedSchedule:
+    return SeedSchedule.build(
+        config.seed,
+        train_count=config.training_seed_count,
+        validation_count=config.validation_seed_count,
+        holdout_count=config.holdout_seed_count,
+    )
+
+
+def _checkpoint_manifest(path: Path) -> UniversalCheckpointManifest:
+    return UniversalCheckpointManifest.model_validate_json(
+        path.resolve().joinpath("manifest.json").read_text(encoding="utf-8")
+    )
+
+
+def _compatible_resume(old: UniversalGameConfig, new: UniversalGameConfig) -> bool:
+    excluded = {"total_steps", "checkpoint_every"}
+    return old.model_dump(exclude=excluded) == new.model_dump(exclude=excluded)
+
+
+def _run_episode(
+    model: DQN,
+    factory: EnvFactory,
+    *,
+    seed: int,
+    max_steps: int,
+) -> UniversalEpisodeResult:
+    env = _prepare_env(factory)
+    try:
+        observation, _reset_info = env.reset(seed=seed)
+        total_reward = 0.0
+        steps = 0
+        terminated = False
+        truncated = False
+        while not (terminated or truncated) and steps < max_steps:
+            prediction, _ = model.predict(observation, deterministic=True)
+            action = int(np.asarray(prediction).item())
+            observation, reward, terminated, truncated, _step_info = env.step(action)
+            total_reward += float(reward)
+            steps += 1
+        if not terminated and not truncated and steps >= max_steps:
+            truncated = True
+        return UniversalEpisodeResult(
+            seed=seed,
+            episode_return=total_reward,
+            steps=steps,
+            terminated=bool(terminated),
+            truncated=bool(truncated),
+        )
+    finally:
+        env.close()
+
+
+def _evaluation_from_episodes(
+    episodes: tuple[UniversalEpisodeResult, ...],
+    *,
+    model_sha256: str,
+    training_mutated: bool,
+) -> UniversalEvaluation:
+    values = np.asarray([episode.episode_return for episode in episodes], dtype=np.float64)
+    generator = np.random.default_rng(0)
+    samples = np.asarray(
+        [float(np.mean(generator.choice(values, size=len(values)))) for _ in range(500)]
+    )
+    return UniversalEvaluation(
+        episodes=len(episodes),
+        mean_return=float(np.mean(values)),
+        confidence_low=float(np.quantile(samples, 0.025)),
+        confidence_high=float(np.quantile(samples, 0.975)),
+        model_sha256=model_sha256,
+        training_mutated=training_mutated,
+        per_seed=episodes,
+    )
+
+
 def _replace_directory_link(link: Path, target: Path) -> None:
     link.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=link.parent) as temporary:
@@ -164,7 +324,13 @@ class _CheckpointCallback(BaseCallback):
         config: UniversalGameConfig,
         action_count: int,
         observation_size: int,
-        on_snapshot: SnapshotCallback | None,
+        space_sha256: str,
+        seeds: SeedSchedule,
+        seed_tracker: _SeedCyclingEnv,
+        validation_factory: EnvFactory,
+        validation_seeds: tuple[int, ...],
+        on_snapshot: SnapshotCallback | None = None,
+        initial_best_score: float = float("-inf"),
     ) -> None:
         super().__init__(verbose=0)
         self.output = output
@@ -172,11 +338,16 @@ class _CheckpointCallback(BaseCallback):
         self.config = config
         self.action_count = action_count
         self.observation_size = observation_size
+        self.space_sha256 = space_sha256
+        self.seeds = seeds
+        self.seed_tracker = seed_tracker
+        self.validation_factory = validation_factory
+        self.validation_seeds = validation_seeds
         self.on_snapshot = on_snapshot
         self.checkpoints = 0
         self.episodes = 0
         self.rewards: deque[float] = deque(maxlen=100)
-        self.best_score = float("-inf")
+        self.best_score = initial_best_score
         self.latest: Path | None = None
         self.best: Path | None = None
 
@@ -195,21 +366,42 @@ class _CheckpointCallback(BaseCallback):
         return True
 
     def _publish(self) -> None:
+        model = cast(DQN, self.model)
         step = int(self.num_timesteps)
         destination = self.output / "checkpoints" / f"step-{step:012d}"
-        score = float(np.mean(self.rewards)) if self.rewards else 0.0
+        training_score = float(np.mean(self.rewards)) if self.rewards else 0.0
+        validation_episodes = tuple(
+            _run_episode(
+                model,
+                self.validation_factory,
+                seed=seed,
+                max_steps=self.config.evaluation_max_steps,
+            )
+            for seed in self.validation_seeds
+        )
+        validation_score = float(
+            np.mean([episode.episode_return for episode in validation_episodes])
+        )
 
         def writer(stage: Path) -> None:
-            self.model.save(stage / "model")
+            model.save(stage / "model")
+            model.save_replay_buffer(stage / "replay.pkl")
             model_path = stage / "model.zip"
+            replay_path = stage / "replay.pkl"
             manifest = UniversalCheckpointManifest(
                 env_name=self.env_name,
                 completed_steps=step,
+                training_seed_index=self.seed_tracker.seed_index,
+                config=self.config,
+                seeds=self.seeds,
                 episodes=self.episodes,
                 action_count=self.action_count,
                 observation_size=self.observation_size,
-                recent_mean_reward=score,
+                space_sha256=self.space_sha256,
+                recent_mean_reward=training_score,
+                validation_mean_reward=validation_score,
                 model_sha256=_sha256(model_path),
+                replay_sha256=_sha256(replay_path),
                 dependencies=_dependencies(),
             )
             stage.joinpath("manifest.json").write_text(
@@ -218,8 +410,8 @@ class _CheckpointCallback(BaseCallback):
 
         checkpoint = publish_directory_atomic(destination, writer)
         self.latest = checkpoint
-        if self.best is None or score >= self.best_score:
-            self.best_score = score
+        if self.best is None or validation_score >= self.best_score:
+            self.best_score = validation_score
             self.best = checkpoint
         _replace_directory_link(self.output / "latest", self.latest)
         _replace_directory_link(self.output / "best", self.best)
@@ -233,30 +425,56 @@ class _CheckpointCallback(BaseCallback):
             )
 
 
+def load_universal_model(checkpoint: Path, env: gym.Env[Any, Any] | None = None) -> DQN:
+    """Load a validated generic checkpoint without changing it."""
+
+    resolved = checkpoint.resolve()
+    manifest = _checkpoint_manifest(resolved)
+    model_path = resolved / "model.zip"
+    replay_path = resolved / "replay.pkl"
+    if _sha256(model_path) != manifest.model_sha256:
+        raise ValueError("universal model hash does not match checkpoint manifest")
+    if _sha256(replay_path) != manifest.replay_sha256:
+        raise ValueError("universal replay hash does not match checkpoint manifest")
+    if env is not None and _space_sha256(env) != manifest.space_sha256:
+        raise ValueError("environment spaces do not match universal checkpoint")
+    return DQN.load(model_path, env=env, device="cpu")
+
+
 def train_universal_game(
     factory: EnvFactory,
     *,
     env_name: str,
     config: UniversalGameConfig,
     output: Path,
+    resume: Path | None = None,
     on_snapshot: SnapshotCallback | None = None,
     close_env: bool = True,
 ) -> UniversalGameRun:
-    """Train a seeded DQN on a connected Gymnasium game and publish checkpoints."""
+    """Train or resume a seeded DQN and publish complete generic-game checkpoints."""
 
     destination = output.resolve()
-    if destination.exists():
-        raise FileExistsError(destination)
-    destination.mkdir(parents=True)
-    env = _prepare_env(factory, seed=config.seed)
-    try:
-        if not isinstance(env.action_space, gym.spaces.Discrete):
-            raise ValueError("prepared environment lost its Discrete action space")
-        shape = env.observation_space.shape
-        observation_size = int(np.prod(shape if shape is not None else (1,)))
+    seeds = _schedule(config)
+    if resume is None:
+        if destination.exists():
+            raise FileExistsError(destination)
+        destination.mkdir(parents=True)
+        write_json_atomic(
+            destination / "run.json",
+            {
+                "protocol": "universal-gym-run-v2",
+                "env_name": env_name,
+                "config": json.loads(config.model_dump_json()),
+                "seeds": json.loads(seeds.model_dump_json()),
+            },
+        )
+        start_index = 0
+        initial_best_score = float("-inf")
+        prepared = _prepare_env(factory)
+        training_env = _SeedCyclingEnv(prepared, seeds.training)
         model = DQN(
             "MlpPolicy",
-            env,
+            training_env,
             learning_rate=1e-3,
             buffer_size=config.buffer_size,
             learning_starts=config.learning_starts,
@@ -272,40 +490,106 @@ def train_universal_game(
             device="cpu",
             verbose=0,
         )
+    else:
+        if not destination.is_dir():
+            raise FileNotFoundError(destination)
+        resume_path = resume.resolve()
+        old = _checkpoint_manifest(resume_path)
+        if not _compatible_resume(old.config, config):
+            raise ValueError("resume checkpoint is incompatible with requested universal config")
+        if old.seeds != seeds:
+            raise ValueError("resume seed schedule does not match requested universal config")
+        if config.total_steps <= old.completed_steps:
+            raise ValueError("total_steps must exceed the resumed checkpoint")
+        prepared = _prepare_env(factory)
+        if _space_sha256(prepared) != old.space_sha256:
+            prepared.close()
+            raise ValueError("environment spaces do not match resumed universal checkpoint")
+        start_index = old.training_seed_index
+        training_env = _SeedCyclingEnv(prepared, seeds.training, start_index=start_index)
+        model = load_universal_model(resume_path, env=training_env)
+        model.load_replay_buffer(resume_path / "replay.pkl")
+        best_path = destination / "best"
+        initial_best_score = (
+            _checkpoint_manifest(best_path).validation_mean_reward
+            if best_path.exists()
+            else float("-inf")
+        )
+
+    try:
+        if not isinstance(training_env.action_space, gym.spaces.Discrete):
+            raise ValueError("prepared environment lost its Discrete action space")
+        shape = training_env.observation_space.shape
+        observation_size = int(np.prod(shape if shape is not None else (1,)))
+        checkpoints = destination / "checkpoints"
+        checkpoints.mkdir(exist_ok=True)
         callback = _CheckpointCallback(
             output=destination,
             env_name=env_name,
             config=config,
-            action_count=int(env.action_space.n),
+            action_count=int(training_env.action_space.n),
             observation_size=observation_size,
+            space_sha256=_space_sha256(prepared),
+            seeds=seeds,
+            seed_tracker=training_env,
+            validation_factory=factory,
+            validation_seeds=seeds.validation,
             on_snapshot=on_snapshot,
+            initial_best_score=initial_best_score,
         )
-        model.learn(total_timesteps=config.total_steps, callback=callback, progress_bar=False)
+        while int(model.num_timesteps) < config.total_steps:
+            remaining = config.total_steps - int(model.num_timesteps)
+            chunk = min(config.checkpoint_every, remaining)
+            model.learn(total_timesteps=chunk, callback=callback, reset_num_timesteps=False)
         if callback.latest is None:
             callback._publish()
         assert callback.latest is not None and callback.best is not None
-        write_json_atomic(
-            destination / "run.json",
-            {
-                "protocol": "universal-gym-run-v1",
-                "env_name": env_name,
-                "seed": config.seed,
-                "total_steps": config.total_steps,
-                "checkpoints": callback.checkpoints,
-                "latest": str(callback.latest.relative_to(destination)),
-                "best": str(callback.best.relative_to(destination)),
-            },
-        )
         return UniversalGameRun(
             output=destination,
             latest=destination / "latest",
             best=destination / "best",
-            completed_steps=config.total_steps,
+            completed_steps=int(callback.latest.name.split("-")[-1]),
             checkpoints=callback.checkpoints,
         )
     finally:
         if close_env:
-            env.close()
+            training_env.close()
+
+
+def evaluate_universal_game(
+    checkpoint: Path,
+    factory: EnvFactory,
+    *,
+    seeds: tuple[int, ...] | None = None,
+) -> UniversalEvaluation:
+    """Evaluate a frozen universal checkpoint on its declared holdout seeds."""
+
+    resolved = checkpoint.resolve()
+    before = _hash_tree(resolved)
+    manifest = _checkpoint_manifest(resolved)
+    evaluation_seeds = manifest.seeds.holdout if seeds is None else seeds
+    if not evaluation_seeds:
+        raise ValueError("universal evaluation requires at least one seed")
+    env = _prepare_env(factory)
+    try:
+        model = load_universal_model(resolved, env=env)
+    finally:
+        env.close()
+    episodes = tuple(
+        _run_episode(
+            model,
+            factory,
+            seed=seed,
+            max_steps=manifest.config.evaluation_max_steps,
+        )
+        for seed in evaluation_seeds
+    )
+    after = _hash_tree(resolved)
+    return _evaluation_from_episodes(
+        episodes,
+        model_sha256=manifest.model_sha256,
+        training_mutated=before != after,
+    )
 
 
 def _frame_surface(frame: Any, width: int, height: int) -> pygame.Surface | None:
@@ -401,7 +685,7 @@ def run_universal_dashboard(
                 frame_count = 0
 
             screen.fill((18, 24, 37))
-            status = "training" if thread.is_alive() else "training finished"
+            status = "training + checkpoint playback" if thread.is_alive() else "training finished"
             if errors:
                 status = f"training failed: {str(errors[0])[:70]}"
             screen.blit(
@@ -410,7 +694,7 @@ def run_universal_dashboard(
             )
             screen.blit(
                 small.render(
-                    f"{status}  |  P pause  |  Q close  |  checkpoints: "
+                    f"{status}  |  P pause  |  Q close  |  checkpoint: "
                     f"{current.completed_steps if current else 0}",
                     True,
                     (178, 195, 216),
@@ -445,18 +729,18 @@ def run_universal_dashboard(
 
             panel_x = 930
             panel_lines = [
-                f"mode: {status}",
-                f"step: {current.completed_steps if current else 0}",
+                "mode: checkpoint playback",
+                f"checkpoint step: {current.completed_steps if current else 0}",
                 f"action: {last_action if last_action is not None else '-'}",
                 f"reward: {last_reward:.3f}",
                 f"episodes: {episodes}",
                 f"input size: {current.observation_size if current else '-'}",
                 f"actions: {current.action_count if current else '-'}",
                 "",
-                "neural activity",
+                "observation activity",
             ]
             for index, line in enumerate(panel_lines):
-                color = (88, 227, 183) if line == "neural activity" else (232, 237, 245)
+                color = (88, 227, 183) if line == "observation activity" else (232, 237, 245)
                 screen.blit(small.render(line, True, color), (panel_x, 105 + index * 28))
             values = np.asarray(observation).reshape(-1) if observation is not None else np.zeros(1)
             values = np.abs(values[:32])

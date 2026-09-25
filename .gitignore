@@ -7,3 +7,5 @@ __pycache__/
 artifacts/
 data/cache/
 *.partial
+/MUJOCO_LOG.TXT
+/probe-step*.json

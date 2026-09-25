@@ -139,12 +139,33 @@ uv run flybrain games connect \
   --output artifacts/games/my-game/seed7
 ```
 
-The connector validates the action space, flattens structured observations, records dependency and
-model hashes, publishes atomic checkpoints, and keeps `latest` and `best` pointers. The live window
-uses `P` to pause playback and `Q` to close the window while training finishes. Continuous or
-structured action spaces need a game-specific learner adapter; the existing Chess and Runner
-adapters provide those richer interfaces. This game layer is an engineered learning bridge and
-does not change the evidence status of the biological MaleCNS path.
+The connector validates the action space, flattens structured observations, records dependency,
+space, model, and replay hashes, publishes atomic full-state checkpoints, and keeps `latest` and
+validation-selected `best` pointers. Continue a run without discarding the replay buffer:
+
+```bash
+uv run flybrain games connect \
+  --env-id CartPole-v1 \
+  --steps 200000 \
+  --resume artifacts/games/cartpole/seed7/latest \
+  --output artifacts/games/cartpole/seed7
+```
+
+Evaluate the frozen policy on the checkpoint's disjoint holdout seeds; evaluation must not mutate
+the checkpoint:
+
+```bash
+uv run flybrain games connect-evaluate \
+  --env-id CartPole-v1 \
+  --checkpoint artifacts/games/cartpole/seed7/best
+```
+
+The live window shows checkpoint playback beside training progress, reward, action, and observation
+activity; it does not pretend that observation values are biological neural spikes. `P` pauses
+playback and `Q` closes the window while training finishes. Continuous, structured, or pixel-heavy
+action spaces need a game-specific learner adapter; the existing Chess and Runner adapters provide
+those richer interfaces. This game layer is an engineered learning bridge and does not change the
+evidence status of the biological MaleCNS path.
 
 ### Train, watch, or play chess
 
