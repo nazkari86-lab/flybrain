@@ -34,10 +34,88 @@ from flybrain.games.runner_viewer import (
     run_runner_viewer_smoke,
 )
 from flybrain.games.training_dashboard import run_training_dashboard
+from flybrain.games.universal import (
+    SnapshotCallback,
+    UniversalGameConfig,
+    UniversalGameRun,
+    env_id_factory,
+    load_factory,
+    run_universal_dashboard,
+    train_universal_game,
+)
 
 GameName = Literal["runner", "chess"]
 
 games_app = typer.Typer(help="Train, evaluate, watch, and play game-learning agents.")
+
+
+@games_app.command("connect")
+def connect_game(
+    output: Annotated[Path, typer.Option("--output")],
+    env_id: Annotated[
+        str | None,
+        typer.Option("--env-id", help="Registered Gymnasium environment id."),
+    ] = None,
+    factory: Annotated[
+        str | None,
+        typer.Option("--factory", help="Local environment factory as module:callable."),
+    ] = None,
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 100_000,
+    checkpoint_every: Annotated[int, typer.Option("--checkpoint-every", min=1)] = 10_000,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    visual: Annotated[
+        bool,
+        typer.Option("--visual", help="Show the connected game and learning telemetry."),
+    ] = False,
+    max_frames: Annotated[int | None, typer.Option("--max-frames", min=1)] = None,
+    demo_frames: Annotated[int, typer.Option("--demo-frames", min=1)] = 90,
+) -> None:
+    """Connect, train, and watch any discrete-action Gymnasium game."""
+
+    if (env_id is None) == (factory is None):
+        raise typer.BadParameter("provide exactly one of --env-id or --factory")
+    try:
+        resolved = env_id_factory(env_id) if env_id is not None else load_factory(factory or "")
+        config = UniversalGameConfig(
+            total_steps=steps,
+            checkpoint_every=min(checkpoint_every, steps),
+            seed=seed,
+        )
+
+        def train(publish: SnapshotCallback) -> UniversalGameRun:
+            return train_universal_game(
+                resolved.factory,
+                env_name=resolved.name,
+                config=config,
+                output=output,
+                on_snapshot=publish,
+            )
+
+        if visual:
+
+            def visual_train(publish: SnapshotCallback) -> UniversalGameRun:
+                return train_universal_game(
+                    resolved.factory,
+                    env_name=resolved.name,
+                    config=config,
+                    output=output,
+                    on_snapshot=publish,
+                    close_env=False,
+                )
+
+            result = run_universal_dashboard(
+                resolved.factory,
+                visual_train,
+                env_name=resolved.name,
+                seed=seed,
+                max_frames=max_frames,
+                demo_frames=demo_frames,
+            )
+        else:
+            result = train(lambda _path, _manifest: None)
+        typer.echo(result.model_dump_json())
+    except (FileExistsError, FileNotFoundError, ImportError, RuntimeError, ValueError) as error:
+        raise typer.BadParameter(str(error)) from error
 
 
 @games_app.command("train")

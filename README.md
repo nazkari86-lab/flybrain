@@ -111,6 +111,41 @@ the other seven; this is strong measured learning but not perfect mastery. Evalu
 checkpoint hash unchanged. This subsystem is engineered DQN reinforcement learning, not
 MaleCNS-generated biological intelligence and not direct automation of commercial Geometry Dash.
 
+### Connect any Gymnasium game
+
+The universal connector accepts any local game that exposes a discrete Gymnasium action space.
+It saves resumable model checkpoints and shows the real `render()` frame beside the current action,
+reward, episode count, checkpoint number, and a compact activity view of the observation channels.
+Use a registered environment directly:
+
+```bash
+uv run flybrain games connect \
+  --env-id CartPole-v1 \
+  --steps 100000 \
+  --checkpoint-every 10000 \
+  --visual \
+  --output artifacts/games/cartpole/seed7
+```
+
+For a local game, expose a zero-argument factory in the form `module:callable`. The factory must
+return a Gymnasium environment with `render_mode="rgb_array"` configured when the game supports
+rendering:
+
+```bash
+uv run flybrain games connect \
+  --factory my_game:make_env \
+  --steps 100000 \
+  --visual \
+  --output artifacts/games/my-game/seed7
+```
+
+The connector validates the action space, flattens structured observations, records dependency and
+model hashes, publishes atomic checkpoints, and keeps `latest` and `best` pointers. The live window
+uses `P` to pause playback and `Q` to close the window while training finishes. Continuous or
+structured action spaces need a game-specific learner adapter; the existing Chess and Runner
+adapters provide those richer interfaces. This game layer is an engineered learning bridge and
+does not change the evidence status of the biological MaleCNS path.
+
 ### Train, watch, or play chess
 
 Chess uses `python-chess` for rules, a learned residual policy/value network, legal-move PUCT,
