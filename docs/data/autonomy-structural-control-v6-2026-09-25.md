@@ -76,6 +76,35 @@ and memory were frozen, and the canonical graph was unchanged. These are
 negative, single-seed diagnostic effects at 20 steps, below the prespecified
 100-step minimum; they do not support learned autonomous behavior.
 
+The same one-seed, 20-step v6 protocol was then run on the millimetre-scale
+FlyGym 2.1.0 / MuJoCo 3.9.0 body. The published artifact is
+[`artifacts/autonomous-behavior-v6-flygym-b2b046d-seed7-steps20.json`](../../artifacts/autonomous-behavior-v6-flygym-b2b046d-seed7-steps20.json)
+(SHA-256 `59d919e86f6a7917927fb7fcd6f7f73b30dc91fd645afb3e4ffe3d3a211b78be`,
+clean source revision `b2b046de49e55c3044d315ab25b3f95c66ad676d`).
+Its structural control again rewired 30,964/33,496 plastic edges; all 30
+episodes replayed exactly, holdout weights and memory were frozen, the graph was
+unchanged, and every normal holdout ended physically supported and unfallen.
+There were no food or threat contacts. Against no plasticity, normal food score
+was lower by 0.00000916 m while threat score was higher by 0.00002139 m. The
+food and threat differences against structural rewiring were -0.00001732 m and
++0.00003453 m. These are millimetre-scale displacement-score differences from
+one seed, not independent confidence intervals; their mixed signs and the
+subminimum horizon keep `behavioral_claim_allowed=false`. The more realistic
+body therefore does not rescue the current food-and-threat learning claim.
+
+The motor interface is a specific unclosed biological boundary: direct
+inspection of the configured FlyGym `LEGS_ONLY` model found 66 leg joint DOFs,
+of which this neural adapter actuates 18 (three per leg), with no adhesion
+actuators. The separately labelled engineering baseline uses FlyGym's official
+42-DOF plus six-adhesion hybrid controller and moved 3.36 mm in 0.32 s in its
+own run; this is not a matched intervention or evidence that substituting that
+controller would make the connectome intelligent. The retained annotations
+contain additional named motor classes, but they do not yet establish a
+complete, validated neuron-to-muscle map for all six legs. Next, test
+cell-specific motor recruitment and physical joint effects before expanding
+the neural actuator bridge; do not silently insert the official gait policy
+into the biological path.
+
 ## Next scientific gate
 
 Before a positive learning claim, run a preregistered v6 protocol with independent
