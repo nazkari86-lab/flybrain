@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Callable
 from typing import Literal, cast
 
 import numpy as np
@@ -43,6 +44,10 @@ from flybrain.proprioceptive_interface import ProprioceptiveMap
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.retinal_interface import VisualInterfaceMap
 
+CausalStage = Literal[
+    "plasticity", "mbon", "descending", "motor", "behavior", "none"
+]
+
 
 class GeneralizationEvidence(BaseModel, frozen=True):
     """Structural proof that evaluation worlds are diverse and held out."""
@@ -65,6 +70,7 @@ class BehaviorBenchmarkConfig(BaseModel, frozen=True):
     training_episodes: int = Field(gt=0, le=10_000)
     holdout_episodes: int = Field(gt=0, le=10_000)
     body_steps: int = Field(gt=0, le=10_000)
+    minimum_behavior_steps: int = Field(default=100, ge=100, le=10_000)
     seeds: tuple[int, ...]
     training_variants: tuple[BehaviorVariant, ...]
     holdout_variants: tuple[BehaviorVariant, ...]
@@ -203,6 +209,22 @@ class NeuralActivitySummary(BaseModel, frozen=True):
     routed_dan_spike_events: int = Field(ge=0)
 
 
+class CausalStageDiagnostic(BaseModel, frozen=True):
+    """Paired normal-minus-control effects along the learned sensorimotor path."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    control: ControlCondition
+    paired_holdout_episodes: int = Field(gt=0)
+    plasticity_delta: float
+    mbon_spike_delta: float
+    descending_spike_delta: float
+    motor_spike_delta: float
+    food_behavior_delta: float
+    threat_behavior_delta: float
+    first_measurable_stage: CausalStage
+
+
 class EpisodeEvidence(BaseModel, frozen=True):
     """Measured verification for every training and evaluation episode."""
 
@@ -259,6 +281,8 @@ class BehaviorBenchmarkResult(BaseModel, frozen=True):
     evidence_protocol: Literal["measured-replay-persistent-memory-v5"]
     world_split: GeneralizationEvidence
     generalization_verified: bool
+    behavioral_horizon_adequate: bool
+    causal_diagnostics: dict[str, CausalStageDiagnostic]
     episode_evidence: tuple[EpisodeEvidence, ...]
     holdout_weights_frozen: bool
     holdout_memory_frozen: bool
@@ -470,6 +494,78 @@ def _run_condition(
     )
 
 
+def _mean_delta(
+    normal: tuple[NeuralActivitySummary, ...],
+    control: tuple[NeuralActivitySummary, ...],
+    value: Callable[[NeuralActivitySummary], float],
+) -> float:
+    pairs = zip(normal, control, strict=True)
+    return float(np.mean([value(first) - value(second) for first, second in pairs]))
+
+
+def _descending_total(activity: NeuralActivitySummary) -> int:
+    return sum(activity.descending_spikes.model_dump().values())
+
+
+def _multiplier_mean(activity: NeuralActivitySummary) -> float:
+    values = tuple(activity.mbon_mean_multipliers.values())
+    return float(np.mean(values)) if values else 1.0
+
+
+def _causal_stage_diagnostic(
+    control: ControlCondition,
+    normal_activity: tuple[NeuralActivitySummary, ...],
+    control_activity: tuple[NeuralActivitySummary, ...],
+    comparison: PairedComparison,
+) -> CausalStageDiagnostic:
+    plasticity_delta = _mean_delta(
+        normal_activity,
+        control_activity,
+        _multiplier_mean,
+    )
+    mbon_spike_delta = _mean_delta(
+        normal_activity,
+        control_activity,
+        lambda item: item.mbon_spikes,
+    )
+    descending_spike_delta = _mean_delta(
+        normal_activity,
+        control_activity,
+        _descending_total,
+    )
+    motor_spike_delta = _mean_delta(
+        normal_activity,
+        control_activity,
+        lambda item: item.motor_spikes,
+    )
+    behavior_deltas = (comparison.food_delta.mean, comparison.threat_delta.mean)
+    stage_values: tuple[tuple[CausalStage, float], ...] = (
+        ("plasticity", plasticity_delta),
+        ("mbon", mbon_spike_delta),
+        ("descending", descending_spike_delta),
+        ("motor", motor_spike_delta),
+        ("behavior", max(abs(value) for value in behavior_deltas)),
+    )
+    first_measurable_stage = cast(
+        CausalStage,
+        next(
+            (stage for stage, value in stage_values if abs(value) > 1e-12),
+            "none",
+        ),
+    )
+    return CausalStageDiagnostic(
+        control=control,
+        paired_holdout_episodes=len(normal_activity),
+        plasticity_delta=plasticity_delta,
+        mbon_spike_delta=mbon_spike_delta,
+        descending_spike_delta=descending_spike_delta,
+        motor_spike_delta=motor_spike_delta,
+        food_behavior_delta=comparison.food_delta.mean,
+        threat_behavior_delta=comparison.threat_delta.mean,
+        first_measurable_stage=first_measurable_stage,
+    )
+
+
 def run_behavior_benchmark(
     graph: EventConnectome,
     binding: PlasticEdgeBinding,
@@ -554,11 +650,22 @@ def run_behavior_benchmark(
     generalization_verified = (
         world_split.unseen_worlds and world_split.sufficient_world_diversity
     )
+    behavioral_horizon_adequate = config.body_steps >= config.minimum_behavior_steps
+    causal_diagnostics: dict[str, CausalStageDiagnostic] = {
+        condition: _causal_stage_diagnostic(
+            condition,
+            holdout_neural_activity["normal"],
+            holdout_neural_activity[condition],
+            comparisons[condition],
+        )
+        for condition in config.controls
+    }
     return BehaviorBenchmarkResult(
         behavioral_claim_allowed=(
             config.odor_assignment is not None
             and holdout_weights_frozen and holdout_memory_frozen
             and holdout_physical_stability_verified
+            and behavioral_horizon_adequate
             and config.reinforcement_source == "contact_gated_neural_dan"
             and config.phase_envelope.amplitude_nm == 0.0
         ) and claim_gate(
@@ -589,6 +696,8 @@ def run_behavior_benchmark(
         evidence_protocol="measured-replay-persistent-memory-v5",
         world_split=world_split,
         generalization_verified=generalization_verified,
+        behavioral_horizon_adequate=behavioral_horizon_adequate,
+        causal_diagnostics=causal_diagnostics,
         episode_evidence=tuple(evidence),
         holdout_weights_frozen=holdout_weights_frozen,
         holdout_memory_frozen=holdout_memory_frozen,

@@ -80,6 +80,17 @@ def test_benchmark_persists_isolated_conditions_and_preserves_graph() -> None:
     assert len(result.world_split.overlap_digests) == 2
     assert result.world_split.holdout_target_world_counts == {"food": 2, "threat": 2}
     assert result.unassisted_motor_output is True
+    assert result.behavioral_horizon_adequate is False
+    assert set(result.causal_diagnostics) == {
+        "no_plasticity",
+        "dan_lesion",
+        "kc_mbon_lesion",
+        "rewired_control",
+    }
+    assert all(
+        item.paired_holdout_episodes == 4
+        for item in result.causal_diagnostics.values()
+    )
     assert len(result.episode_evidence) == 40
     assert all(item.replay_performed and item.replay_exact for item in result.episode_evidence)
     assert all(
