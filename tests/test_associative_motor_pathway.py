@@ -86,10 +86,29 @@ def test_retained_malecns_audit_keeps_mbon_motor_anatomy_explicit() -> None:
     assert result.evidence_kind == "dataset_measurement"
     assert result.direct_edge_count == 0
     assert result.direct_contact_count == 0
-    assert result.two_hop_edge_count == 31
-    assert result.two_hop_route_count == 46
-    assert result.two_hop_intermediate_count == 10
-    assert result.two_hop_contact_count == 376
+    assert result.two_hop_edge_count == 60
+    assert result.two_hop_route_count == 108
+    assert result.two_hop_intermediate_count == 16
+    assert result.two_hop_contact_count == 1502
     assert result.route_digest == (
-        "cf68cd3392f91324305fabdbd677bdf797ae8c4941b6dc8c1366d36703abdf6f"
+        "44f4383a89f1be558016e024e1fbce8c25cc49beb0db82ce750e52cc917e8e55"
     )
+
+    old_motor_registry = resolve_biological_registry(
+        load_biological_registry(Path("data/registry/hexapod-motor-registry-v1.json")),
+        snapshot,
+    )
+    old_motor_ids = {
+        neuron_id
+        for population in old_motor_registry.populations
+        if population.role == "motor"
+        for neuron_id in population.neuron_ids
+    }
+    current_motor_ids = {
+        neuron_id for group in HexapodMotorMap.from_registry(motor_registry).groups
+        for neuron_id in group.neuron_ids
+    }
+    assert old_motor_ids <= current_motor_ids
+    old_routes = tuple(route for route in result.routes if route.motor_id in old_motor_ids)
+    assert len(old_routes) == 46
+    assert len({(route.intermediate_id, route.motor_id) for route in old_routes}) == 31

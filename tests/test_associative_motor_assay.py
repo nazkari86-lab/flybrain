@@ -18,7 +18,7 @@ def test_retained_assay_binds_anatomy_learning_body_and_controls() -> None:
     assert result.graph_neurons == 166_606
     assert result.graph_edges == 6_240_402
     assert result.anatomy.direct_edge_count == 0
-    assert result.anatomy.two_hop_edge_count == 31
+    assert result.anatomy.two_hop_edge_count == 60
     assert result.dynamics_stability.stimulus_mode == "source_poisson"
     assert result.dynamics_stability.stimulus_voltage_events == 3_824
     assert result.dynamics_stability.classification == "persistent_activity"
@@ -29,11 +29,11 @@ def test_retained_assay_binds_anatomy_learning_body_and_controls() -> None:
     assert result.no_contact_preserves_overlay is True
     assert result.learning_probe.replay_exact is True
     assert result.learning_probe.graph_unchanged is True
-    assert result.learning_probe.classification == "null"
-    assert (
-        result.learning_probe.baseline_probe_motor_spikes
-        == result.learning_probe.learned_probe_motor_spikes
-    )
+    assert result.learning_probe.classification == "motor_difference"
+    assert result.learning_probe.baseline_probe_motor_spikes == 70
+    assert result.learning_probe.learned_probe_motor_spikes == 71
+    assert result.learning_probe.probe_motor_spike_difference == 1
+    assert result.unpaired_probe.probe_motor_spike_difference == -12
     assert result.unpaired_probe.replay_exact is True
     assert result.unpaired_probe.graph_unchanged is True
     assert result.delayed_contact_depression_exceeds_paired is True

@@ -46,14 +46,17 @@ revision also showed no useful sustained food approach.
 ## Integration-test boundary
 
 With `FLYBRAIN_MALECNS_SNAPSHOT` set, the new real two-step motor-trace test
-passes. Two older tests expecting a positive dopamine effect in only two
-reference-body steps fail on the current contact-gated-neural-DAN configuration.
+passes. At the time of this diagnostic, two older tests expected a positive
+dopamine effect in only two reference-body steps and failed on the current
+contact-gated-neural-DAN configuration.
 The observed reference episode had two appetitive contacts and 13 distinct
 spiking declared DAN IDs, but zero *contact-coincident recruited* DAN spike
 events and therefore zero slow-memory dopamine effect. The old positive
-assertions are not evidence that the optional trace broke learning. The
-normal test suite, which skips retained-snapshot tests without the explicit
-environment variable, passed 448 tests and skipped 18.
+assertions were not evidence that the optional trace broke learning. A later
+[20-step contact-gated assay](contact-gated-dan-horizon-2026-09-25.md)
+observed real recruited DAN spikes and restored-memory effects. The normal
+test suite at this diagnostic revision, which skipped retained-snapshot tests
+without the explicit environment variable, passed 448 tests and skipped 18.
 
 ## Next causal gate
 

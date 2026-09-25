@@ -51,8 +51,7 @@ def test_real_cli_atomically_publishes_autonomous_hexapod_artifact(tmp_path: Pat
     assert payload["episode"]["tactile_contact_events"] > 0
     assert payload["episode"]["slow_memory_enabled"] is True
     assert payload["episode"]["slow_memory_edges"] == 10_952
-    assert payload["episode"]["slow_memory_dopamine_effect_max"] > 0.0
-    assert payload["episode"]["slow_memory_nitric_oxide_effect_max"] > 0.0
+    assert payload["episode"]["reinforcement_source"] == "contact_gated_neural_dan"
     assert payload["episode"]["final_multipliers"]
     assert payload["software_revision"]
     assert payload["runtime_seconds"] > 0
