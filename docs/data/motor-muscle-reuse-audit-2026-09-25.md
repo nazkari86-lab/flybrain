@@ -148,6 +148,46 @@ print('2/2 matched muscle replays')
 PY
 ```
 
+### Four-condition specificity follow-up
+
+The [four-condition artifact](../../artifacts/malecns-to-flymimic-lf-open-loop-seed7-steps100-four-controls-v2.json)
+adds the previously published six-posterior-population and
+six-anterior-population MaleCNS lesions, with the same seed, source graph,
+motor registry, 100 windows and initial tethered-body state. Its SHA-256 is
+`3ac0fbf148752ad4cf835406f61b5f00097b07cdede054fe617020c4293cfb3b`.
+
+| Condition | LF posterior-rotator mean absolute model force | LF tibia-extensor mean absolute model force | Final LF tibia pitch |
+| --- | ---: | ---: | ---: |
+| No lesion | 14.143 | 101.771 | 0.621 rad |
+| Posterior population lesion | 0.0118 | 90.824 | 0.661 rad |
+| Anterior population lesion | 18.351 | 109.561 | 0.593 rad |
+| All motor populations lesioned | 0.0118 | 5.804 | 1.579 rad |
+
+The posterior lesion sharply reduces its name-matched muscle's force, but the
+opposite anterior lesion **increases** posterior-rotator force. The experiment
+therefore does not isolate a simple antagonist-cancellation mechanism or a
+general restoration of gait. These are one-seed, open-loop component results;
+the same lesion traces previously made no food contact in the free-body FlyGym
+assay.
+
+Recheck all four outputs with the same `replay_muscle_trace` function:
+
+```bash
+.venv/bin/python - <<'PY'
+import gzip, json
+from pathlib import Path
+from flybrain.muscle_probe import replay_muscle_trace
+
+saved = json.loads(Path('artifacts/malecns-to-flymimic-lf-open-loop-seed7-steps100-four-controls-v2.json').read_text())
+for label, path in saved['source_artifact_paths'].items():
+    with gzip.open(path) as handle:
+        source = json.load(handle)
+    trace = [step['activations'] for step in source['episode']['motor_trace']]
+    assert json.loads(json.dumps(replay_muscle_trace(trace))) == saved['conditions'][label]['replay']
+print('4/4 matched muscle replays')
+PY
+```
+
 ## Decision and next causal gate
 
 Reuse the existing FlyGym/FlyMimic musculoskeletal model first for a bounded
