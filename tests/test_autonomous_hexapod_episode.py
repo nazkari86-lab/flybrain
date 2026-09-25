@@ -570,6 +570,47 @@ def test_motor_diagnostic_is_off_by_default() -> None:
     assert result.motor_trace is None
 
 
+def test_declared_motor_lesion_silences_only_selected_population() -> None:
+    kwargs = dict(
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        capture_motor_trace=True,
+    )
+    baseline = run_autonomous_hexapod_episode(graph(), binding(), config(), **kwargs)
+    lesioned = run_autonomous_hexapod_episode(
+        graph(), binding(), config(),
+        motor_lesion_groups=("left_fore_thorax_coxa_anterior",),
+        **kwargs,
+    )
+
+    assert baseline.motor_trace is not None
+    assert lesioned.motor_trace is not None
+    assert any(step.activations[0] > 0.0 for step in baseline.motor_trace)
+    assert all(step.activations[0] == 0.0 for step in lesioned.motor_trace)
+    assert lesioned.motor_lesion_groups == ("left_fore_thorax_coxa_anterior",)
+    assert lesioned.active_motor_groups == baseline.active_motor_groups - 1
+    assert lesioned.replay_exact is True
+    assert lesioned.graph_unchanged is True
+
+
+def test_declared_motor_lesion_rejects_unknown_group() -> None:
+    with pytest.raises(ValueError, match="unknown motor populations"):
+        run_autonomous_hexapod_episode(
+            graph(), binding(), config(),
+            motor=motor_map(),
+            proprio=proprio_map(),
+            reinforcement=ReinforcementInterface(
+                appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+            ),
+            body_parameters=HexapodParameters(dt_s=0.01),
+            motor_lesion_groups=("not_a_motor_group",),
+        )
+
+
 @pytest.mark.skipif(
     not flygym_availability().available,
     reason=flygym_availability().reason,

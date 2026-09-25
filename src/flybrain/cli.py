@@ -504,6 +504,10 @@ def autonomous_hexapod_command(
     motor_trace: Annotated[
         bool, typer.Option("--motor-trace", help="Record per-step motor and body diagnostics")
     ] = False,
+    motor_lesion_group: Annotated[
+        list[str] | None,
+        typer.Option("--motor-lesion-group", help="Silence a named motor population"),
+    ] = None,
 ) -> None:
     """Publish a retained schedule-free contact-learning hexapod episode."""
 
@@ -527,6 +531,7 @@ def autonomous_hexapod_command(
         seed=seed,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
         capture_motor_trace=motor_trace,
+        motor_lesion_groups=tuple(motor_lesion_group or ()),
     )
     serialized = result.model_dump_json()
     output_final.parent.mkdir(parents=True, exist_ok=True)

@@ -94,3 +94,27 @@ def test_real_cli_can_publish_motor_diagnostics(tmp_path: Path) -> None:
     assert len(trace) == 2
     assert len(trace[0]["activations"]) == 36
     assert trace[-1]["thorax_position_m"] == payload["episode"]["final_body"]["thorax_position_m"]
+
+
+def test_real_cli_can_publish_explicit_motor_lesion(tmp_path: Path) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "motor-lesion.json"
+
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-hexapod", snapshot,
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--motor-trace", "--motor-lesion-group", "left_middle_thorax_coxa_anterior",
+            "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    episode = json.loads(output.read_text(encoding="utf-8"))["episode"]
+    assert episode["motor_lesion_groups"] == ["left_middle_thorax_coxa_anterior"]
+    assert all(step["activations"][12] == 0.0 for step in episode["motor_trace"])
+    assert episode["replay_exact"] is True
+    assert episode["graph_unchanged"] is True

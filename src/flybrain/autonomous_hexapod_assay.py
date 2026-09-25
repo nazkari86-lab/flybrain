@@ -156,6 +156,7 @@ def run_retained_autonomous_hexapod_assay(
     ] = "source_equivalent_spikes",
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
+    motor_lesion_groups: tuple[str, ...] = (),
 ) -> RetainedAutonomousHexapodAssay:
     """Resolve exact registries and run one autonomous contact-learning episode."""
 
@@ -268,6 +269,7 @@ def run_retained_autonomous_hexapod_assay(
         backend_factory=backend_factory,
         learning_memory=learning_memory,
         capture_motor_trace=capture_motor_trace,
+        motor_lesion_groups=motor_lesion_groups,
     )
     return RetainedAutonomousHexapodAssay(
         snapshot_content_sha256=snapshot_content_sha256(snapshot),

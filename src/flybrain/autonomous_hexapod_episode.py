@@ -25,6 +25,7 @@ from flybrain.hexapod_motor import (
     HexapodMotorDecoder,
     HexapodMotorMap,
     PhaseEnvelopeAssumption,
+    motor_population_silence_mask,
 )
 from flybrain.learning_memory import AutonomousLearningMemory
 from flybrain.mushroom_body_learning import (
@@ -259,6 +260,7 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     mbon_mean_multipliers: dict[int, float]
     descending_spikes: DescendingSpikeSummary
     motor_spikes: int = Field(ge=0)
+    motor_lesion_groups: tuple[str, ...] = ()
     active_motor_groups: int = Field(ge=0, le=len(CANONICAL_MOTOR_GROUPS))
     all_motor_groups_active: bool
     proprioceptive_events: int = Field(ge=0)
@@ -457,6 +459,7 @@ def _run(
     learning_memory: AutonomousLearningMemory | None,
     memory_context: str,
     capture_motor_trace: bool,
+    motor_lesion_groups: frozenset[str],
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -513,6 +516,8 @@ def _run(
     silenced = np.zeros(graph.neuron_count, dtype=np.bool_)
     if not dan_enabled:
         silenced[[index_by_id[neuron_id] for neuron_id in dan_ids]] = True
+    if motor_lesion_groups:
+        silenced |= motor_population_silence_mask(graph, motor, motor_lesion_groups)
     state = ShiuState.initial(
         graph.neuron_count,
         params=learning.shiu_parameters,
@@ -1008,6 +1013,7 @@ def run_autonomous_hexapod_episode(
     plasticity_enabled: bool = True,
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
+    motor_lesion_groups: tuple[str, ...] = (),
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
@@ -1044,6 +1050,7 @@ def run_autonomous_hexapod_episode(
         learning_memory=learning_memory,
         memory_context=memory_context,
         capture_motor_trace=capture_motor_trace,
+        motor_lesion_groups=frozenset(motor_lesion_groups),
     )
     replay_trace = None
     if replay_binding is not None:
@@ -1063,6 +1070,7 @@ def run_autonomous_hexapod_episode(
             learning_memory=learning_memory,
             memory_context=memory_context,
             capture_motor_trace=capture_motor_trace,
+            motor_lesion_groups=frozenset(motor_lesion_groups),
         )
     return AutonomousHexapodResult(
         odor_channel_model=(
@@ -1107,6 +1115,7 @@ def run_autonomous_hexapod_episode(
         mbon_mean_multipliers=first.mbon_mean_multipliers,
         descending_spikes=first.descending_spikes,
         motor_spikes=first.motor_spikes,
+        motor_lesion_groups=tuple(sorted(set(motor_lesion_groups))),
         active_motor_groups=len(first.active_motor_groups),
         all_motor_groups_active=(
             len(first.active_motor_groups) == len(CANONICAL_MOTOR_GROUPS)
