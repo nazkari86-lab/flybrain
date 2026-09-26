@@ -57,7 +57,7 @@ def fixture(*, connected: bool) -> tuple[EventConnectome, DescendingMap, Hexapod
 
 
 def proprio_fixture(
-    *, connected: bool
+    *, connected: bool, target_joint: str = "trochanter"
 ) -> tuple[EventConnectome, ProprioceptiveMap, HexapodMotorMap]:
     banks = tuple(
         ProprioceptiveBank(
@@ -95,7 +95,7 @@ def proprio_fixture(
     values = []
     if connected:
         for bank, leg in zip(banks, LEG_NAMES, strict=True):
-            group = motor.group(f"{leg}_trochanter_flexor")
+            group = motor.group(f"{leg}_{target_joint}_flexor")
             rows.append(index_by_id[bank.neuron_ids[0]])
             columns.append(index_by_id[group.neuron_ids[0]])
             values.append(500.0)

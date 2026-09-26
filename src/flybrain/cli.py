@@ -1,5 +1,6 @@
 """Command-line entry points for the Connectome Core milestone."""
 
+import hashlib
 import json
 import os
 import tempfile
@@ -26,6 +27,10 @@ from flybrain.embodied_episode import EmbodiedEpisodeConfig, run_embodied_episod
 from flybrain.embodied_interfaces import MotorMap, SensoryMap
 from flybrain.embodied_world import ArenaConfig, ArenaWorld, FlyBody, MotorCommand
 from flybrain.experiment import ExperimentConfig, run_experiment
+from flybrain.foreleg_subtype_assay import (
+    load_foreleg_subtype_labels,
+    run_foreleg_subtype_assay,
+)
 from flybrain.games.cli import games_app
 from flybrain.graph import EventConnectome, SparseConnectome
 from flybrain.hexapod_benchmark import (
@@ -341,6 +346,73 @@ def visual_looming_command(
             os.fsync(stream.fileno())
         os.link(stage, output_final)
     typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("foreleg-subtypes")
+def foreleg_subtypes_command(
+    snapshot: Path,
+    registry: Annotated[Path, typer.Option("--registry")],
+    output: Annotated[Path, typer.Option("--output")],
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 100,
+    seed: Annotated[int, typer.Option("--seed", min=0)] = 7,
+    drive_interval_steps: Annotated[
+        int, typer.Option("--drive-interval-steps", min=1)
+    ] = 25,
+    drive_amplitude_mv: Annotated[
+        float, typer.Option("--drive-amplitude-mv", min=0.001)
+    ] = 10.0,
+) -> None:
+    """Measure retained foreleg sensory-subtype recruitment of tibia motors."""
+
+    output_final = output.resolve()
+    snapshot_final = snapshot.resolve()
+    registry_final = registry.resolve()
+    annotations = snapshot_final / "source-annotations.parquet"
+    if output_final in {snapshot_final, registry_final} or output_final.is_relative_to(
+        snapshot_final
+    ):
+        raise typer.BadParameter("--output must differ from inputs and be outside snapshot")
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    resolved = resolve_biological_registry(
+        load_biological_registry(registry_final), snapshot_final
+    )
+    graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot_final))
+    resolved.validate_graph(graph)
+    proprio = ProprioceptiveMap.from_registry(resolved)
+    motor = HexapodMotorMap.from_registry(resolved)
+    labels = load_foreleg_subtype_labels(annotations, proprio)
+    result = run_foreleg_subtype_assay(
+        graph,
+        proprio,
+        motor,
+        subtype_by_id=labels,
+        steps=steps,
+        seed=seed,
+        drive_interval_steps=drive_interval_steps,
+        drive_amplitude_mv=drive_amplitude_mv,
+    )
+    metadata = json.loads((snapshot_final / "metadata.json").read_text(encoding="utf-8"))
+    payload = {
+        "assay": "foreleg-subtypes-v1",
+        "snapshot": str(snapshot_final),
+        "dataset_id": metadata["dataset_id"],
+        "snapshot_content_sha256": snapshot_content_sha256(snapshot_final),
+        "registry": str(registry_final),
+        "registry_sha256": hashlib.sha256(registry_final.read_bytes()).hexdigest(),
+        "annotations_sha256": hashlib.sha256(annotations.read_bytes()).hexdigest(),
+        "graph_neurons": graph.neuron_count,
+        "graph_edges": graph.edge_count,
+        "result": result,
+    }
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(str(output_final))
 
 
 @experiment_app.command("hexapod-motor")

@@ -1,0 +1,291 @@
+{
+  "annotations_sha256": "ead87b4d37f97968f2845d525309649a1db9c7e8a032b147af32d51318eaa67b",
+  "assay": "foreleg-subtypes-v1",
+  "dataset_id": "male-cns-v1.0-essential",
+  "graph_edges": 6240402,
+  "graph_neurons": 166606,
+  "registry": "/Users/dulatnurlanuly/Downloads/flybrain/data/registry/hexapod-motor-registry-v2.json",
+  "registry_sha256": "d469a70447e0cd7f2e7516b5ddbfbb7155d430701a1c9fd81fc612e3efd9e6e0",
+  "result": {
+    "behavioral_claim_allowed": false,
+    "closed_loop": false,
+    "conditions": [
+      {
+        "event_digest": "9a2769b64b36b948a6c8498ed4a83299e14ea6edc94087bac1adb5598c9004f9",
+        "motor_spikes": 0,
+        "replay_exact": true,
+        "side": "left",
+        "source_ids": [
+          899926,
+          1061030026
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 2,
+        "source_spikes": 12,
+        "subtype": "campaniform sensilla",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "2c1c9eda671dbc70e4fa910c21d3e0fb74b3cc508507087a278ac7fc429f0f3e"
+      },
+      {
+        "event_digest": "f969b138009e07d01d226c49847027dc73741cb9ccc432a4809ea93026ea0389",
+        "motor_spikes": 2,
+        "replay_exact": true,
+        "side": "left",
+        "source_ids": [
+          815569,
+          815843,
+          817298,
+          817680,
+          817839,
+          902324,
+          902359,
+          903843,
+          905037,
+          905335,
+          905339,
+          905340,
+          906290,
+          906558,
+          906823,
+          911316,
+          912317,
+          914116,
+          935383,
+          935541
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 20,
+        "source_spikes": 120,
+        "subtype": "chordotonal organ",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 2,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "c9ac1123e683226bf64b87c7512ca942d55054032dcfeadc336fccaa1f3657fb"
+      },
+      {
+        "event_digest": "8daa2d34575491655466b266068be182ab18033dc620aeb18034d54ff4f43990",
+        "motor_spikes": 0,
+        "replay_exact": true,
+        "side": "left",
+        "source_ids": [
+          821165
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 1,
+        "source_spikes": 6,
+        "subtype": "hair plate",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "917aa997ddac4562a5a2d82bcecae88d38a3beb609bd53b09a2ccf770a116b61"
+      },
+      {
+        "event_digest": "042aaeb760767abb1c718d337b32e19a8f38dc71cd9422ba0cd0c71e27582fbd",
+        "motor_spikes": 1,
+        "replay_exact": true,
+        "side": "left",
+        "source_ids": [
+          811689,
+          812120,
+          813177,
+          813907,
+          814326,
+          814780,
+          815329,
+          815483,
+          817697,
+          817969,
+          818035,
+          818352,
+          820483,
+          821306,
+          821547,
+          824971,
+          908487,
+          926838
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 18,
+        "source_spikes": 108,
+        "subtype": "leg",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 1,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "28635f1ea7e9bac821ba7359a25bb83435d393c8d0d45cc38913387b2f2f82a6"
+      },
+      {
+        "event_digest": "95fcb40aa51356650e307825865087452970f370d2a824c0adefbe2624581e12",
+        "motor_spikes": 0,
+        "replay_exact": true,
+        "side": "right",
+        "source_ids": [
+          877244,
+          1078099767
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 2,
+        "source_spikes": 12,
+        "subtype": "campaniform sensilla",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "3dae0bbecaa0376d6715b0d06d081983dc7bae26d14d022e68853fc592ca7712"
+      },
+      {
+        "event_digest": "ade3442651e30aad7054ec7827c782e6d053298299aa75382cb3cecfceaec97f",
+        "motor_spikes": 0,
+        "replay_exact": true,
+        "side": "right",
+        "source_ids": [
+          816782,
+          817154,
+          817245,
+          817825,
+          826042,
+          833439,
+          905668,
+          912365,
+          913052,
+          933556
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 10,
+        "source_spikes": 60,
+        "subtype": "chordotonal organ",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "c0ec6564accafe7fb0a088a3ffe620ce88e339d653337aa5dfd7836af58377d2"
+      },
+      {
+        "event_digest": "76ea7b19443ba4e0343b81d7821d958c7b9f15654163e4e51391a65cf9fd2e9c",
+        "motor_spikes": 0,
+        "replay_exact": true,
+        "side": "right",
+        "source_ids": [
+          822779,
+          823827,
+          905407,
+          911756,
+          1051890373
+        ],
+        "source_lesion_motor_spikes": 0,
+        "source_lesion_same_events": true,
+        "source_lesion_source_spikes": 0,
+        "source_lesion_tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "source_neuron_count": 5,
+        "source_spikes": 30,
+        "subtype": "leg",
+        "tibia_spikes": {
+          "left_fore_tibia_extensor": 0,
+          "left_fore_tibia_flexor": 0,
+          "right_fore_tibia_extensor": 0,
+          "right_fore_tibia_flexor": 0
+        },
+        "trace_digest": "c8bf5221fd0944cc77b9ea487948106bd508c09bf6140da4e53983b588ee77c3"
+      }
+    ],
+    "drive_amplitude_mv": 10.0,
+    "drive_interval_steps": 10,
+    "evidence_kind": "simulation_observation",
+    "graph_unchanged": true,
+    "mirror_pairs": [
+      {
+        "left_count": 2,
+        "right_count": 2,
+        "subtype": "campaniform sensilla"
+      },
+      {
+        "left_count": 20,
+        "right_count": 10,
+        "subtype": "chordotonal organ"
+      },
+      {
+        "left_count": 18,
+        "right_count": 5,
+        "subtype": "leg"
+      }
+    ],
+    "protocol": "foreleg-proprio-subtype-open-loop-v1",
+    "seed": 7,
+    "steps": 180,
+    "unpaired_subtypes": [
+      "hair plate"
+    ]
+  },
+  "snapshot": "/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5",
+  "snapshot_content_sha256": "9b7d4594216c8b37b5ffc4199f2b5cd448a77d0b1daadfbb3de8b322738a2f1f"
+}

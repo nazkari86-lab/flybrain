@@ -370,6 +370,23 @@ turning sparse recruitment into a walking claim in
 [docs/data/male-cns-hexapod-motor-v2-180.md](docs/data/male-cns-hexapod-motor-v2-180.md). The assay
 is a sparse, causally tested motor foundation—not evidence of a walking or intelligent animal.
 
+### Foreleg sensory-subtype diagnostic
+
+The retained MaleCNS annotations can be split into foreleg proprioceptive
+subclasses before applying identical per-neuron voltage pulses. This open-loop
+assay records source and tibia-motor spikes, source-silencing controls, exact
+replay, and homologous left/right subtype availability. Group sizes differ;
+these pulses are interventions, not a calibrated body-to-sensor encoder.
+
+```bash
+uv run flybrain experiment foreleg-subtypes artifacts/male-cns-v1.0-w5 \
+  --registry data/registry/hexapod-motor-registry-v2.json \
+  --steps 180 --seed 7 --drive-interval-steps 25 --drive-amplitude-mv 10 \
+  --output artifacts/foreleg-subtypes-local.json
+```
+
+See [the measured results](docs/data/foreleg-proprio-subtypes-2026-09-26.md).
+
 ### Experimental single-leg muscle bridge
 
 The installed FlyGym 2.1.0 also includes FlyMimic's Hill-type muscle body. The
