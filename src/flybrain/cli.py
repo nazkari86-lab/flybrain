@@ -653,6 +653,13 @@ def autonomous_behavior_command(
         ],
         typer.Option("--proprioceptive-encoding"),
     ] = "source_equivalent_spikes",
+    arena_scale: Annotated[
+        float,
+        typer.Option(
+            "--arena-scale", min=0.000001, max=1.0,
+            help="Reference-body exploratory world scale; 1 preserves the default protocol",
+        ),
+    ] = 1.0,
 ) -> None:
     """Publish the retained multi-condition autonomous behavior benchmark."""
 
@@ -684,6 +691,7 @@ def autonomous_behavior_command(
         seeds=parsed_seeds,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
         proprioceptive_encoding=proprioceptive_encoding,
+        arena_scale=arena_scale,
     )
     output_final.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:

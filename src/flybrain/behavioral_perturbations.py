@@ -65,6 +65,20 @@ def world_digest(variant: BehaviorVariant) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def scale_behavior_variant(variant: BehaviorVariant, scale: float) -> BehaviorVariant:
+    """Rescale environment geometry without changing labels or body physics."""
+
+    if not math.isfinite(scale) or not 0.0 < scale <= 1.0:
+        raise ValueError("arena scale must be finite and in (0, 1]")
+    return variant.model_copy(
+        update={
+            "food_position_m": tuple(value * scale for value in variant.food_position_m),
+            "threat_position_m": tuple(value * scale for value in variant.threat_position_m),
+            "initial_position_m": tuple(value * scale for value in variant.initial_position_m),
+        }
+    )
+
+
 def apply_perturbation(
     parameters: HexapodParameters,
     perturbation: BodyPerturbation,

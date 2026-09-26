@@ -461,6 +461,13 @@ uv run --extra physics flybrain experiment autonomous-behavior \
   --output artifacts/autonomous-behavior-reference-seed7.json
 ```
 
+For an exploratory reference-body reachability probe, add `--arena-scale 0.04`
+and use at least `--steps 100`. This multiplies food/threat/start coordinates,
+contact radius, odor length scale, antenna offset, and visual-disc radius by
+0.04 while leaving neural and body parameters unchanged. The artifact records
+the scale and contact radius. This is a diagnostic change of task geometry,
+not a biological body-scale correction or evidence of learned behavior.
+
 The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
 separate mutable state and publishes task-specific environment-only food/threat metrics.
 Current results carry `evidence_protocol="measured-replay-persistent-memory-v6"` and

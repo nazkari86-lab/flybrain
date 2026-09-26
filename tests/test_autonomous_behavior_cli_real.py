@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from flybrain.autonomous_hexapod_assay import run_retained_autonomous_behavior_benchmark
 from flybrain.cli import app
 
 runner = CliRunner()
@@ -131,3 +132,38 @@ def test_real_behavior_cli_keeps_subtype_encoder_in_all_control_episodes(tmp_pat
     assert benchmark["holdout_weights_frozen"] is True
     assert len(benchmark["episode_evidence"]) == 30
     assert benchmark["behavioral_claim_allowed"] is False
+
+
+def test_real_behavior_cli_rescales_reference_worlds_for_reachability_probe(
+    tmp_path: Path,
+) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "reachable-behavior.json"
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-behavior", snapshot,
+            "--training-episodes", "1", "--holdout-episodes", "1",
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--arena-scale", "0.04", "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["arena_scale"] == pytest.approx(0.04)
+    assert payload["arena_contact_radius_m"] == pytest.approx(0.002)
+    food = payload["benchmark"]["condition_observations"]["normal"][0]
+    assert food["initial_food_distance"] == pytest.approx(0.0116619038, abs=1e-6)
+    assert food["food_contact"] is False
+    assert payload["benchmark"]["replay_exact"] is True
+    assert payload["benchmark"]["behavioral_claim_allowed"] is False
+
+
+def test_reachable_arena_scale_rejects_flygym_without_loading_snapshot() -> None:
+    with pytest.raises(ValueError, match="reference backend"):
+        run_retained_autonomous_behavior_benchmark(
+            Path("missing-snapshot"), backend="flygym", arena_scale=0.04,
+        )

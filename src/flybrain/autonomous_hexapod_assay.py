@@ -24,7 +24,11 @@ from flybrain.autonomous_hexapod_episode import (
     run_autonomous_hexapod_episode,
 )
 from flybrain.autonomous_learning_benchmark import AssociativeCalibrationConfig
-from flybrain.behavioral_perturbations import BehaviorVariant, BodyPerturbation
+from flybrain.behavioral_perturbations import (
+    BehaviorVariant,
+    BodyPerturbation,
+    scale_behavior_variant,
+)
 from flybrain.biological_registry import (
     ResolvedRegistry,
     load_biological_registry,
@@ -120,6 +124,8 @@ class RetainedAutonomousBehaviorBenchmark(BaseModel, frozen=True):
     training_episodes: int = Field(gt=0)
     holdout_episodes: int = Field(gt=0)
     seeds: tuple[int, ...]
+    arena_scale: float = Field(default=1.0, gt=0.0, le=1.0)
+    arena_contact_radius_m: float = Field(gt=0.0)
     software_revision: str = Field(min_length=1)
     runtime_seconds: float = Field(gt=0.0)
     peak_rss_bytes: int = Field(gt=0)
@@ -317,6 +323,7 @@ def run_retained_autonomous_behavior_benchmark(
         "population_voltage", "source_equivalent_spikes",
         "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "source_equivalent_spikes",
+    arena_scale: float = 1.0,
 ) -> RetainedAutonomousBehaviorBenchmark:
     """Run the bounded multi-condition benchmark on a retained snapshot."""
 
@@ -327,6 +334,10 @@ def run_retained_autonomous_behavior_benchmark(
         raise ValueError("seeds must be non-empty and non-negative")
     if not math.isfinite(proprioceptive_spike_rate_hz) or proprioceptive_spike_rate_hz <= 0.0:
         raise ValueError("proprioceptive spike rate must be finite and positive")
+    if not math.isfinite(arena_scale) or not 0.0 < arena_scale <= 1.0:
+        raise ValueError("arena scale must be finite and in (0, 1]")
+    if backend != "reference" and arena_scale != 1.0:
+        raise ValueError("scaled arena requires the reference backend")
     started = time.perf_counter()
     learning_registry = load_biological_registry(learning_registry_path)
     motor_registry = load_biological_registry(motor_registry_path)
@@ -472,6 +483,13 @@ def run_retained_autonomous_behavior_benchmark(
             "threat_position_m": (-0.001, 0.0),
             "initial_position_m": (-0.0001, 0.0002),
         })
+    elif arena_scale != 1.0:
+        food_training = scale_behavior_variant(food_training, arena_scale)
+        threat_training = scale_behavior_variant(threat_training, arena_scale)
+        food_holdout_a = scale_behavior_variant(food_holdout_a, arena_scale)
+        food_holdout_b = scale_behavior_variant(food_holdout_b, arena_scale)
+        threat_holdout_a = scale_behavior_variant(threat_holdout_a, arena_scale)
+        threat_holdout_b = scale_behavior_variant(threat_holdout_b, arena_scale)
     config = BehaviorBenchmarkConfig(
         training_episodes=training_episodes,
         holdout_episodes=holdout_episodes,
@@ -493,16 +511,17 @@ def run_retained_autonomous_behavior_benchmark(
         proprioceptive_encoding=proprioceptive_encoding,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
         contact_radius_m=(
-            _FLYGYM_ARENA.contact_radius_m if backend == "flygym" else 0.05
+            _FLYGYM_ARENA.contact_radius_m if backend == "flygym" else 0.05 * arena_scale
         ),
         odor_length_scale_m=(
-            _FLYGYM_ARENA.odor_length_scale_m if backend == "flygym" else 1.0
+            _FLYGYM_ARENA.odor_length_scale_m if backend == "flygym" else arena_scale
         ),
         antenna_lateral_offset_m=(
-            _FLYGYM_ARENA.antenna_lateral_offset_m if backend == "flygym" else 0.02
+            _FLYGYM_ARENA.antenna_lateral_offset_m
+            if backend == "flygym" else 0.02 * arena_scale
         ),
         visual_disc_radius_m=(
-            _FLYGYM_ARENA.visual_disc_radius_m if backend == "flygym" else 0.05
+            _FLYGYM_ARENA.visual_disc_radius_m if backend == "flygym" else 0.05 * arena_scale
         ),
         neural_authority_nm=(
             _FLYGYM_NEURAL_AUTHORITY_NM if backend == "flygym"
@@ -536,6 +555,8 @@ def run_retained_autonomous_behavior_benchmark(
         training_episodes=training_episodes,
         holdout_episodes=holdout_episodes,
         seeds=active_seeds,
+        arena_scale=arena_scale,
+        arena_contact_radius_m=config.contact_radius_m,
         software_revision=_software_revision(),
         runtime_seconds=time.perf_counter() - started,
         peak_rss_bytes=_peak_rss_bytes(),
