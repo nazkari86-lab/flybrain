@@ -77,4 +77,4 @@ assert episode["replay_exact"] is True
 - [x] Run the focused real-data test with `FLYBRAIN_MALECNS_SNAPSHOT` and confirm it fails because the CLI option is absent.
 - [x] Thread the option through the retained assay and CLI using `Literal["none", "all_annotated"]`, then rerun the test.
 - [x] Run paired FlyGym baseline/all-DN and passive all-motor controls with seed 7 and 100 body steps; inspect joint moments, thorax displacement, contacts, replay, and stability. Repeat the paired active conditions at seeds 8 and 9.
-- [ ] Record all conditions, source revision, caveats, and exact artifact paths in the data report; run the full suite and static checks.
+- [x] Record all conditions, source revision, caveats, and exact artifact paths in the data report; run the full suite and static checks.
