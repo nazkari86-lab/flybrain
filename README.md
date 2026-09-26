@@ -453,6 +453,16 @@ produced motor spikes, closed physical contact-to-DAN learning, and returned pro
 measurements, slow-memory evidence, reproduction commands, and the remaining behavioral-validation
 gates.
 
+The strongest narrow biological-circuit result now tests the annotated DNg33
+pair. In a prospective three-seed FlyGym lesion, activity in eight anatomically
+direct `vnc_motor` targets fell by 64.8–69.9% while the other 700 motor cells
+fell by 6.6–7.8%; see the [embodied target-cell report](docs/data/dng33-direct-motor-targets-2026-09-27.md).
+A separate predeclared [fixed-source edge test](docs/data/dng33-direct-edge-localization-2026-09-27.md)
+held input events and DNg33 spike timing equal: zeroing exactly their 16 direct
+edges reduced target spikes from 71/84/78 to zero, unlike a 16-edge matched
+control. This establishes edge necessity under that artificial neural input
+**in the model**, not real-fly physiology, learned behavior, or full autonomy.
+
 Run the multi-condition behavior benchmark:
 
 ```bash
