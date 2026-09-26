@@ -165,6 +165,7 @@ def run_retained_autonomous_hexapod_assay(
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
     motor_lesion_groups: tuple[str, ...] = (),
+    descending_lesion: Literal["none", "all_annotated"] = "none",
 ) -> RetainedAutonomousHexapodAssay:
     """Resolve exact registries and run one autonomous contact-learning episode."""
 
@@ -287,6 +288,7 @@ def run_retained_autonomous_hexapod_assay(
         learning_memory=learning_memory,
         capture_motor_trace=capture_motor_trace,
         motor_lesion_groups=motor_lesion_groups,
+        descending_lesion=descending_lesion,
     )
     return RetainedAutonomousHexapodAssay(
         snapshot_content_sha256=snapshot_content_sha256(snapshot),

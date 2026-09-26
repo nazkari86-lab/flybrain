@@ -630,6 +630,10 @@ def autonomous_hexapod_command(
         list[str] | None,
         typer.Option("--motor-lesion-group", help="Silence a named motor population"),
     ] = None,
+    descending_lesion: Annotated[
+        Literal["none", "all_annotated"],
+        typer.Option("--descending-lesion", help="Experimental annotated-DN lesion"),
+    ] = "none",
 ) -> None:
     """Publish a retained schedule-free contact-learning hexapod episode."""
 
@@ -655,6 +659,7 @@ def autonomous_hexapod_command(
         proprioceptive_encoding=proprioceptive_encoding,
         capture_motor_trace=motor_trace,
         motor_lesion_groups=tuple(motor_lesion_group or ()),
+        descending_lesion=descending_lesion,
     )
     serialized = result.model_dump_json()
     output_final.parent.mkdir(parents=True, exist_ok=True)

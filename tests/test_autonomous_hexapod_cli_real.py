@@ -120,6 +120,33 @@ def test_real_cli_can_publish_explicit_motor_lesion(tmp_path: Path) -> None:
     assert episode["graph_unchanged"] is True
 
 
+def test_real_cli_can_publish_all_annotated_descending_lesion(tmp_path: Path) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "descending-lesion.json"
+
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-hexapod", snapshot,
+            "--steps", "5", "--seed", "7", "--backend", "reference",
+            "--descending-lesion", "all_annotated", "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    episode = json.loads(output.read_text(encoding="utf-8"))["episode"]
+    assert episode["descending_lesion"] == "all_annotated"
+    assert episode["silenced_descending_neurons"] == 1_314
+    assert episode["annotated_descending_spikes"] == 0
+    assert all(count == 0 for count in episode["descending_spikes"].values())
+    assert episode["motor_spikes"] > 0
+    assert episode["replay_exact"] is True
+    assert episode["graph_unchanged"] is True
+    assert episode["autonomous_behavior_claim_allowed"] is False
+
+
 def test_real_cli_routes_annotated_proprioception_in_closed_loop(tmp_path: Path) -> None:
     snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
     if snapshot is None:

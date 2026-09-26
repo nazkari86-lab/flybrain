@@ -262,8 +262,11 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     mbon_spike_counts: dict[int, int]
     mbon_mean_multipliers: dict[int, float]
     descending_spikes: DescendingSpikeSummary
+    annotated_descending_spikes: int = Field(ge=0)
     motor_spikes: int = Field(ge=0)
     motor_lesion_groups: tuple[str, ...] = ()
+    descending_lesion: Literal["none", "all_annotated"] = "none"
+    silenced_descending_neurons: int = Field(default=0, ge=0)
     active_motor_groups: int = Field(ge=0, le=len(CANONICAL_MOTOR_GROUPS))
     all_motor_groups_active: bool
     proprioceptive_events: int = Field(ge=0)
@@ -305,6 +308,7 @@ class _Trace:
     mbon_spike_counts: dict[int, int]
     mbon_mean_multipliers: dict[int, float]
     descending_spikes: DescendingSpikeSummary
+    annotated_descending_spikes: int
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
@@ -468,6 +472,7 @@ def _run(
     memory_context: str,
     capture_motor_trace: bool,
     motor_lesion_groups: frozenset[str],
+    descending_lesion_indices: np.ndarray,
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -526,6 +531,7 @@ def _run(
         silenced[[index_by_id[neuron_id] for neuron_id in dan_ids]] = True
     if motor_lesion_groups:
         silenced |= motor_population_silence_mask(graph, motor, motor_lesion_groups)
+    silenced[descending_lesion_indices] = True
     state = ShiuState.initial(
         graph.neuron_count,
         params=learning.shiu_parameters,
@@ -629,6 +635,12 @@ def _run(
         else {}
     )
     descending_counts = {name: 0 for name in descending_ids}
+    annotated_descending_ids = {
+        int(graph.neuron_ids[index])
+        for index, superclass in enumerate(graph.superclasses)
+        if superclass == "descending_neuron"
+    }
+    annotated_descending_spikes = 0
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
@@ -847,6 +859,9 @@ def _run(
                 mbon_spike_counts[neuron_id] += 1
         for name, ids in descending_ids.items():
             descending_counts[name] += sum(neuron_id in ids for neuron_id in fired_ids)
+        annotated_descending_spikes += sum(
+            neuron_id in annotated_descending_ids for neuron_id in fired_ids
+        )
         for neuron_id in fired_ids:
             group = motor_owner.get(neuron_id)
             if group is not None:
@@ -999,6 +1014,7 @@ def _run(
             mdn_left=descending_counts.get("mdn_left", 0),
             mdn_right=descending_counts.get("mdn_right", 0),
         ),
+        annotated_descending_spikes=annotated_descending_spikes,
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
@@ -1051,10 +1067,25 @@ def run_autonomous_hexapod_episode(
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
     motor_lesion_groups: tuple[str, ...] = (),
+    descending_lesion: Literal["none", "all_annotated"] = "none",
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
     before = _graph_digest(graph)
+    if descending_lesion == "all_annotated":
+        descending_lesion_indices = np.asarray(
+            [
+                index for index, superclass in enumerate(graph.superclasses)
+                if superclass == "descending_neuron"
+            ],
+            dtype=np.int64,
+        )
+        if not descending_lesion_indices.size:
+            raise ValueError("no annotated descending neurons in graph")
+    elif descending_lesion == "none":
+        descending_lesion_indices = np.empty(0, dtype=np.int64)
+    else:
+        raise ValueError(f"unknown descending lesion: {descending_lesion}")
     context = hashlib.sha256(before.encode())
     context.update(config.learning.model_dump_json().encode())
     context.update(repr((
@@ -1093,6 +1124,7 @@ def run_autonomous_hexapod_episode(
         memory_context=memory_context,
         capture_motor_trace=capture_motor_trace,
         motor_lesion_groups=frozenset(motor_lesion_groups),
+        descending_lesion_indices=descending_lesion_indices,
     )
     replay_trace = None
     if replay_binding is not None:
@@ -1114,6 +1146,7 @@ def run_autonomous_hexapod_episode(
             memory_context=memory_context,
             capture_motor_trace=capture_motor_trace,
             motor_lesion_groups=frozenset(motor_lesion_groups),
+            descending_lesion_indices=descending_lesion_indices,
         )
     return AutonomousHexapodResult(
         odor_channel_model=(
@@ -1157,8 +1190,11 @@ def run_autonomous_hexapod_episode(
         mbon_spike_counts=first.mbon_spike_counts,
         mbon_mean_multipliers=first.mbon_mean_multipliers,
         descending_spikes=first.descending_spikes,
+        annotated_descending_spikes=first.annotated_descending_spikes,
         motor_spikes=first.motor_spikes,
         motor_lesion_groups=tuple(sorted(set(motor_lesion_groups))),
+        descending_lesion=descending_lesion,
+        silenced_descending_neurons=int(descending_lesion_indices.size),
         active_motor_groups=len(first.active_motor_groups),
         all_motor_groups_active=(
             len(first.active_motor_groups) == len(CANONICAL_MOTOR_GROUPS)

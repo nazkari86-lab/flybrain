@@ -18,6 +18,8 @@ from flybrain.flygym_backend import FlyGymBackend, flygym_availability
 from flybrain.graph import EventConnectome
 from flybrain.hexapod_backend import ReferenceHexapodBackend
 from flybrain.hexapod_body import HexapodParameters
+from flybrain.plastic_edge_binding import PlasticEdgeBinding
+from flybrain.plastic_overlay import PlasticWeightOverlay
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.retinal_interface import VisualInterfaceMap
 from flybrain.shiu import ShiuParameters
@@ -659,6 +661,71 @@ def test_declared_motor_lesion_rejects_unknown_group() -> None:
             body_parameters=HexapodParameters(dt_s=0.01),
             motor_lesion_groups=("not_a_motor_group",),
         )
+
+
+def test_all_annotated_descending_lesion_blocks_motor_in_synthetic_chain() -> None:
+    base = graph()
+    neuron_ids = np.insert(base.neuron_ids, 4, np.uint64(40))
+    index = {int(value): position for position, value in enumerate(neuron_ids)}
+    motor_ids = [value for group in motor_map().groups for value in group.neuron_ids]
+    edges = [(1, 10, 400.0), (10, 20, 200.0), (20, 40, 200.0)]
+    edges.extend((40, neuron_id, 200.0) for neuron_id in motor_ids)
+    chain = EventConnectome(
+        neuron_ids=neuron_ids,
+        cell_types=(*base.cell_types[:4], "DN", *base.cell_types[4:]),
+        roles=(*base.roles[:4], "descending", *base.roles[4:]),
+        transmitters=(*base.transmitters[:4], "acetylcholine", *base.transmitters[4:]),
+        superclasses=(*base.superclasses[:4], "descending_neuron", *base.superclasses[4:]),
+        outgoing=csr_array(
+            (
+                np.asarray([weight for _, _, weight in edges], dtype=np.float32),
+                (
+                    [index[pre] for pre, _, _ in edges],
+                    [index[post] for _, post, _ in edges],
+                ),
+            ),
+            shape=(len(neuron_ids), len(neuron_ids)),
+        ),
+    )
+    plastic = PlasticEdgeBinding(
+        overlay=PlasticWeightOverlay.create(
+            edge_indices=np.asarray([1], dtype=np.int64),
+            canonical_edge_count=chain.edge_count,
+        ),
+        pre_ids=np.asarray([10], dtype=np.uint64),
+        post_ids=np.asarray([20], dtype=np.uint64),
+    )
+    kwargs = dict(
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        capture_motor_trace=True,
+    )
+
+    longer = config().model_copy(update={"body_steps": 5})
+    baseline = run_autonomous_hexapod_episode(chain, plastic, longer, **kwargs)
+    lesioned = run_autonomous_hexapod_episode(
+        chain, plastic, longer, descending_lesion="all_annotated", **kwargs
+    )
+
+    assert baseline.motor_spikes > 0, (
+        baseline.plastic_kc_spikes,
+        baseline.mbon_spikes,
+        baseline.descending_spikes,
+        baseline.proprioceptive_events,
+    )
+    assert lesioned.motor_spikes == 0
+    assert lesioned.descending_lesion == "all_annotated"
+    assert lesioned.silenced_descending_neurons == 1
+    assert lesioned.motor_trace is not None
+    assert all(
+        all(value == 0.0 for leg in step.applied_torque_nm.values for value in leg)
+        for step in lesioned.motor_trace
+    )
+    assert lesioned.replay_exact and lesioned.graph_unchanged
 
 
 @pytest.mark.skipif(

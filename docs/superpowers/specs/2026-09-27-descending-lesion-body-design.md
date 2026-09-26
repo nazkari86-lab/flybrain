@@ -33,8 +33,10 @@ motor decoder, environment, and body parameters are unchanged.
 A synthetic chain with one annotated DN must show nonzero motor output in the
 baseline and zero motor output after DN silencing, with exact replay and an
 unchanged graph. The retained test must show the serialized lesion identity,
-positive annotated-neuron count, exact replay, and zero registered motor
-spikes. A matched normal/lesion FlyGym pair uses the same seed, horizon, arena,
+positive annotated-neuron count, exact replay, and zero spikes among all
+annotated DNs. Residual motor spikes are allowed and measured: the embodied
+loop has additional sensory and local VNC pathways. Matched normal/lesion
+FlyGym pairs use the same seed, horizon, arena,
 and backend; compare actual thorax displacement and joint moments against the
 passive all-motor lesion. If the normal trajectory is indistinguishable from
 passive settling, the embodied causal result is null, not positive.
@@ -42,3 +44,17 @@ passive settling, the embodied causal result is null, not positive.
 This remains a model-level result. It does not permit claims of learned food
 seeking, threat avoidance, a validated neuron-to-muscle map, or complete
 biological intelligence.
+
+## Prospective validation after exploratory seeds 7–9
+
+Before viewing seeds 10–12, fix the same 100-step FlyGym protocol, no parameter
+changes, and the same baseline/all-annotated-DN pairing. The prospective
+prediction is: in each of seeds 10, 11, and 12, the lesion has zero annotated-DN
+spikes, at least 50% fewer registered motor spikes than its paired baseline,
+and at least 40% less integrated absolute applied joint moment. A no-motor
+seed-10 condition checks passive settling. Food/threat contact and final
+distance are recorded but are **not** success criteria: the exploratory lesion
+often improved food distance without learned behavior. These thresholds were
+chosen after inspecting seeds 7–9, so the prospective panel is an independent
+replication of that exploratory effect, not independent hypothesis generation
+or an animal-physiology validation.
