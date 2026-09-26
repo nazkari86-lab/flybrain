@@ -467,6 +467,9 @@ contact radius, odor length scale, antenna offset, and visual-disc radius by
 0.04 while leaving neural and body parameters unchanged. The artifact records
 the scale and contact radius. This is a diagnostic change of task geometry,
 not a biological body-scale correction or evidence of learned behavior.
+The [100-step retained comparison](docs/data/autonomy-reachability-probe-2026-09-26.md)
+found no food contacts and a normal-only threat contact relative to the
+no-plasticity control; the behavioral claim remains false.
 
 The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
 separate mutable state and publishes task-specific environment-only food/threat metrics.
