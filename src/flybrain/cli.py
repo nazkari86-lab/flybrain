@@ -48,6 +48,7 @@ from flybrain.importers.malecns import MaleCNSSources, import_malecns
 from flybrain.manifest import load_manifest
 from flybrain.mb_association import run_mb_association
 from flybrain.mbon_descending_assay import run_retained_mbon_descending_assay
+from flybrain.odor_mbon_probe import run_retained_odor_mbon_probe
 from flybrain.practical_autonomy import PracticalAutonomyConfig, run_practical_autonomy
 from flybrain.practical_flygym import run_practical_flygym
 from flybrain.practical_interactive import (
@@ -545,6 +546,48 @@ def mbon_descending_command(
         seed=seed,
         max_hops=max_hops,
     )
+    with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
+        stage = Path(temporary) / output_final.name
+        with stage.open("xb") as stream:
+            stream.write((result.model_dump_json(indent=2) + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(stage, output_final)
+    typer.echo(result.model_dump_json())
+
+
+@experiment_app.command("odor-mbon")
+def odor_mbon_command(
+    snapshot: Path,
+    output: Annotated[Path, typer.Option("--output")],
+    learning_registry: Annotated[
+        Path, typer.Option("--learning-registry")
+    ] = DEFAULT_LEARNING_REGISTRY,
+    steps: Annotated[int, typer.Option("--steps", min=1)] = 2_000,
+    seeds: Annotated[str, typer.Option("--seeds")] = "7,8,9",
+) -> None:
+    """Publish an isolated odor-to-MBON recruitment diagnostic."""
+
+    snapshot_final = snapshot.resolve()
+    output_final = output.resolve()
+    registry_final = learning_registry.resolve()
+    if output_final in {snapshot_final, registry_final} or output_final.is_relative_to(
+        snapshot_final
+    ):
+        raise typer.BadParameter("--output must differ from inputs and be outside snapshot")
+    if output_final.exists():
+        raise typer.BadParameter(f"output already exists: {output_final}")
+    try:
+        parsed_seeds = tuple(int(item.strip()) for item in seeds.split(",") if item.strip())
+    except ValueError as error:
+        raise typer.BadParameter("--seeds must be comma-separated integers") from error
+    result = run_retained_odor_mbon_probe(
+        snapshot_final,
+        learning_registry_path=registry_final,
+        steps=steps,
+        seeds=parsed_seeds,
+    )
+    output_final.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:
         stage = Path(temporary) / output_final.name
         with stage.open("xb") as stream:
