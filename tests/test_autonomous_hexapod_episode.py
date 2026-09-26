@@ -728,6 +728,117 @@ def test_all_annotated_descending_lesion_blocks_motor_in_synthetic_chain() -> No
     assert lesioned.replay_exact and lesioned.graph_unchanged
 
 
+def _typed_descending_chain() -> tuple[EventConnectome, PlasticEdgeBinding]:
+    base = graph()
+    neuron_ids = np.insert(base.neuron_ids, 4, np.asarray([40, 41], dtype=np.uint64))
+    index = {int(value): position for position, value in enumerate(neuron_ids)}
+    motor_ids = [value for group in motor_map().groups for value in group.neuron_ids]
+    edges = [
+        (1, 10, 400.0),
+        (10, 20, 200.0),
+        (20, 40, 200.0),
+        (20, 41, 200.0),
+        *((40, neuron_id, 200.0) for neuron_id in motor_ids),
+    ]
+    chain = EventConnectome(
+        neuron_ids=neuron_ids,
+        cell_types=(*base.cell_types[:4], "DNg33", "DNg48", *base.cell_types[4:]),
+        roles=(*base.roles[:4], "descending", "descending", *base.roles[4:]),
+        transmitters=(
+            *base.transmitters[:4], "acetylcholine", "acetylcholine",
+            *base.transmitters[4:],
+        ),
+        superclasses=(
+            *base.superclasses[:4], "descending_neuron", "descending_neuron",
+            *base.superclasses[4:],
+        ),
+        outgoing=csr_array(
+            (
+                np.asarray([weight for _, _, weight in edges], dtype=np.float32),
+                ([index[pre] for pre, _, _ in edges], [index[post] for _, post, _ in edges]),
+            ),
+            shape=(len(neuron_ids), len(neuron_ids)),
+        ),
+    )
+    plastic = PlasticEdgeBinding(
+        overlay=PlasticWeightOverlay.create(
+            edge_indices=np.asarray([1], dtype=np.int64),
+            canonical_edge_count=chain.edge_count,
+        ),
+        pre_ids=np.asarray([10], dtype=np.uint64),
+        post_ids=np.asarray([20], dtype=np.uint64),
+    )
+    return chain, plastic
+
+
+def test_descending_type_lesion_silences_only_selected_dn_path() -> None:
+    chain, plastic = _typed_descending_chain()
+    kwargs = dict(
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+    )
+    longer = config().model_copy(update={"body_steps": 5})
+    baseline = run_autonomous_hexapod_episode(
+        chain, plastic, longer, descending_type="DNg33", **kwargs
+    )
+    control_baseline = run_autonomous_hexapod_episode(
+        chain, plastic, longer, descending_type="DNg48", **kwargs
+    )
+    target_lesion = run_autonomous_hexapod_episode(
+        chain, plastic, longer,
+        descending_lesion="annotated_type", descending_type="DNg33", **kwargs,
+    )
+    control_lesion = run_autonomous_hexapod_episode(
+        chain, plastic, longer,
+        descending_lesion="annotated_type", descending_type="DNg48", **kwargs,
+    )
+
+    assert baseline.target_type_neurons == 1
+    assert baseline.target_type_spikes > 0
+    assert baseline.motor_spikes > 0
+    assert control_baseline.target_type_spikes > 0
+    assert control_baseline.motor_spikes == baseline.motor_spikes
+    assert target_lesion.target_type_spikes == 0
+    assert target_lesion.silenced_descending_neurons == 1
+    assert target_lesion.motor_spikes == 0
+    assert control_lesion.target_type_spikes == 0
+    assert control_lesion.silenced_descending_neurons == 1
+    assert control_lesion.motor_spikes == baseline.motor_spikes
+    assert target_lesion.replay_exact and control_lesion.replay_exact
+    assert target_lesion.graph_unchanged and control_lesion.graph_unchanged
+
+
+@pytest.mark.parametrize(
+    ("mode", "cell_type"),
+    [
+        ("annotated_type", None),
+        ("annotated_type", "motor"),
+        ("annotated_type", "unknown_dn"),
+        ("all_annotated", "DNg33"),
+    ],
+)
+def test_descending_type_lesion_rejects_missing_or_incompatible_selection(
+    mode: str, cell_type: str | None,
+) -> None:
+    chain, plastic = _typed_descending_chain()
+    with pytest.raises(ValueError):
+        run_autonomous_hexapod_episode(
+            chain, plastic, config(),
+            motor=motor_map(),
+            proprio=proprio_map(),
+            reinforcement=ReinforcementInterface(
+                appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+            ),
+            body_parameters=HexapodParameters(dt_s=0.01),
+            descending_lesion=mode,
+            descending_type=cell_type,
+        )
+
+
 @pytest.mark.skipif(
     not flygym_availability().available,
     reason=flygym_availability().reason,

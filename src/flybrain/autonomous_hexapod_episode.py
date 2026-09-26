@@ -263,9 +263,12 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     mbon_mean_multipliers: dict[int, float]
     descending_spikes: DescendingSpikeSummary
     annotated_descending_spikes: int = Field(ge=0)
+    descending_type: str | None = None
+    target_type_neurons: int = Field(default=0, ge=0)
+    target_type_spikes: int = Field(default=0, ge=0)
     motor_spikes: int = Field(ge=0)
     motor_lesion_groups: tuple[str, ...] = ()
-    descending_lesion: Literal["none", "all_annotated"] = "none"
+    descending_lesion: Literal["none", "all_annotated", "annotated_type"] = "none"
     silenced_descending_neurons: int = Field(default=0, ge=0)
     active_motor_groups: int = Field(ge=0, le=len(CANONICAL_MOTOR_GROUPS))
     all_motor_groups_active: bool
@@ -309,6 +312,7 @@ class _Trace:
     mbon_mean_multipliers: dict[int, float]
     descending_spikes: DescendingSpikeSummary
     annotated_descending_spikes: int
+    target_type_spikes: int
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
@@ -473,6 +477,7 @@ def _run(
     capture_motor_trace: bool,
     motor_lesion_groups: frozenset[str],
     descending_lesion_indices: np.ndarray,
+    target_type_ids: frozenset[int],
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -641,6 +646,7 @@ def _run(
         if superclass == "descending_neuron"
     }
     annotated_descending_spikes = 0
+    target_type_spikes = 0
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
@@ -862,6 +868,9 @@ def _run(
         annotated_descending_spikes += sum(
             neuron_id in annotated_descending_ids for neuron_id in fired_ids
         )
+        target_type_spikes += sum(
+            neuron_id in target_type_ids for neuron_id in fired_ids
+        )
         for neuron_id in fired_ids:
             group = motor_owner.get(neuron_id)
             if group is not None:
@@ -1015,6 +1024,7 @@ def _run(
             mdn_right=descending_counts.get("mdn_right", 0),
         ),
         annotated_descending_spikes=annotated_descending_spikes,
+        target_type_spikes=target_type_spikes,
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
@@ -1067,12 +1077,30 @@ def run_autonomous_hexapod_episode(
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
     motor_lesion_groups: tuple[str, ...] = (),
-    descending_lesion: Literal["none", "all_annotated"] = "none",
+    descending_lesion: Literal["none", "all_annotated", "annotated_type"] = "none",
+    descending_type: str | None = None,
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
     before = _graph_digest(graph)
+    if descending_type is not None and (
+        type(descending_type) is not str or not descending_type.strip()
+    ):
+        raise ValueError("descending type must be a nonempty string")
+    target_type_indices = np.asarray(
+        [
+            index for index, (superclass, cell_type) in enumerate(
+                zip(graph.superclasses, graph.cell_types, strict=True)
+            )
+            if superclass == "descending_neuron" and cell_type == descending_type
+        ] if descending_type is not None else [],
+        dtype=np.int64,
+    )
+    if descending_type is not None and not target_type_indices.size:
+        raise ValueError(f"no annotated descending neurons of type {descending_type}")
     if descending_lesion == "all_annotated":
+        if descending_type is not None:
+            raise ValueError("all-annotated lesion does not accept a descending type")
         descending_lesion_indices = np.asarray(
             [
                 index for index, superclass in enumerate(graph.superclasses)
@@ -1082,6 +1110,10 @@ def run_autonomous_hexapod_episode(
         )
         if not descending_lesion_indices.size:
             raise ValueError("no annotated descending neurons in graph")
+    elif descending_lesion == "annotated_type":
+        if descending_type is None:
+            raise ValueError("annotated-type lesion requires a descending type")
+        descending_lesion_indices = target_type_indices
     elif descending_lesion == "none":
         descending_lesion_indices = np.empty(0, dtype=np.int64)
     else:
@@ -1104,6 +1136,7 @@ def run_autonomous_hexapod_episode(
     active_perturbation = perturbation or BodyPerturbation()
     active_parameters = apply_perturbation(body_parameters, active_perturbation)
     approach_mbon_ids = _approach_mbon_ids(config.learning, reinforcement)
+    target_type_ids = frozenset(int(graph.neuron_ids[index]) for index in target_type_indices)
     replay_binding = _clone_binding(binding) if replay else None
     first_binding = binding if mutate_binding else _clone_binding(binding)
     first = _run(
@@ -1125,6 +1158,7 @@ def run_autonomous_hexapod_episode(
         capture_motor_trace=capture_motor_trace,
         motor_lesion_groups=frozenset(motor_lesion_groups),
         descending_lesion_indices=descending_lesion_indices,
+        target_type_ids=target_type_ids,
     )
     replay_trace = None
     if replay_binding is not None:
@@ -1147,6 +1181,7 @@ def run_autonomous_hexapod_episode(
             capture_motor_trace=capture_motor_trace,
             motor_lesion_groups=frozenset(motor_lesion_groups),
             descending_lesion_indices=descending_lesion_indices,
+            target_type_ids=target_type_ids,
         )
     return AutonomousHexapodResult(
         odor_channel_model=(
@@ -1191,6 +1226,9 @@ def run_autonomous_hexapod_episode(
         mbon_mean_multipliers=first.mbon_mean_multipliers,
         descending_spikes=first.descending_spikes,
         annotated_descending_spikes=first.annotated_descending_spikes,
+        descending_type=descending_type,
+        target_type_neurons=int(target_type_indices.size),
+        target_type_spikes=first.target_type_spikes,
         motor_spikes=first.motor_spikes,
         motor_lesion_groups=tuple(sorted(set(motor_lesion_groups))),
         descending_lesion=descending_lesion,
