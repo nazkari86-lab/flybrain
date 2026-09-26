@@ -73,3 +73,21 @@ downstream motor specificity the immediate causal questions.
 Next, keep the honest baseline and test the specific sensory→MBON→descending→
 motor route and joint-level locomotor authority. Do not tune the arena scale
 on this outcome or insert a hidden policy to manufacture success.
+
+## Training-path activity check on `c3948eb` (20 steps)
+
+The [compressed full result](../../artifacts/autonomous-behavior-training-path-c3948eb-seed7-steps20.json.gz)
+comes from clean revision `c3948eb2de43012d341303d7d384ebba373a82c9`
+with seed 7, one training and one holdout episode per world, the reference
+backend, and arena scale 0.04. The decompressed JSON SHA-256 is
+`f98ce6bf1cd183c1782f5d5194faefaab2775278ee17b408ab522f8f26493a65`.
+This shorter run is a pathway diagnostic, not another behavioral benchmark:
+`behavioral_horizon_adequate=false` and `behavioral_claim_allowed=false`.
+
+During the normal food/threat training episodes, putative avoidance MBON
+519128 fired 0/0 times and MBON 524893 fired 1/2 times, despite 14/14
+appetitive/aversive contacts and 25 routed DAN spike events in total. MBON
+519128 also fired zero times in all four normal holdouts. The run replayed
+exactly, left the canonical graph unchanged, and kept holdout weights and
+memory frozen. These observations narrow the recruitment question; they do
+not establish an autonomous learning or avoidance capability.
