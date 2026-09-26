@@ -46,7 +46,7 @@
 
 - [x] Write a failing subprocess CLI test on a tiny snapshot: output contains exact condition names, digests, resolved edges, source revision, snapshot digest, and `autonomous_behavior_claim_allowed=false`; reject missing output path/snapshot or nonpositive steps.
 - [x] Implement CLI with `argparse`, JSON output, snapshot digest and clean source revision provenance. Do not inspect seed 19–21 outcomes during this task.
-- [ ] Run focused/full tests, Ruff, mypy, `git diff --check`; commit code/tests/plan and push source revision **before** prospective seeds.
+- [x] Run focused/full tests, Ruff, mypy, `git diff --check`; commit code/tests/plan and push source revision **before** prospective seeds.
 
 ### Task 3: Prospective edge intervention and report
 
