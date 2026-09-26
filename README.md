@@ -429,6 +429,17 @@ uv run --extra physics flybrain experiment autonomous-hexapod \
   --output artifacts/autonomous-hexapod-reference-seed7.json
 ```
 
+To compare annotation-aware proprioceptive source selection, set
+`--proprioceptive-encoding budget_matched_uniform_spikes` or
+`--proprioceptive-encoding subtype_weighted_spikes`. Both require exact retained
+sensory-subtype annotations and match the number of addressed cells per leg and
+neural step **when given the same body observation**. The subtype scores are
+unvalidated encoding assumptions, not measured natural spike rates. The result
+separately reports event objects, addressed cell occurrences, and their annotated
+subtype counts; addressed cells are not necessarily observed neural spikes.
+The [100-step comparison](docs/data/male-cns-autonomous-hexapod.md) did not
+establish a behavioral improvement.
+
 Use `--backend flygym` to run the same neural and torque inputs on pinned FlyGym 2.1.0 / MuJoCo
 3.9.0. The retained two-step reference and FlyGym runs both preserved the graph, replayed exactly,
 produced motor spikes, closed physical contact-to-DAN learning, and returned proprioception. See

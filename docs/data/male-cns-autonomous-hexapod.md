@@ -50,6 +50,61 @@ uv run --extra physics flybrain experiment autonomous-hexapod \
 Publication is staged and linked atomically. Existing output, registry aliases, and paths inside
 the snapshot are rejected.
 
+## Experimental proprioceptive-subtype comparison on 2026-09-26
+
+The optional `budget_matched_uniform_spikes` and `subtype_weighted_spikes` encoders
+select **addressed input cells**, not observed spikes. Both use the 622 retained
+registered proprioceptors with exact source `subclass`, side, and entry-nerve
+annotations. The subtype encoder's mappings from joint angle, movement, load,
+and contact to subclass weights are project assumptions, not measured fly
+encoding functions. No target, reward, action, or future body state enters
+either selector.
+
+With identical body observations and seed, both modes draw the same number of
+addressed cells for each leg and neural step. Once placed in separate closed
+loops their body trajectories can diverge, so their **whole-episode** budgets
+need not be exactly equal. The retained reference-backend comparison used
+software revision `931fe0d2df77058a5f90cdb63f4eb1e0d7784769`, seed 7,
+100 body steps, and 10,000 neural steps per run:
+
+| Measure | Uniform | Subtype weighted |
+| --- | ---: | ---: |
+| Proprioceptive event objects | 32,796 | 32,769 |
+| Addressed cell occurrences | 54,375 | 54,346 |
+| Chordotonal organ targets | 32,376 | 34,030 |
+| Campaniform sensilla targets | 1,102 | 1,010 |
+| Hair plate targets | 5,171 | 5,176 |
+| `leg` targets | 15,726 | 14,130 |
+| Motor spikes | 2,392 | 2,358 |
+| Active motor groups (of 36) | 28 | 27 |
+| Final distance to initial food location (m) | 0.010585 | 0.017750 |
+
+Both runs preserved the graph and replayed exactly. Both recorded 100
+appetitive contacts and zero aversive contacts. The body **started at the food
+location** (initial distance 0), so contacts do not demonstrate food seeking.
+The subtype-weighted condition recruited more chordotonal targets but did not
+improve the measured motor-group count or final distance in this single short
+episode. It is not evidence of learned preference, threat avoidance, a natural
+gait, or complete autonomous intelligence; the claim gate remains false.
+Independent multi-seed food/threat holdouts and causal controls are still
+required. Target counts cannot be read as successful source-neuron spikes.
+
+Full provenance-bearing outputs are published as compressed
+[uniform](../../artifacts/autonomous-hexapod-proprio-uniform-931fe0d-seed7-steps100.json.gz)
+and [subtype-weighted](../../artifacts/autonomous-hexapod-proprio-subtype-931fe0d-seed7-steps100.json.gz)
+JSON. Reproduce them with:
+
+```bash
+uv run flybrain experiment autonomous-hexapod artifacts/male-cns-v1.0-w5 \
+  --steps 100 --seed 7 --backend reference \
+  --proprioceptive-encoding budget_matched_uniform_spikes \
+  --output artifacts/proprio-uniform-local.json
+uv run flybrain experiment autonomous-hexapod artifacts/male-cns-v1.0-w5 \
+  --steps 100 --seed 7 --backend reference \
+  --proprioceptive-encoding subtype_weighted_spikes \
+  --output artifacts/proprio-subtype-local.json
+```
+
 ## Retained observation on 2026-09-19
 
 - graph: 166,606 neurons and 6,240,402 retained edges;
