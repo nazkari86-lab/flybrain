@@ -465,6 +465,13 @@ control. This establishes edge necessity under that artificial neural input
 All eight direct targets have A2–A5 and A7 somata and AbN-labelled exit nerves in
 the retained [annotation audit](docs/data/dng33-abdominal-motor-identity-2026-09-27.md);
 they are not an identified left-front-leg muscle route.
+The subsequent [DNa02 thoracic-route audit](docs/data/dna02-thoracic-route-2026-09-27.md)
+finds 17 direct targets inside the leg motor registry, all with T1–T3 somata.
+Zeroing those edges under identical artificial DNa02 spike timing reduced
+their pooled spikes by 33–47% across three seeds. The matched-edge control
+changed DNa02 firing, however, and a separate embodied DNa02 lesion missed
+its pre-outcome primary gate in all three seeds. Neither result establishes a
+validated muscle response, learned walking, or autonomous intelligence.
 
 Run the multi-condition behavior benchmark:
 
