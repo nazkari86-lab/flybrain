@@ -573,6 +573,13 @@ def autonomous_hexapod_command(
     proprioceptive_spike_rate_hz: Annotated[
         float, typer.Option("--proprioceptive-spike-rate-hz", min=0.001)
     ] = 150.0,
+    proprioceptive_encoding: Annotated[
+        Literal[
+            "population_voltage", "source_equivalent_spikes",
+            "budget_matched_uniform_spikes", "subtype_weighted_spikes",
+        ],
+        typer.Option("--proprioceptive-encoding"),
+    ] = "source_equivalent_spikes",
     motor_trace: Annotated[
         bool, typer.Option("--motor-trace", help="Record per-step motor and body diagnostics")
     ] = False,
@@ -602,6 +609,7 @@ def autonomous_hexapod_command(
         body_steps=steps,
         seed=seed,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
+        proprioceptive_encoding=proprioceptive_encoding,
         capture_motor_trace=motor_trace,
         motor_lesion_groups=tuple(motor_lesion_group or ()),
     )
@@ -638,6 +646,13 @@ def autonomous_behavior_command(
     proprioceptive_spike_rate_hz: Annotated[
         float, typer.Option("--proprioceptive-spike-rate-hz", min=0.001)
     ] = 150.0,
+    proprioceptive_encoding: Annotated[
+        Literal[
+            "population_voltage", "source_equivalent_spikes",
+            "budget_matched_uniform_spikes", "subtype_weighted_spikes",
+        ],
+        typer.Option("--proprioceptive-encoding"),
+    ] = "source_equivalent_spikes",
 ) -> None:
     """Publish the retained multi-condition autonomous behavior benchmark."""
 
@@ -668,6 +683,7 @@ def autonomous_behavior_command(
         seed=seed,
         seeds=parsed_seeds,
         proprioceptive_spike_rate_hz=proprioceptive_spike_rate_hz,
+        proprioceptive_encoding=proprioceptive_encoding,
     )
     output_final.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output_final.parent) as temporary:

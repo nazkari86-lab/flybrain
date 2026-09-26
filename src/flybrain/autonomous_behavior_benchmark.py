@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Literal, cast
 
 import numpy as np
@@ -85,7 +85,8 @@ class BehaviorBenchmarkConfig(BaseModel, frozen=True):
     odor_b_left_input_ids: tuple[int, ...] = ()
     odor_b_right_input_ids: tuple[int, ...] = ()
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "population_voltage"
     proprioceptive_spike_rate_hz: float = Field(default=150.0, gt=0.0)
     contact_radius_m: float = Field(default=0.05, gt=0.0)
@@ -276,7 +277,8 @@ class BehaviorBenchmarkResult(BaseModel, frozen=True):
     ]
     odor_assignment: TaskOdorAssignment | None
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ]
     proprioceptive_spike_rate_hz: float = Field(gt=0.0)
     phase_envelope: PhaseEnvelopeAssumption
@@ -368,6 +370,7 @@ def _run_condition(
     reinforcement: ReinforcementInterface,
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory,
+    proprioceptive_subtypes: Mapping[int, str] | None,
 ) -> tuple[
     tuple[EpisodeObservation, ...],
     TrainingSummary,
@@ -460,6 +463,7 @@ def _run_condition(
                     }
                 ),
                 backend_factory=backend_factory,
+                proprioceptive_subtypes=proprioceptive_subtypes,
                 mutate_binding=not holdout,
                 replay=True,
                 dan_enabled=condition_binding.dan_enabled,
@@ -607,9 +611,14 @@ def run_behavior_benchmark(
     reinforcement: ReinforcementInterface,
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory = ReferenceHexapodBackend,
+    proprioceptive_subtypes: Mapping[int, str] | None = None,
 ) -> BehaviorBenchmarkResult:
     """Run isolated condition states and compare holdout observations."""
 
+    if config.proprioceptive_encoding in {
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes"
+    } and proprioceptive_subtypes is None:
+        raise ValueError("proprioceptive subtype labels are required")
     before = _graph_digest(graph)
     observations: dict[str, tuple[EpisodeObservation, ...]] = {}
     training_summaries: dict[str, TrainingSummary] = {}
@@ -629,6 +638,7 @@ def run_behavior_benchmark(
             reinforcement=reinforcement,
             body_parameters=body_parameters,
             backend_factory=backend_factory,
+            proprioceptive_subtypes=proprioceptive_subtypes,
         )
         observations[condition] = condition_observations
         training_summaries[condition] = training_summary

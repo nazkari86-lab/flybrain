@@ -118,3 +118,27 @@ def test_real_cli_can_publish_explicit_motor_lesion(tmp_path: Path) -> None:
     assert all(step["activations"][12] == 0.0 for step in episode["motor_trace"])
     assert episode["replay_exact"] is True
     assert episode["graph_unchanged"] is True
+
+
+def test_real_cli_routes_annotated_proprioception_in_closed_loop(tmp_path: Path) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "annotated-proprioception.json"
+
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-hexapod", snapshot,
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--proprioceptive-encoding", "subtype_weighted_spikes",
+            "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    episode = json.loads(output.read_text(encoding="utf-8"))["episode"]
+    assert episode["proprioceptive_encoding"] == "subtype_weighted_spikes"
+    assert episode["proprioceptive_events"] > 0
+    assert episode["replay_exact"] is True
+    assert episode["autonomous_behavior_claim_allowed"] is False

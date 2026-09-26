@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from typing import Literal, Self, cast
 
@@ -100,7 +101,8 @@ class AutonomousHexapodConfig(BaseModel, frozen=True):
     odor_b_left_input_ids: tuple[int, ...] = ()
     odor_b_right_input_ids: tuple[int, ...] = ()
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "population_voltage"
     proprioceptive_spike_rate_hz: float = Field(default=150.0, gt=0.0)
     phase_envelope: PhaseEnvelopeAssumption = Field(default_factory=PhaseEnvelopeAssumption)
@@ -228,7 +230,8 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
         "measured_bilateral_receptor_channels",
     ] = "bipartite_registered_olfactory_assumption"
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "population_voltage"
     proprioceptive_spike_rate_hz: float = Field(default=150.0, gt=0.0)
     phase_envelope: PhaseEnvelopeAssumption
@@ -264,6 +267,8 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     active_motor_groups: int = Field(ge=0, le=len(CANONICAL_MOTOR_GROUPS))
     all_motor_groups_active: bool
     proprioceptive_events: int = Field(ge=0)
+    proprioceptive_target_events: int = Field(ge=0)
+    proprioceptive_targets_by_subtype: dict[str, int]
     tactile_contact_events: int = Field(ge=0)
     visual_source_events: int = Field(ge=0)
     slow_memory_enabled: bool
@@ -303,6 +308,8 @@ class _Trace:
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
+    proprioceptive_target_events: int
+    proprioceptive_targets_by_subtype: dict[str, int]
     tactile_contact_events: int
     visual_source_events: int
     slow_memory_enabled: bool
@@ -453,6 +460,7 @@ def _run(
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory,
     proprioceptive_calibration: ProprioceptiveCalibration,
+    proprioceptive_subtypes: Mapping[int, str] | None,
     perturbation: BodyPerturbation,
     dan_enabled: bool,
     plasticity_enabled: bool,
@@ -627,6 +635,8 @@ def _run(
     motor_spikes = 0
     active_groups: set[str] = set()
     proprioceptive_events = 0
+    proprioceptive_target_events = 0
+    proprioceptive_targets_by_subtype: dict[str, int] = {}
     tactile_contact_events = 0
     visual_source_events = 0
     appetitive_contacts = 0
@@ -752,7 +762,24 @@ def _run(
         proprio_observation = observe_proprioception(
             body, body_parameters, proprioceptive_calibration
         )
-        if config.proprioceptive_encoding == "source_equivalent_spikes":
+        if config.proprioceptive_encoding in {
+            "budget_matched_uniform_spikes", "subtype_weighted_spikes"
+        }:
+            if proprioceptive_subtypes is None:
+                raise ValueError("proprioceptive subtype labels are required")
+            proprio_events = proprio_encoder.encode_budget_matched_spikes(
+                proprio_observation,
+                subtype_by_id=proprioceptive_subtypes,
+                weighting=(
+                    "subtype" if config.proprioceptive_encoding == "subtype_weighted_spikes"
+                    else "uniform"
+                ),
+                steps=learning.neural_chunk_steps,
+                seed=config.seed + state.step + 4_000_013,
+                rate_hz=config.proprioceptive_spike_rate_hz,
+                dt_ms=learning.shiu_parameters.dt_ms,
+            )
+        elif config.proprioceptive_encoding == "source_equivalent_spikes":
             proprio_events = proprio_encoder.encode_source_equivalent_spikes(
                 proprio_observation,
                 steps=learning.neural_chunk_steps,
@@ -767,9 +794,16 @@ def _run(
             )
         proprioceptive_events += len(proprio_events)
         for event in proprio_events:
+            proprioceptive_target_events += len(event.neuron_ids)
+            if proprioceptive_subtypes is not None:
+                for neuron_id in event.neuron_ids:
+                    subtype = proprioceptive_subtypes[neuron_id]
+                    proprioceptive_targets_by_subtype[subtype] = (
+                        proprioceptive_targets_by_subtype.get(subtype, 0) + 1
+                    )
             event_step = (
                 state.step + event.step
-                if config.proprioceptive_encoding == "source_equivalent_spikes"
+                if config.proprioceptive_encoding != "population_voltage"
                 else event.step
             )
             scheduled.setdefault(event_step, []).extend(
@@ -968,6 +1002,8 @@ def _run(
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
+        proprioceptive_target_events=proprioceptive_target_events,
+        proprioceptive_targets_by_subtype=proprioceptive_targets_by_subtype,
         tactile_contact_events=tactile_contact_events,
         visual_source_events=visual_source_events,
         slow_memory_enabled=slow_state is not None,
@@ -1006,6 +1042,7 @@ def run_autonomous_hexapod_episode(
     body_parameters: HexapodParameters,
     backend_factory: BackendFactory = ReferenceHexapodBackend,
     proprioceptive_calibration: ProprioceptiveCalibration | None = None,
+    proprioceptive_subtypes: Mapping[int, str] | None = None,
     perturbation: BodyPerturbation | None = None,
     replay: bool = True,
     mutate_binding: bool = False,
@@ -1029,6 +1066,10 @@ def run_autonomous_hexapod_episode(
         context.update(array.tobytes())
     memory_context = context.hexdigest()
     calibration = proprioceptive_calibration or ProprioceptiveCalibration()
+    if config.proprioceptive_encoding in {
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes"
+    } and proprioceptive_subtypes is None:
+        raise ValueError("proprioceptive subtype labels are required")
     active_perturbation = perturbation or BodyPerturbation()
     active_parameters = apply_perturbation(body_parameters, active_perturbation)
     approach_mbon_ids = _approach_mbon_ids(config.learning, reinforcement)
@@ -1044,6 +1085,7 @@ def run_autonomous_hexapod_episode(
         body_parameters=active_parameters,
         backend_factory=backend_factory,
         proprioceptive_calibration=calibration,
+        proprioceptive_subtypes=proprioceptive_subtypes,
         perturbation=active_perturbation,
         dan_enabled=dan_enabled,
         plasticity_enabled=plasticity_enabled,
@@ -1064,6 +1106,7 @@ def run_autonomous_hexapod_episode(
             body_parameters=active_parameters,
             backend_factory=backend_factory,
             proprioceptive_calibration=calibration,
+            proprioceptive_subtypes=proprioceptive_subtypes,
             perturbation=active_perturbation,
             dan_enabled=dan_enabled,
             plasticity_enabled=plasticity_enabled,
@@ -1121,6 +1164,8 @@ def run_autonomous_hexapod_episode(
             len(first.active_motor_groups) == len(CANONICAL_MOTOR_GROUPS)
         ),
         proprioceptive_events=first.proprioceptive_events,
+        proprioceptive_target_events=first.proprioceptive_target_events,
+        proprioceptive_targets_by_subtype=first.proprioceptive_targets_by_subtype,
         tactile_contact_events=first.tactile_contact_events,
         visual_source_events=first.visual_source_events,
         slow_memory_enabled=first.slow_memory_enabled,

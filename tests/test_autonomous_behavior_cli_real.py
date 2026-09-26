@@ -106,3 +106,28 @@ def test_real_behavior_cli_publishes_all_controls_atomically(tmp_path: Path) -> 
         ],
     )
     assert repeated.exit_code != 0
+
+
+def test_real_behavior_cli_keeps_subtype_encoder_in_all_control_episodes(tmp_path: Path) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "subtype-behavior.json"
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-behavior", snapshot,
+            "--training-episodes", "1", "--holdout-episodes", "1",
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--proprioceptive-encoding", "subtype_weighted_spikes",
+            "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    benchmark = json.loads(output.read_text(encoding="utf-8"))["benchmark"]
+    assert benchmark["proprioceptive_encoding"] == "subtype_weighted_spikes"
+    assert benchmark["replay_exact"] is True
+    assert benchmark["holdout_weights_frozen"] is True
+    assert len(benchmark["episode_evidence"]) == 30
+    assert benchmark["behavioral_claim_allowed"] is False

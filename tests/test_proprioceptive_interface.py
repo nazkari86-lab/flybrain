@@ -25,9 +25,7 @@ from flybrain.proprioceptive_interface import (
     observe_proprioception,
 )
 
-RETAINED_MALE_CNS = Path(
-    "/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5"
-)
+RETAINED_MALE_CNS = Path("/Users/dulatnurlanuly/Downloads/flybrain/artifacts/male-cns-v1.0-w5")
 
 
 def proprioceptive_map(*, overlap: bool = False) -> ProprioceptiveMap:
@@ -148,9 +146,7 @@ def test_observation_contains_no_privileged_world_or_action_fields() -> None:
 
 def test_mirror_swaps_homologous_observations_with_declared_joint_sign() -> None:
     simulator = ReferenceHexapod()
-    body = simulator.step(
-        HexapodTorque.for_leg("left_fore", (0.01, 0.02, -0.01))
-    )
+    body = simulator.step(HexapodTorque.for_leg("left_fore", (0.01, 0.02, -0.01)))
     parameters = simulator.parameters
     calibration = ProprioceptiveCalibration()
     normal = observe_proprioception(body, parameters, calibration)
@@ -160,9 +156,7 @@ def test_mirror_swaps_homologous_observations_with_declared_joint_sign() -> None
 
     assert right.joint_angles[0] == pytest.approx(1.0 - left.joint_angles[0])
     assert right.joint_angles[1:] == pytest.approx(left.joint_angles[1:])
-    assert right.joint_velocities[0] == pytest.approx(
-        1.0 - left.joint_velocities[0]
-    )
+    assert right.joint_velocities[0] == pytest.approx(1.0 - left.joint_velocities[0])
     assert right.joint_velocities[1:] == pytest.approx(left.joint_velocities[1:])
     assert right.contact == left.contact
     assert right.load == left.load
@@ -229,10 +223,77 @@ def test_source_equivalent_spikes_use_sparse_full_voltage_events_and_replay() ->
     assert {event.channel for event in first} == {
         f"proprioception_spikes_{leg}" for leg in LEG_NAMES
     }
-    assert all(
-        set(event.voltages) == {calibration.total_voltage}
-        for event in first
+    assert all(set(event.voltages) == {calibration.total_voltage} for event in first)
+
+
+def test_subtype_allocation_changes_cells_not_per_step_source_budget() -> None:
+    mapping = proprioceptive_map()
+    calibration = ProprioceptiveCalibration()
+    parameters = HexapodParameters()
+    body = ReferenceHexapod().observe()
+    right = body.leg("right_fore").model_copy(
+        update={"joint_angles_rad": parameters.joint_upper_rad}
     )
+    body = body.model_copy(update={"legs": (body.legs[0], right, *body.legs[2:])})
+    observation = observe_proprioception(body, parameters, calibration)
+    right_ids = mapping.bank("right_fore").neuron_ids
+    labels = {neuron_id: "leg" for bank in mapping.banks for neuron_id in bank.neuron_ids}
+    labels[right_ids[0]] = "chordotonal organ"
+    labels[right_ids[1]] = "campaniform sensilla"
+    encoder = ProprioceptiveEncoder(mapping, calibration)
+
+    uniform = encoder.encode_budget_matched_spikes(
+        observation,
+        subtype_by_id=labels,
+        weighting="uniform",
+        steps=400,
+        seed=7,
+        rate_hz=10_000.0,
+        dt_ms=0.1,
+    )
+    weighted = encoder.encode_budget_matched_spikes(
+        observation,
+        subtype_by_id=labels,
+        weighting="subtype",
+        steps=400,
+        seed=7,
+        rate_hz=10_000.0,
+        dt_ms=0.1,
+    )
+
+    def step_counts(events):
+        return {(event.step, event.channel): len(event.neuron_ids) for event in events}
+
+    assert step_counts(weighted) == step_counts(uniform)
+    assert weighted == encoder.encode_budget_matched_spikes(
+        observation,
+        subtype_by_id=labels,
+        weighting="subtype",
+        steps=400,
+        seed=7,
+        rate_hz=10_000.0,
+        dt_ms=0.1,
+    )
+    assert sum(right_ids[0] in event.neuron_ids for event in weighted) > sum(
+        right_ids[0] in event.neuron_ids for event in uniform
+    )
+    assert all(set(event.voltages) == {calibration.total_voltage} for event in weighted)
+
+
+def test_subtype_allocation_rejects_missing_labels() -> None:
+    mapping = proprioceptive_map()
+    calibration = ProprioceptiveCalibration()
+    observation = observe_proprioception(
+        ReferenceHexapod().observe(), HexapodParameters(), calibration
+    )
+    with pytest.raises(ValueError, match="subtype labels"):
+        ProprioceptiveEncoder(mapping, calibration).encode_budget_matched_spikes(
+            observation,
+            subtype_by_id={},
+            weighting="subtype",
+            steps=10,
+            seed=7,
+        )
 
 
 def test_map_rejects_overlap_incomplete_and_missing_graph_ids() -> None:
@@ -268,9 +329,7 @@ def test_real_registry_builds_six_disjoint_proprioceptive_banks() -> None:
     if not RETAINED_MALE_CNS.is_dir():
         pytest.skip(f"retained snapshot unavailable: {RETAINED_MALE_CNS}")
     registry = resolve_biological_registry(
-        load_biological_registry(
-            Path("data/registry/hexapod-motor-registry-v2.json")
-        ),
+        load_biological_registry(Path("data/registry/hexapod-motor-registry-v2.json")),
         RETAINED_MALE_CNS,
     )
 

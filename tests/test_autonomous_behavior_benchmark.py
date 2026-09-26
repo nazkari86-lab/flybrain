@@ -116,6 +116,45 @@ def test_benchmark_persists_isolated_conditions_and_preserves_graph() -> None:
     assert all(item.motor_spikes >= 0 for item in normal_activity)
 
 
+def test_benchmark_propagates_subtype_encoder_through_training_and_holdout() -> None:
+    learning = AssociativeCalibrationConfig(
+        cue_ids=(10,), mbon_ids=(20,), dan_to_mbon_pairs=((30, 20),),
+        input_mode="sensory_path", sensory_input_ids=(1,), neural_chunk_steps=20,
+        shiu_parameters=ShiuParameters(dt_ms=0.5, refractory_ms=2.0, synaptic_delay_ms=1.0),
+    )
+    food = BehaviorVariant(
+        name="food-training", food_position_m=(0.0, 0.0), threat_position_m=(10.0, 10.0)
+    )
+    threat = BehaviorVariant(
+        name="threat-training", food_position_m=(10.0, 10.0), threat_position_m=(0.0, 0.0)
+    )
+    configuration = BehaviorBenchmarkConfig(
+        training_episodes=1, holdout_episodes=1, body_steps=2, seeds=(7,),
+        controls=("no_plasticity",),
+        training_variants=(food, threat),
+        holdout_variants=(
+            food.model_copy(update={"name": "food-holdout", "evaluation_target": "food"}),
+            threat.model_copy(update={"name": "threat-holdout", "evaluation_target": "threat"}),
+        ),
+        proprioceptive_encoding="subtype_weighted_spikes",
+    )
+    labels = {neuron_id: "leg" for bank in proprio_map().banks for neuron_id in bank.neuron_ids}
+
+    result = run_behavior_benchmark(
+        graph(), binding(), configuration,
+        learning=learning, motor=motor_map(), proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(appetitive_dan_ids=(30,), aversive_dan_ids=(31,)),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        proprioceptive_subtypes=labels,
+    )
+
+    assert result.proprioceptive_encoding == "subtype_weighted_spikes"
+    assert result.replay_exact
+    assert len(result.episode_evidence) == 8
+    assert all(item.replay_exact for item in result.episode_evidence)
+    assert result.behavioral_claim_allowed is False
+
+
 def test_generalization_requires_two_unseen_worlds_per_task() -> None:
     learning = AssociativeCalibrationConfig(
         cue_ids=(10,),

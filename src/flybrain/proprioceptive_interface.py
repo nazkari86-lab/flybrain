@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from typing import Literal, Self
 
 import numpy as np
@@ -104,9 +105,7 @@ class ProprioceptiveBank(BaseModel, frozen=True):
     @field_validator("neuron_ids", mode="before")
     @classmethod
     def validate_id_types(cls, value: object) -> object:
-        if not isinstance(value, (tuple, list)) or any(
-            type(item) is not int for item in value
-        ):
+        if not isinstance(value, (tuple, list)) or any(type(item) is not int for item in value):
             raise ValueError("proprioceptive bank must contain integer IDs")
         return value
 
@@ -291,16 +290,12 @@ class ProprioceptiveEncoder:
         for step in range(steps):
             for item in observation.legs:
                 bank = self.mapping.bank(item.leg)
-                selected = generator.random(len(bank.neuron_ids)) < (
-                    probability * item.drive
-                )
+                selected = generator.random(len(bank.neuron_ids)) < (probability * item.drive)
                 if not np.any(selected):
                     continue
                 selected_ids = tuple(
                     neuron_id
-                    for neuron_id, include in zip(
-                        bank.neuron_ids, selected, strict=True
-                    )
+                    for neuron_id, include in zip(bank.neuron_ids, selected, strict=True)
                     if include
                 )
                 events.append(
@@ -309,6 +304,83 @@ class ProprioceptiveEncoder:
                         neuron_ids=selected_ids,
                         voltages=(self.calibration.total_voltage,) * len(selected_ids),
                         channel=f"proprioception_spikes_{item.leg}",
+                    )
+                )
+        return tuple(events)
+
+    def encode_budget_matched_spikes(
+        self,
+        observation: ProprioceptiveObservation,
+        *,
+        subtype_by_id: Mapping[int, str],
+        weighting: Literal["uniform", "subtype"],
+        steps: int,
+        seed: int,
+        rate_hz: float = 150.0,
+        dt_ms: float = 0.1,
+    ) -> tuple[ExternalEvent, ...]:
+        """Allocate an identical per-leg spike budget uniformly or by modality.
+
+        Subtype scores are declared model assumptions. Neither mode sees a
+        target, reward, desired action, or future state. Matched seeds and
+        observations produce identical event counts at every leg and step.
+        """
+
+        if weighting not in {"uniform", "subtype"}:
+            raise ValueError("unknown proprioceptive subtype weighting")
+        if type(steps) is not int or steps <= 0:
+            raise ValueError("proprioceptive spike steps must be a positive integer")
+        if type(seed) is not int or seed < 0:
+            raise ValueError("proprioceptive spike seed must be non-negative")
+        if not math.isfinite(rate_hz) or rate_hz <= 0.0:
+            raise ValueError("proprioceptive spike rate must be finite and positive")
+        if not math.isfinite(dt_ms) or dt_ms <= 0.0:
+            raise ValueError("proprioceptive spike timestep must be finite and positive")
+        probability = rate_hz * dt_ms / 1000.0
+        if probability > 1.0:
+            raise ValueError("proprioceptive spike probability must not exceed one")
+        if observation.calibration != self.calibration:
+            raise ValueError("observation calibration differs from encoder calibration")
+        required = {neuron_id for bank in self.mapping.banks for neuron_id in bank.neuron_ids}
+        if set(subtype_by_id) != required:
+            raise ValueError("proprioceptive subtype labels must cover exact bank IDs")
+        allowed = {"chordotonal organ", "campaniform sensilla", "hair plate", "leg"}
+        if any(value not in allowed for value in subtype_by_id.values()):
+            raise ValueError("unknown proprioceptive subtype labels")
+
+        generator = np.random.default_rng(seed)
+        events: list[ExternalEvent] = []
+        for step in range(steps):
+            for item in observation.legs:
+                bank = self.mapping.bank(item.leg)
+                count = int(generator.binomial(len(bank.neuron_ids), probability * item.drive))
+                uniforms = generator.random(len(bank.neuron_ids))
+                if count == 0:
+                    continue
+                if weighting == "uniform":
+                    weights = np.ones(len(bank.neuron_ids), dtype=np.float64)
+                else:
+                    angle = sum(item.joint_angles) / 3.0
+                    movement = sum(abs(value - 0.5) * 2.0 for value in item.joint_velocities) / 3.0
+                    scores = {
+                        "chordotonal organ": min(1.0, angle + movement),
+                        "campaniform sensilla": (item.contact + item.load) / 2.0,
+                        "hair plate": angle,
+                        "leg": item.drive,
+                    }
+                    weights = np.asarray(
+                        [max(0.01, scores[subtype_by_id[value]]) for value in bank.neuron_ids],
+                        dtype=np.float64,
+                    )
+                keys = -np.log(np.maximum(uniforms, np.finfo(np.float64).tiny)) / weights
+                selected_positions = sorted(np.argpartition(keys, count - 1)[:count])
+                selected_ids = tuple(bank.neuron_ids[position] for position in selected_positions)
+                events.append(
+                    ExternalEvent(
+                        step=step,
+                        neuron_ids=selected_ids,
+                        voltages=(self.calibration.total_voltage,) * count,
+                        channel=f"proprioception_budget_spikes_{item.leg}",
                     )
                 )
         return tuple(events)

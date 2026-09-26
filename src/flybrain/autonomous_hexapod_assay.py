@@ -43,6 +43,7 @@ from flybrain.olfactory_interface import OlfactoryReceptorMap, task_odor_assignm
 from flybrain.plastic_edge_binding import bind_manifest_to_graph
 from flybrain.plastic_edge_registry import resolve_plastic_edge_manifests
 from flybrain.proprioceptive_interface import ProprioceptiveMap
+from flybrain.proprioceptive_subtypes import load_proprioceptive_subtypes
 from flybrain.provenance import snapshot_content_sha256
 from flybrain.reinforcement_interface import ReinforcementInterface
 from flybrain.retinal_interface import VisualInterfaceMap
@@ -152,7 +153,8 @@ def run_retained_autonomous_hexapod_assay(
     seed: int = 7,
     proprioceptive_spike_rate_hz: float = 150.0,
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "source_equivalent_spikes",
     learning_memory: AutonomousLearningMemory | None = None,
     capture_motor_trace: bool = False,
@@ -233,6 +235,14 @@ def run_retained_autonomous_hexapod_assay(
             minimum=0.0, maximum=2.0,
         )
     backend_factory = FlyGymBackend if backend == "flygym" else ReferenceHexapodBackend
+    proprio = ProprioceptiveMap.from_registry(motor_populations)
+    subtypes = (
+        load_proprioceptive_subtypes(snapshot / "source-annotations.parquet", proprio)
+        if proprioceptive_encoding in {
+            "budget_matched_uniform_spikes", "subtype_weighted_spikes"
+        }
+        else None
+    )
     episode = run_autonomous_hexapod_episode(
         graph,
         binding,
@@ -263,7 +273,8 @@ def run_retained_autonomous_hexapod_assay(
             descending_map=_descending_map(interface_populations),
         ),
         motor=HexapodMotorMap.from_registry(motor_populations),
-        proprio=ProprioceptiveMap.from_registry(motor_populations),
+        proprio=proprio,
+        proprioceptive_subtypes=subtypes,
         reinforcement=reinforcement,
         body_parameters=HexapodParameters(dt_s=0.01),
         backend_factory=backend_factory,
@@ -303,7 +314,8 @@ def run_retained_autonomous_behavior_benchmark(
     seeds: tuple[int, ...] | None = None,
     proprioceptive_spike_rate_hz: float = 150.0,
     proprioceptive_encoding: Literal[
-        "population_voltage", "source_equivalent_spikes"
+        "population_voltage", "source_equivalent_spikes",
+        "budget_matched_uniform_spikes", "subtype_weighted_spikes",
     ] = "source_equivalent_spikes",
 ) -> RetainedAutonomousBehaviorBenchmark:
     """Run the bounded multi-condition benchmark on a retained snapshot."""
@@ -329,6 +341,14 @@ def run_retained_autonomous_behavior_benchmark(
         )
     }
     graph = EventConnectome.from_sparse(SparseConnectome.from_snapshot(snapshot))
+    proprio = ProprioceptiveMap.from_registry(motor_populations)
+    subtypes = (
+        load_proprioceptive_subtypes(snapshot / "source-annotations.parquet", proprio)
+        if proprioceptive_encoding in {
+            "budget_matched_uniform_spikes", "subtype_weighted_spikes"
+        }
+        else None
+    )
     binding = bind_manifest_to_graph(graph, manifests["kc_to_mbon"])
     reinforcement = ReinforcementInterface.from_resolved_registry(learning_populations)
     sensory_input_ids = learning_populations.population("olfactory_sensory").neuron_ids
@@ -500,7 +520,8 @@ def run_retained_autonomous_behavior_benchmark(
         config,
         learning=learning,
         motor=HexapodMotorMap.from_registry(motor_populations),
-        proprio=ProprioceptiveMap.from_registry(motor_populations),
+        proprio=proprio,
+        proprioceptive_subtypes=subtypes,
         reinforcement=reinforcement,
         body_parameters=HexapodParameters(dt_s=0.01),
         backend_factory=backend_factory,

@@ -208,6 +208,56 @@ def test_episode_can_use_source_equivalent_proprioceptive_spikes() -> None:
     assert result.graph_unchanged is True
 
 
+def test_episode_routes_budget_matched_subtype_events_without_a_policy() -> None:
+    labels = {
+        neuron_id: "leg"
+        for bank in proprio_map().banks
+        for neuron_id in bank.neuron_ids
+    }
+    outputs = []
+    for mode in ("budget_matched_uniform_spikes", "subtype_weighted_spikes"):
+        result = run_autonomous_hexapod_episode(
+            graph(),
+            binding(),
+            config().model_copy(update={"proprioceptive_encoding": mode}),
+            motor=motor_map(),
+            proprio=proprio_map(),
+            reinforcement=ReinforcementInterface(
+                appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+            ),
+            body_parameters=HexapodParameters(dt_s=0.01),
+            proprioceptive_subtypes=labels,
+        )
+        assert result.replay_exact
+        assert result.graph_unchanged
+        assert result.autonomous_behavior_claim_allowed is False
+        assert result.proprioceptive_events > 0
+        assert result.proprioceptive_target_events >= result.proprioceptive_events
+        assert (
+            sum(result.proprioceptive_targets_by_subtype.values())
+            == result.proprioceptive_target_events
+        )
+        assert result.proprioceptive_encoding == mode
+        outputs.append(result)
+    assert outputs[0].proprioceptive_events == outputs[1].proprioceptive_events
+    assert outputs[0].trace_digest == outputs[1].trace_digest
+
+
+def test_subtype_episode_fails_closed_without_retained_labels() -> None:
+    with pytest.raises(ValueError, match="subtype labels"):
+        run_autonomous_hexapod_episode(
+            graph(),
+            binding(),
+            config().model_copy(update={"proprioceptive_encoding": "subtype_weighted_spikes"}),
+            motor=motor_map(),
+            proprio=proprio_map(),
+            reinforcement=ReinforcementInterface(
+                appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+            ),
+            body_parameters=HexapodParameters(dt_s=0.01),
+        )
+
+
 def test_episode_reports_registered_descending_spikes_without_decoding_commands() -> None:
     descending = DescendingMap(
         d_na02_left=(10,),
