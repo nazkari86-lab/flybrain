@@ -111,6 +111,12 @@ the other seven; this is strong measured learning but not perfect mastery. Evalu
 checkpoint hash unchanged. This subsystem is engineered DQN reinforcement learning, not
 MaleCNS-generated biological intelligence and not direct automation of commercial Geometry Dash.
 
+A later [terminal-obstacle curriculum](docs/data/runner-terminal-curriculum-2026-09-26.md)
+improved the frozen runner policy to **124/128 completed new levels**, compared with **49/128**
+for its source checkpoint on the same levels. The report links both runnable checkpoints and
+per-level evaluations. This result remains specific to the procedural runner, not the biological
+MaleCNS controller.
+
 ### Connect any Gymnasium game
 
 The universal connector accepts any local game that exposes a discrete Gymnasium action space.
