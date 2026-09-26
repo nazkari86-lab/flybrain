@@ -62,7 +62,7 @@
 - Consumes: committed Task 2 CLI, eight fixed direct target IDs, `vnc_motor` readout.
 - Produces: per-seed direct-target and non-target spike totals, exact primary-gate verdict, checksums, and explicitly limited interpretation.
 
-- [ ] For each seed 16–18, run 100-step FlyGym normal DNg33, DNg33 lesion, and DNg48 lesion with `--spike-readout-superclass vnc_motor --motor-trace`; do not inspect outcomes until all nine finish.
-- [ ] Apply all four predeclared primary criteria without changing thresholds or targets. Report null/inconclusive if any fails.
-- [ ] Audit replay, graph, revisions, readout cardinality, zero-inclusive counts, body/motor diagnostics, food/threat contacts, DAN events, and compression/hash integrity.
+- [x] For each seed 16–18, run 100-step FlyGym normal DNg33, DNg33 lesion, and DNg48 lesion with `--spike-readout-superclass vnc_motor --motor-trace`; do not inspect outcomes until all nine finish.
+- [x] Apply all four predeclared primary criteria without changing thresholds or targets. Report null/inconclusive if any fails.
+- [x] Audit replay, graph, revisions, readout cardinality, zero-inclusive counts, body/motor diagnostics, food/threat contacts, DAN events, and compression/hash integrity.
 - [ ] Publish the report and all compressed artifacts, preserving any negative result.
