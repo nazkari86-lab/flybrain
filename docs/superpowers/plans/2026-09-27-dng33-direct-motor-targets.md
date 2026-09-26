@@ -65,4 +65,4 @@
 - [x] For each seed 16–18, run 100-step FlyGym normal DNg33, DNg33 lesion, and DNg48 lesion with `--spike-readout-superclass vnc_motor --motor-trace`; do not inspect outcomes until all nine finish.
 - [x] Apply all four predeclared primary criteria without changing thresholds or targets. Report null/inconclusive if any fails.
 - [x] Audit replay, graph, revisions, readout cardinality, zero-inclusive counts, body/motor diagnostics, food/threat contacts, DAN events, and compression/hash integrity.
-- [ ] Publish the report and all compressed artifacts, preserving any negative result.
+- [x] Publish the report and all compressed artifacts, preserving any negative result.
