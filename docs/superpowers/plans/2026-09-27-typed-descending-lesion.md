@@ -63,7 +63,7 @@
 - Consumes: committed Task 2 CLI, snapshot/registries, the spec's locked primary gate.
 - Produces: exact per-seed motor spikes, target-type spikes, applied-moment integral, contact/stability diagnostics, hashes, and a positive/negative/inconclusive conclusion.
 
-- [ ] For each seed 13, 14, 15 run four 100-step FlyGym conditions: DNg33 readout-only baseline, DNg33 lesion, DNg48 readout-only baseline, DNg48 lesion. Use `--motor-trace` and unique output files.
-- [ ] Check that the two readout-only baselines have identical motor/body traces for each seed; otherwise fail the comparison.
-- [ ] Evaluate the exact primary gate in the spec, with no threshold or parameter changes. Record all failures as prominently as successes.
-- [ ] Audit all JSON, gzip integrity, checksums, software/snapshot/registry revisions, replay, graph state, contacts, body motion, and phase amplitude; publish the report and compressed artifacts only after verification.
+- [x] For each seed 13, 14, 15 run four 100-step FlyGym conditions: DNg33 readout-only baseline, DNg33 lesion, DNg48 readout-only baseline, DNg48 lesion. Use `--motor-trace` and unique output files.
+- [x] Check that the two readout-only baselines have identical motor/body traces for each seed; otherwise fail the comparison.
+- [x] Evaluate the exact primary gate in the spec, with no threshold or parameter changes. Record all failures as prominently as successes.
+- [x] Audit all JSON, gzip integrity, checksums, software/snapshot/registry revisions, replay, graph state, contacts, body motion, and phase amplitude; publish the report and compressed artifacts only after verification.
