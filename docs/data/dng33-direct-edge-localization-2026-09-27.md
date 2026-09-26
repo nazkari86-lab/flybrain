@@ -8,6 +8,9 @@ therefore compared zeroing the 16 direct DNg33→motor-target edges with zeroing
 and tests were pushed as `842be22`; the completed source lock was pushed as
 `454cfbdae10719cf6cfddb891cdcecefd54b129e` **before** outcome seeds
 19–21. The predeclared gate passed in all three seeds.
+The subsequent [annotation audit](dng33-abdominal-motor-identity-2026-09-27.md)
+places all eight direct targets in A2–A5 and A7 with AbN-labelled exit nerves; this
+is not an identified leg-muscle pathway.
 
 ## Fixed anatomy and intervention
 

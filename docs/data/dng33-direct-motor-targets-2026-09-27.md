@@ -3,6 +3,9 @@
 This is a prospective, replicated **model-level biological-circuit result** on
 the retained MaleCNS graph coupled to FlyGym. It is not an experiment on a
 living fly, a direct-synapse-only proof, or evidence of learned navigation.
+The later [annotation audit](dng33-abdominal-motor-identity-2026-09-27.md)
+identified all eight direct targets as motor cells with A2–A5 or A7 somata
+and AbN-labelled exit nerves, not identified leg-muscle motors.
 
 ## Why these cells were tested
 
@@ -125,3 +128,5 @@ The next mechanistic localization gate is a fixed-source neural replay with
 selective DNg33→target-edge removal versus size/weight-matched unrelated
 edge removal, followed by the same target-neuron readout. It must be
 predeclared separately; this report does not imply that result.
+The subsequent [locked edge assay](dng33-direct-edge-localization-2026-09-27.md)
+performed that intervention and passed its own model-level gate.

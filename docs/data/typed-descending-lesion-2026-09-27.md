@@ -55,6 +55,9 @@ signed graph weight +404. All eight targets are outside the current
 36-population motor registry, which covers 182 of the 708 annotated
 `vnc_motor` cells. DNg48 has two direct `vnc_motor` edges, one into that
 registry, but its silence here prevents an activity-matched comparison.
+The later [annotation audit](dng33-abdominal-motor-identity-2026-09-27.md)
+found all eight DNg33 targets have abdominal A2–A5 and A7 somata and AbN-labelled
+exit nerves; none is an identified leg-muscle motor cell.
 
 The anatomical edge count is a **dataset measurement** and the lesion result
 is a **simulation observation**. Direct synapses plus DNg33 spiking do not

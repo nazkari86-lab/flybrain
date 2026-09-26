@@ -462,6 +462,9 @@ held input events and DNg33 spike timing equal: zeroing exactly their 16 direct
 edges reduced target spikes from 71/84/78 to zero, unlike a 16-edge matched
 control. This establishes edge necessity under that artificial neural input
 **in the model**, not real-fly physiology, learned behavior, or full autonomy.
+All eight direct targets have A2–A5 and A7 somata and AbN-labelled exit nerves in
+the retained [annotation audit](docs/data/dng33-abdominal-motor-identity-2026-09-27.md);
+they are not an identified left-front-leg muscle route.
 
 Run the multi-condition behavior benchmark:
 
