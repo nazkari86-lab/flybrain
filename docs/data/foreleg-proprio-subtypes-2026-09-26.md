@@ -9,8 +9,9 @@ averages eight proprioceptive channels for each entire leg bank.
 ## Reproduction and provenance
 
 Use `flybrain experiment foreleg-subtypes` as documented in the README. The
-published 500-step run is
-[`artifacts/foreleg-subtypes-malecns-seed7-steps500-v2.json`](../../artifacts/foreleg-subtypes-malecns-seed7-steps500-v2.json).
+published 500-step run, including whole-bank and leave-one-subtype-out
+controls, is
+[`artifacts/foreleg-subtypes-malecns-seed7-steps500-v4.json`](../../artifacts/foreleg-subtypes-malecns-seed7-steps500-v4.json).
 It uses the retained `male-cns-v1.0-essential` graph (166,606 neurons;
 6,240,402 directed edges), registry `hexapod-motor-registry-v2`, Shiu defaults
 (`dt=0.1 ms`), seed 7, and one 10-mV pulse per selected neuron every 25 steps
@@ -18,9 +19,10 @@ for 500 steps (50 ms). Exact input IDs, graph/annotation/registry hashes,
 per-population motor counts, event digests, and trace digests are in the JSON.
 
 The protocol stimulates all neurons of one annotated subclass at a time.
-Each condition is repeated, then run with that source subset silenced while
-the input event schedule stays the same. It also runs homologous subclasses
-on both sides. The right foreleg has no annotated hair-plate cell in this
+Each condition is repeated, then run with its driven source silenced while
+the input event schedule stays the same. The same pulse protocol also drives
+each entire foreleg bank and each bank with one subtype omitted. It runs
+homologous subclasses on both sides. The right foreleg has no annotated hair-plate cell in this
 registry, so no corresponding right control is claimed. Subclass sizes are
 unequal; this is **not** an equal-input comparison of biological efficacy.
 
@@ -43,8 +45,29 @@ seven right-chordotonal motor spikes occur in **right-middle** tibia flexor
 (1) and trochanter flexor (6), not right-fore tibia. Thus `right motor
 spikes > 0` is not a right-fore tibia success.
 
+The matched whole-bank and leave-one-out controls resolve an important
+nonlinearity in the left-fore tibia response:
+
+| Left-fore input at 500 steps | Source spikes | Left-fore tibia flexor | Left-fore tibia extensor |
+| --- | ---: | ---: | ---: |
+| Entire 41-cell bank | 820 | 2 | 0 |
+| Exclude 2 campaniform cells | 780 | 2 | 0 |
+| Exclude 20 chordotonal cells | 420 | 0 | 4 |
+| Exclude 1 hair-plate cell | 800 | 2 | 0 |
+| Exclude 18 `leg` cells | 460 | 12 | 0 |
+
+The corresponding 180-step
+[controlled run](../../artifacts/foreleg-subtypes-malecns-seed7-steps180-v3.json)
+has 0 whole-bank motor spikes; omitting `leg` gives 2 flexor spikes, and
+omitting chordotonal cells gives 1 extensor spike. At 500 steps the full
+right-fore bank yields 7 motor spikes, still only in right-middle groups;
+omitting right chordotonal cells removes them. These controls show that
+concurrent input changes modeled recruitment. They do **not** identify a
+direct inhibitory synapse or prove which natural proprioceptive signals
+should activate each subclass. Removing a subtype also changes input count.
+
 Every source-silenced condition has zero source and motor spikes; its event
-digest matches the corresponding unsilenced condition. All seven exact
+digest matches the corresponding unsilenced condition. All sixteen exact
 replays match their normal trace digests, and the graph digest is unchanged.
 These are simulation-level causal controls only. They do not establish
 natural sensory coding, realistic muscle activation, gait, or learning.
@@ -62,9 +85,11 @@ period. Neither variation makes the experiment a natural closed loop.
 ## Decision boundary
 
 The left-fore flexor **has a reachable path** under this artificial
-chordotonal intervention. Its weak activation in the previous body trace
-therefore cannot be attributed simply to missing anatomical inputs. This
-experiment does **not** establish that whole-bank averaging is the cause:
+chordotonal intervention, and co-driving `leg`-annotated cells sharply
+reduces this response under the tested pulse schedule. Its weak activation
+in the previous body trace therefore cannot be attributed simply to missing
+anatomical inputs. This experiment does **not** establish that the current
+body encoder's whole-bank averaging is the cause:
 the body encoder, stimulus statistics, graph dynamics, motor decoder and
 unmeasured proprioceptive modalities all remain possible contributors.
 

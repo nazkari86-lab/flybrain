@@ -47,6 +47,16 @@ def test_cli_runs_retained_foreleg_subtype_controls(tmp_path: Path) -> None:
     assert all(item["source_lesion_source_spikes"] == 0 for item in result["conditions"])
     assert len(result["mirror_pairs"]) == 3
     assert result["unpaired_subtypes"] == ["hair plate"]
+    assert len(result["leave_one_out_controls"]) == 7
+    by_excluded = {
+        (item["side"], item["excluded_subtype"]): item for item in result["leave_one_out_controls"]
+    }
+    assert by_excluded[("left", "chordotonal organ")]["source_neuron_count"] == 21
+    assert by_excluded[("right", "chordotonal organ")]["source_neuron_count"] == 7
+    assert all(
+        item["source_lesion_motor_spikes"] == 0 and item["replay_exact"]
+        for item in result["leave_one_out_controls"]
+    )
 
     second = CliRunner().invoke(app, args)
     assert second.exit_code != 0

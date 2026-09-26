@@ -375,7 +375,8 @@ is a sparse, causally tested motor foundation—not evidence of a walking or int
 The retained MaleCNS annotations can be split into foreleg proprioceptive
 subclasses before applying identical per-neuron voltage pulses. This open-loop
 assay records source and tibia-motor spikes, source-silencing controls, exact
-replay, and homologous left/right subtype availability. Group sizes differ;
+replay, whole-bank/leave-one-subtype-out controls, and homologous left/right
+subtype availability. Group sizes differ;
 these pulses are interventions, not a calibrated body-to-sensor encoder.
 
 ```bash

@@ -38,6 +38,13 @@ def test_subtype_assay_has_source_lesion_replay_and_homologous_pair() -> None:
     assert result["mirror_pairs"] == (
         {"subtype": "chordotonal organ", "left_count": 1, "right_count": 1},
     )
+    whole_left, whole_right = result["whole_bank_controls"]
+    assert whole_left["source_ids"] == (10,)
+    assert whole_left["motor_spikes_by_population"] == left["motor_spikes_by_population"]
+    assert whole_left["source_lesion_motor_spikes"] == 0
+    assert whole_left["replay_exact"]
+    assert whole_right["source_ids"] == (11,)
+    assert result["leave_one_out_controls"] == ()
 
 
 def test_subtype_assay_reports_absent_mirror_without_inventing_a_control() -> None:
