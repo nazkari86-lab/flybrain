@@ -110,6 +110,15 @@ def test_benchmark_persists_isolated_conditions_and_preserves_graph() -> None:
     assert result.training_summaries["normal"].dan_events > 0
     assert result.training_summaries["dan_lesion"].dan_events == 0
     assert len(result.holdout_neural_activity["normal"]) == 4
+    assert len(result.training_neural_activity["normal"]) == 4
+    assert all(
+        item.mbon_spikes == sum(item.mbon_spike_counts.values())
+        for item in result.training_neural_activity["normal"]
+    )
+    assert all(
+        sum(item.dan_spike_counts.values()) == 0
+        for item in result.training_neural_activity["dan_lesion"]
+    )
     normal_activity = result.holdout_neural_activity["normal"]
     assert sum(item.plastic_kc_spikes for item in normal_activity) > 0
     assert sum(item.mbon_spikes for item in normal_activity) > 0

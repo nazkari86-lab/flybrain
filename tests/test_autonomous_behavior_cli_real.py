@@ -84,6 +84,12 @@ def test_real_behavior_cli_publishes_all_controls_atomically(tmp_path: Path) -> 
     assert benchmark["training_summaries"]["normal"]["aversive_contacts"] > 0
     assert benchmark["training_summaries"]["normal"]["dan_events"] > 0
     assert benchmark["training_summaries"]["dan_lesion"]["dan_events"] == 0
+    assert len(benchmark["training_neural_activity"]["normal"]) == 2
+    assert "519128" in benchmark["training_neural_activity"]["normal"][1]["mbon_spike_counts"]
+    assert all(
+        sum(item["dan_spike_counts"].values()) == 0
+        for item in benchmark["training_neural_activity"]["dan_lesion"]
+    )
     descending = benchmark["holdout_neural_activity"]["normal"][0]["descending_spikes"]
     assert set(descending) == {
         "d_na02_left",

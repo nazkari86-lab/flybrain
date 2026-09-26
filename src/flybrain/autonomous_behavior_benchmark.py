@@ -290,6 +290,7 @@ class BehaviorBenchmarkResult(BaseModel, frozen=True):
     backend: BackendIdentity
     condition_observations: dict[str, tuple[EpisodeObservation, ...]]
     training_summaries: dict[str, TrainingSummary]
+    training_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]]
     holdout_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]]
     comparisons: dict[str, PairedComparison]
     evidence_protocol: Literal["measured-replay-persistent-memory-v6"]
@@ -375,10 +376,12 @@ def _run_condition(
     tuple[EpisodeObservation, ...],
     TrainingSummary,
     tuple[NeuralActivitySummary, ...],
+    tuple[NeuralActivitySummary, ...],
     tuple[EpisodeEvidence, ...],
     tuple[RewiredControlEvidence, ...],
 ]:
     observations: list[EpisodeObservation] = []
+    training_neural_activity: list[NeuralActivitySummary] = []
     holdout_neural_activity: list[NeuralActivitySummary] = []
     evidence: list[EpisodeEvidence] = []
     rewired_evidence: list[RewiredControlEvidence] = []
@@ -488,6 +491,16 @@ def _run_condition(
                 final_fallen=result.final_body.fallen,
                 trace_digest=result.trace_digest,
             ))
+            neural_activity = NeuralActivitySummary(
+                plastic_kc_spikes=result.plastic_kc_spikes,
+                mbon_spikes=result.mbon_spikes,
+                dan_spike_counts=result.dan_spike_counts,
+                mbon_spike_counts=result.mbon_spike_counts,
+                mbon_mean_multipliers=result.mbon_mean_multipliers,
+                descending_spikes=result.descending_spikes,
+                motor_spikes=result.motor_spikes,
+                routed_dan_spike_events=result.routed_dan_spike_events,
+            )
             if holdout:
                 observations.append(
                     _observation(
@@ -496,19 +509,9 @@ def _run_condition(
                         evaluation_target=variant.evaluation_target,
                     )
                 )
-                holdout_neural_activity.append(
-                    NeuralActivitySummary(
-                        plastic_kc_spikes=result.plastic_kc_spikes,
-                        mbon_spikes=result.mbon_spikes,
-                        dan_spike_counts=result.dan_spike_counts,
-                        mbon_spike_counts=result.mbon_spike_counts,
-                        mbon_mean_multipliers=result.mbon_mean_multipliers,
-                        descending_spikes=result.descending_spikes,
-                        motor_spikes=result.motor_spikes,
-                        routed_dan_spike_events=result.routed_dan_spike_events,
-                    )
-                )
+                holdout_neural_activity.append(neural_activity)
             else:
+                training_neural_activity.append(neural_activity)
                 memory = result.learning_memory
                 appetitive_contacts += result.appetitive_contacts
                 aversive_contacts += result.aversive_contacts
@@ -522,6 +525,7 @@ def _run_condition(
             dan_events=dan_events,
             routed_dan_spike_events=routed_dan_spike_events,
         ),
+        tuple(training_neural_activity),
         tuple(holdout_neural_activity),
         tuple(evidence),
         tuple(rewired_evidence),
@@ -622,12 +626,14 @@ def run_behavior_benchmark(
     before = _graph_digest(graph)
     observations: dict[str, tuple[EpisodeObservation, ...]] = {}
     training_summaries: dict[str, TrainingSummary] = {}
+    training_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]] = {}
     holdout_neural_activity: dict[str, tuple[NeuralActivitySummary, ...]] = {}
     evidence: list[EpisodeEvidence] = []
     rewired_evidence: tuple[RewiredControlEvidence, ...] = ()
     for condition in ("normal", *config.controls):
         (condition_observations, training_summary,
-         condition_neural_activity, condition_evidence, condition_rewired) = _run_condition(
+         condition_training_activity, condition_neural_activity,
+         condition_evidence, condition_rewired) = _run_condition(
             condition,
             graph,
             binding,
@@ -642,6 +648,7 @@ def run_behavior_benchmark(
         )
         observations[condition] = condition_observations
         training_summaries[condition] = training_summary
+        training_neural_activity[condition] = condition_training_activity
         holdout_neural_activity[condition] = condition_neural_activity
         evidence.extend(condition_evidence)
         if condition == "rewired_control":
@@ -743,6 +750,7 @@ def run_behavior_benchmark(
         backend=backend_factory(body_parameters).identity,
         condition_observations=observations,
         training_summaries=training_summaries,
+        training_neural_activity=training_neural_activity,
         holdout_neural_activity=holdout_neural_activity,
         comparisons=comparisons,
         evidence_protocol="measured-replay-persistent-memory-v6",

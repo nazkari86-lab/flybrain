@@ -473,6 +473,9 @@ no-plasticity control; the behavioral claim remains false.
 
 The benchmark runs normal, no-plasticity, DAN-lesion, KC→MBON-lesion, and rewired controls with
 separate mutable state and publishes task-specific environment-only food/threat metrics.
+New results also retain per-training-episode KC, MBON, DAN, descending and motor
+activity alongside holdout activity, so training-path failures can be located
+without treating contact or weight change alone as learned behavior.
 Current results carry `evidence_protocol="measured-replay-persistent-memory-v6"` and
 per-episode evidence. The v6 rewired control swaps KC→MBON targets on an isolated
 graph copy, preserves source and target edge degrees, rejects duplicate edges,
