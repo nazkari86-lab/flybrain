@@ -124,6 +124,35 @@ def test_no_source_stays_inactive_and_unknown_target_fails_closed() -> None:
         )
 
 
+def test_source_id_order_does_not_change_poisson_assignment() -> None:
+    graph, binding = _fixture()
+    parameters = ShiuParameters(dt_ms=0.1, refractory_ms=2.0, synaptic_delay_ms=1.0)
+
+    forward = run_odor_mbon_condition(
+        graph,
+        binding,
+        name="paired",
+        source_ids=(1, 2),
+        target_ids=(3, 4),
+        steps=500,
+        seed=7,
+        parameters=parameters,
+    )
+    reverse = run_odor_mbon_condition(
+        graph,
+        binding,
+        name="paired",
+        source_ids=(2, 1),
+        target_ids=(3, 4),
+        steps=500,
+        seed=7,
+        parameters=parameters,
+    )
+
+    assert forward.source_event_digest == reverse.source_event_digest
+    assert forward.neural_trace_digest == reverse.neural_trace_digest
+
+
 def test_retained_probe_resolves_real_odor_and_dan_routes_without_behavior_claim() -> None:
     raw_snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
     if raw_snapshot is None:

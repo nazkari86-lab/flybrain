@@ -22,7 +22,8 @@ seed, compare no odor, food, threat, and both with baseline overlay, plus
 threat with all declared KC→MBON 519128 multipliers at the allowed 2.0 upper
 bound. Reuse the exact threat event train between baseline and upper-bound
 conditions. The 2.0 condition is labeled an artificial intervention, never
-learning.
+learning. Sort source neuron IDs before assigning Poisson draws so a different
+tuple order cannot change which receptor receives each event.
 
 ## Output and gates
 

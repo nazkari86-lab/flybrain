@@ -79,7 +79,9 @@ def run_odor_mbon_condition(
     edge_multipliers = binding.overlay.multipliers.copy()
     if max2_target_id is not None:
         edge_multipliers[binding.post_ids == max2_target_id] = 2.0
-    source_indices = np.asarray([index_by_id[value] for value in source_ids], dtype=np.int64)
+    source_indices = np.asarray(
+        [index_by_id[value] for value in sorted(source_ids)], dtype=np.int64
+    )
     events = poisson_voltage_events(source_indices, steps=steps, params=parameters, seed=seed)
     source_digest = hashlib.sha256()
     for event_step, (indices, voltages) in sorted(events.items()):

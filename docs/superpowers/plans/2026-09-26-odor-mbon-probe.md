@@ -15,6 +15,7 @@
 - Do not mutate the MaleCNS graph, main learning rule, motor decoder or embodied benchmark.
 - Reuse measured-side ORN_DM1/ORN_VA2 and ORN_DA2 channels and the current Shiu parameters.
 - Compare the same threat event train under baseline and artificial 2.0 KC→519128 multipliers.
+- Canonically sort source neuron IDs before generating Poisson events.
 - Keep `autonomous_behavior_claim_allowed=false`; no body behavior is inferred.
 - Do not download data while disk free space is below 10 GiB.
 
@@ -43,9 +44,11 @@ assert boosted.effective_positive_weighted_spikes[4] == baseline.effective_posit
 ```
 
 - [ ] **Step 2: Verify red.** Run `.venv/bin/pytest tests/test_odor_mbon_probe.py -q`; expect failure because `flybrain.odor_mbon_probe` is absent.
-- [ ] **Step 3: Implement the minimum condition runner.** Validate IDs and steps; generate source events with `poisson_voltage_events`; use fresh `ShiuState`; copy overlay multipliers and set only declared target edges to 2.0 when requested; run `simulate_shiu`; count source, declared KC and target MBON spikes; sample post-step target voltage; sum active signed presynaptic edge weights, applying the diagnostic multiplier only to the target edge. Return a frozen Pydantic result with explicit `artificial_intervention`.
+- [ ] **Step 3: Implement the minimum condition runner.** Validate IDs and steps; sort source IDs before `poisson_voltage_events`; use fresh `ShiuState`; copy overlay multipliers and set only declared target edges to 2.0 when requested; run `simulate_shiu`; count source, declared KC and target MBON spikes; sample post-step target voltage; sum active signed presynaptic edge weights, applying the diagnostic multiplier only to the target edge. Return a frozen Pydantic result with explicit `artificial_intervention`.
 
 ```python
+source_indices = np.asarray([index_by_id[value] for value in sorted(source_ids)],
+    dtype=np.int64)
 events = poisson_voltage_events(source_indices, steps=steps, params=parameters, seed=seed)
 edge_multipliers = binding.overlay.multipliers.copy()
 if max2_target_id is not None:
