@@ -61,4 +61,4 @@
 
 - [x] Run all five conditions for each of seeds 19–21, then inspect outcomes. Do not alter thresholds, sources, targets, controls, or horizon.
 - [x] Check each predeclared gate independently, replay, source timing, graph digest, revision/snapshot, artifact gzip integrity and SHA-256; report every failed gate as null/inconclusive.
-- [ ] Publish compressed JSON and interpretation on the public branch, and verify remote revision contains both.
+- [x] Publish compressed JSON and interpretation on the public branch, and verify remote revision contains both.
