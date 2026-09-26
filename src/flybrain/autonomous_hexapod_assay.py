@@ -167,6 +167,7 @@ def run_retained_autonomous_hexapod_assay(
     motor_lesion_groups: tuple[str, ...] = (),
     descending_lesion: Literal["none", "all_annotated", "annotated_type"] = "none",
     descending_type: str | None = None,
+    spike_readout_superclass: Literal["none", "vnc_motor"] = "none",
 ) -> RetainedAutonomousHexapodAssay:
     """Resolve exact registries and run one autonomous contact-learning episode."""
 
@@ -291,6 +292,7 @@ def run_retained_autonomous_hexapod_assay(
         motor_lesion_groups=motor_lesion_groups,
         descending_lesion=descending_lesion,
         descending_type=descending_type,
+        spike_readout_superclass=spike_readout_superclass,
     )
     return RetainedAutonomousHexapodAssay(
         snapshot_content_sha256=snapshot_content_sha256(snapshot),

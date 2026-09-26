@@ -641,6 +641,13 @@ def autonomous_hexapod_command(
             help="Exact annotated-DN cell type to monitor or silence",
         ),
     ] = None,
+    spike_readout_superclass: Annotated[
+        Literal["none", "vnc_motor"],
+        typer.Option(
+            "--spike-readout-superclass",
+            help="Read emitted spikes from an annotated graph superclass",
+        ),
+    ] = "none",
 ) -> None:
     """Publish a retained schedule-free contact-learning hexapod episode."""
 
@@ -668,6 +675,7 @@ def autonomous_hexapod_command(
         motor_lesion_groups=tuple(motor_lesion_group or ()),
         descending_lesion=descending_lesion,
         descending_type=descending_type,
+        spike_readout_superclass=spike_readout_superclass,
     )
     serialized = result.model_dump_json()
     output_final.parent.mkdir(parents=True, exist_ok=True)

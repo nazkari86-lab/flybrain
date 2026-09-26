@@ -30,11 +30,11 @@
 - Consumes: `EventConnectome.superclasses`, emitted `simulate_shiu` neuron IDs.
 - Produces: `run_autonomous_hexapod_episode(..., spike_readout_superclass="none" | "vnc_motor")`, result fields `spike_readout_superclass` and `spike_readout_counts: dict[int, int]`.
 
-- [ ] Write a synthetic-chain test with one extra unregistered `vnc_motor` cell 42 reached from DNg33. Assert intact count for 42 is positive, DNg33 lesion reduces it to zero, DNg48 lesion retains it, and registered motor behavior remains as before. Assert the readout includes zero counts and replays exactly.
-- [ ] Write a fail-closed test requesting `vnc_motor` from a fixture graph with no such superclass.
-- [ ] Run `.venv/bin/pytest -q tests/test_autonomous_hexapod_episode.py -k spike_readout`; verify red due to missing argument/field.
-- [ ] Implement exact superclass resolution, deterministic sorted ID keys, zero-inclusive counts, and replay propagation without changing the Shiu mask or decoder.
-- [ ] Rerun focused synthetic tests and existing typed/all-DN lesions.
+- [x] Write a synthetic-chain test with one extra unregistered `vnc_motor` cell 42 reached from DNg33. Assert intact count for 42 is positive, DNg33 lesion reduces it to zero, DNg48 lesion retains it, and registered motor behavior remains as before. Assert the readout includes zero counts and replays exactly.
+- [x] Write a fail-closed test requesting `vnc_motor` from a fixture graph with no such superclass.
+- [x] Run `.venv/bin/pytest -q tests/test_autonomous_hexapod_episode.py -k spike_readout`; verify red due to missing argument/field.
+- [x] Implement exact superclass resolution, deterministic sorted ID keys, zero-inclusive counts, and replay propagation without changing the Shiu mask or decoder.
+- [x] Rerun focused synthetic tests and existing typed/all-DN lesions.
 
 ### Task 2: Retained assay and CLI
 
@@ -47,10 +47,10 @@
 - Consumes: Task 1 readout option.
 - Produces: `--spike-readout-superclass vnc_motor` in the retained CLI and an output dictionary for all 708 graph `vnc_motor` cells.
 
-- [ ] Add a real-data CLI regression using two reference body steps: assert 708 count keys, inclusion of all eight preregistered target IDs, exact replay, unchanged graph, and unchanged no-autonomy gate.
-- [ ] Run `FLYBRAIN_MALECNS_SNAPSHOT=artifacts/male-cns-v1.0-w5 .venv/bin/pytest -q tests/test_autonomous_hexapod_cli_real.py -k spike_readout`; verify red due to absent option.
-- [ ] Thread the option through CLI and retained assay; run focused tests, full `.venv/bin/pytest -q`, Ruff, mypy, and `git diff --check`.
-- [ ] Commit code, tests, and this plan; push the source revision before running seeds 16–18.
+- [x] Add a real-data CLI regression using two reference body steps: assert 708 count keys, inclusion of all eight preregistered target IDs, exact replay, unchanged graph, and unchanged no-autonomy gate.
+- [x] Run `FLYBRAIN_MALECNS_SNAPSHOT=artifacts/male-cns-v1.0-w5 .venv/bin/pytest -q tests/test_autonomous_hexapod_cli_real.py -k spike_readout`; verify red due to absent option.
+- [x] Thread the option through CLI and retained assay; run focused tests, full `.venv/bin/pytest -q`, Ruff, mypy, and `git diff --check`.
+- [x] Commit code, tests, and this plan; push the source revision before running seeds 16–18.
 
 ### Task 3: Prospective target-cell assay
 

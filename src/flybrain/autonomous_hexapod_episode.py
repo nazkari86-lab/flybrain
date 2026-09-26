@@ -266,6 +266,8 @@ class AutonomousHexapodResult(BaseModel, frozen=True):
     descending_type: str | None = None
     target_type_neurons: int = Field(default=0, ge=0)
     target_type_spikes: int = Field(default=0, ge=0)
+    spike_readout_superclass: Literal["none", "vnc_motor"] = "none"
+    spike_readout_counts: dict[int, int] = Field(default_factory=dict)
     motor_spikes: int = Field(ge=0)
     motor_lesion_groups: tuple[str, ...] = ()
     descending_lesion: Literal["none", "all_annotated", "annotated_type"] = "none"
@@ -313,6 +315,7 @@ class _Trace:
     descending_spikes: DescendingSpikeSummary
     annotated_descending_spikes: int
     target_type_spikes: int
+    spike_readout_counts: dict[int, int]
     motor_spikes: int
     active_motor_groups: tuple[str, ...]
     proprioceptive_events: int
@@ -478,6 +481,7 @@ def _run(
     motor_lesion_groups: frozenset[str],
     descending_lesion_indices: np.ndarray,
     target_type_ids: frozenset[int],
+    spike_readout_ids: tuple[int, ...],
 ) -> _Trace:
     motor.validate_graph(graph)
     proprio.validate_graph(graph)
@@ -647,6 +651,7 @@ def _run(
     }
     annotated_descending_spikes = 0
     target_type_spikes = 0
+    spike_readout_counts = dict.fromkeys(spike_readout_ids, 0)
     motor_owner = {
         neuron_id: group.name for group in motor.groups for neuron_id in group.neuron_ids
     }
@@ -863,6 +868,8 @@ def _run(
                 dan_spike_counts[neuron_id] += 1
             if neuron_id in mbon_spike_counts:
                 mbon_spike_counts[neuron_id] += 1
+            if neuron_id in spike_readout_counts:
+                spike_readout_counts[neuron_id] += 1
         for name, ids in descending_ids.items():
             descending_counts[name] += sum(neuron_id in ids for neuron_id in fired_ids)
         annotated_descending_spikes += sum(
@@ -1025,6 +1032,7 @@ def _run(
         ),
         annotated_descending_spikes=annotated_descending_spikes,
         target_type_spikes=target_type_spikes,
+        spike_readout_counts=spike_readout_counts,
         motor_spikes=motor_spikes,
         active_motor_groups=tuple(sorted(active_groups)),
         proprioceptive_events=proprioceptive_events,
@@ -1079,10 +1087,23 @@ def run_autonomous_hexapod_episode(
     motor_lesion_groups: tuple[str, ...] = (),
     descending_lesion: Literal["none", "all_annotated", "annotated_type"] = "none",
     descending_type: str | None = None,
+    spike_readout_superclass: Literal["none", "vnc_motor"] = "none",
 ) -> AutonomousHexapodResult:
     """Run and replay a schedule-free physical-contact learning episode."""
 
     before = _graph_digest(graph)
+    if spike_readout_superclass == "vnc_motor":
+        spike_readout_ids = tuple(sorted(
+            int(graph.neuron_ids[index])
+            for index, superclass in enumerate(graph.superclasses)
+            if superclass == "vnc_motor"
+        ))
+        if not spike_readout_ids:
+            raise ValueError("no vnc_motor neurons in graph")
+    elif spike_readout_superclass == "none":
+        spike_readout_ids = ()
+    else:
+        raise ValueError(f"unknown spike readout superclass: {spike_readout_superclass}")
     if descending_type is not None and (
         type(descending_type) is not str or not descending_type.strip()
     ):
@@ -1159,6 +1180,7 @@ def run_autonomous_hexapod_episode(
         motor_lesion_groups=frozenset(motor_lesion_groups),
         descending_lesion_indices=descending_lesion_indices,
         target_type_ids=target_type_ids,
+        spike_readout_ids=spike_readout_ids,
     )
     replay_trace = None
     if replay_binding is not None:
@@ -1182,6 +1204,7 @@ def run_autonomous_hexapod_episode(
             motor_lesion_groups=frozenset(motor_lesion_groups),
             descending_lesion_indices=descending_lesion_indices,
             target_type_ids=target_type_ids,
+            spike_readout_ids=spike_readout_ids,
         )
     return AutonomousHexapodResult(
         odor_channel_model=(
@@ -1229,6 +1252,8 @@ def run_autonomous_hexapod_episode(
         descending_type=descending_type,
         target_type_neurons=int(target_type_indices.size),
         target_type_spikes=first.target_type_spikes,
+        spike_readout_superclass=spike_readout_superclass,
+        spike_readout_counts=first.spike_readout_counts,
         motor_spikes=first.motor_spikes,
         motor_lesion_groups=tuple(sorted(set(motor_lesion_groups))),
         descending_lesion=descending_lesion,

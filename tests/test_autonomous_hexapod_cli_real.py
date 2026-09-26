@@ -198,6 +198,38 @@ def test_real_cli_descending_type_lesions_are_exact_and_fail_closed(tmp_path: Pa
         assert not output.exists()
 
 
+def test_real_cli_spike_readout_includes_unregistered_dng33_motor_targets(
+    tmp_path: Path,
+) -> None:
+    snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
+    if snapshot is None:
+        pytest.skip("real MaleCNS snapshot is not configured")
+    output = tmp_path / "vnc-motor-readout.json"
+    invocation = runner.invoke(
+        app,
+        [
+            "experiment", "autonomous-hexapod", snapshot,
+            "--steps", "2", "--seed", "7", "--backend", "reference",
+            "--descending-type", "DNg33",
+            "--spike-readout-superclass", "vnc_motor",
+            "--output", str(output),
+        ],
+    )
+
+    assert invocation.exit_code == 0, invocation.output
+    episode = json.loads(output.read_text(encoding="utf-8"))["episode"]
+    counts = episode["spike_readout_counts"]
+    targets = {800659, 803732, 810086, 813291, 814430, 814989, 815205, 815281}
+    assert episode["spike_readout_superclass"] == "vnc_motor"
+    assert len(counts) == 708
+    assert {str(value) for value in targets} <= counts.keys()
+    assert all(type(value) is int and value >= 0 for value in counts.values())
+    assert episode["target_type_neurons"] == 2
+    assert episode["replay_exact"] is True
+    assert episode["graph_unchanged"] is True
+    assert episode["autonomous_behavior_claim_allowed"] is False
+
+
 def test_real_cli_routes_annotated_proprioception_in_closed_loop(tmp_path: Path) -> None:
     snapshot = os.environ.get("FLYBRAIN_MALECNS_SNAPSHOT")
     if snapshot is None:

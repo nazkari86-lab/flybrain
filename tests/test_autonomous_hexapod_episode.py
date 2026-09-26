@@ -730,7 +730,7 @@ def test_all_annotated_descending_lesion_blocks_motor_in_synthetic_chain() -> No
 
 def _typed_descending_chain() -> tuple[EventConnectome, PlasticEdgeBinding]:
     base = graph()
-    neuron_ids = np.insert(base.neuron_ids, 4, np.asarray([40, 41], dtype=np.uint64))
+    neuron_ids = np.insert(base.neuron_ids, 4, np.asarray([40, 41, 42], dtype=np.uint64))
     index = {int(value): position for position, value in enumerate(neuron_ids)}
     motor_ids = [value for group in motor_map().groups for value in group.neuron_ids]
     edges = [
@@ -738,18 +738,24 @@ def _typed_descending_chain() -> tuple[EventConnectome, PlasticEdgeBinding]:
         (10, 20, 200.0),
         (20, 40, 200.0),
         (20, 41, 200.0),
+        (40, 42, 200.0),
         *((40, neuron_id, 200.0) for neuron_id in motor_ids),
     ]
     chain = EventConnectome(
         neuron_ids=neuron_ids,
-        cell_types=(*base.cell_types[:4], "DNg33", "DNg48", *base.cell_types[4:]),
-        roles=(*base.roles[:4], "descending", "descending", *base.roles[4:]),
+        cell_types=(
+            *base.cell_types[:4], "DNg33", "DNg48", "MNad03", *base.cell_types[4:],
+        ),
+        roles=(
+            *base.roles[:4], "descending", "descending", "motor", *base.roles[4:],
+        ),
         transmitters=(
-            *base.transmitters[:4], "acetylcholine", "acetylcholine",
+            *base.transmitters[:4], "acetylcholine", "acetylcholine", "glutamate",
             *base.transmitters[4:],
         ),
         superclasses=(
             *base.superclasses[:4], "descending_neuron", "descending_neuron",
+            "vnc_motor",
             *base.superclasses[4:],
         ),
         outgoing=csr_array(
@@ -810,6 +816,53 @@ def test_descending_type_lesion_silences_only_selected_dn_path() -> None:
     assert control_lesion.motor_spikes == baseline.motor_spikes
     assert target_lesion.replay_exact and control_lesion.replay_exact
     assert target_lesion.graph_unchanged and control_lesion.graph_unchanged
+
+
+def test_spike_readout_counts_unregistered_motor_target_without_decoding_it() -> None:
+    chain, plastic = _typed_descending_chain()
+    kwargs = dict(
+        motor=motor_map(),
+        proprio=proprio_map(),
+        reinforcement=ReinforcementInterface(
+            appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+        ),
+        body_parameters=HexapodParameters(dt_s=0.01),
+        spike_readout_superclass="vnc_motor",
+    )
+    longer = config().model_copy(update={"body_steps": 5})
+    normal = run_autonomous_hexapod_episode(
+        chain, plastic, longer, descending_type="DNg33", **kwargs
+    )
+    dng33_lesion = run_autonomous_hexapod_episode(
+        chain, plastic, longer,
+        descending_type="DNg33", descending_lesion="annotated_type", **kwargs,
+    )
+    dng48_lesion = run_autonomous_hexapod_episode(
+        chain, plastic, longer,
+        descending_type="DNg48", descending_lesion="annotated_type", **kwargs,
+    )
+
+    assert normal.spike_readout_superclass == "vnc_motor"
+    assert set(normal.spike_readout_counts) == {42}
+    assert normal.spike_readout_counts[42] > 0
+    assert dng33_lesion.spike_readout_counts == {42: 0}
+    assert dng48_lesion.spike_readout_counts == normal.spike_readout_counts
+    assert dng48_lesion.motor_spikes == normal.motor_spikes
+    assert normal.replay_exact and dng33_lesion.replay_exact and dng48_lesion.replay_exact
+
+
+def test_spike_readout_fails_closed_without_annotated_motor_cells() -> None:
+    with pytest.raises(ValueError, match="no vnc_motor neurons"):
+        run_autonomous_hexapod_episode(
+            graph(), binding(), config(),
+            motor=motor_map(),
+            proprio=proprio_map(),
+            reinforcement=ReinforcementInterface(
+                appetitive_dan_ids=(30,), aversive_dan_ids=(31,)
+            ),
+            body_parameters=HexapodParameters(dt_s=0.01),
+            spike_readout_superclass="vnc_motor",
+        )
 
 
 @pytest.mark.parametrize(
