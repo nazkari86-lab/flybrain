@@ -491,6 +491,14 @@ finds DNa02 connections to 12 GABAergic premotor cells across both sides, whose
 retained edges reach 33 typed leg-rotator motor cells. This reproduces a
 published connectome motif in the retained snapshot; it neither reverses the
 failed control nor demonstrates a functional stride or behavioral effect.
+The [prospective premotor-output assay](docs/data/dna02-premotor-output-2026-09-30.md)
+then zeroed 33 inhibitory IN19A003/IN08A006→rotator-motor edges under
+registered ORN drive. It increased pooled target spikes by 71–118% across
+six new conditions while presynaptic spike timing stayed paired. Its strict
+same-post specificity gate nevertheless failed 0/6 because the alternative
+input exposure was too low (39–64% of the route); one relay was inactive in
+one condition. This is a narrow model-circuit effect, not demonstrated
+steering, muscle force, walking, or learned autonomy.
 
 Run the multi-condition behavior benchmark:
 
