@@ -53,6 +53,31 @@ total source spike counts. A separate read-only recomputation from the
 artifact reproduced every gate and independently reconstructed the 1,136
 afferent CSR positions from the retained snapshot.
 
+## New-seed replication from a committed runner
+
+The non-overwriting `flybrain.dna02_afferent_probe` runner, frozen-edge hash,
+synthetic confound regression, and unchanged gate were published as source
+revision `3ce84da0aee53e4241b4b106363768e0cee21335` **before** seeds
+31–33 were run. A pre-outcome [protocol addendum](../superpowers/specs/2026-09-30-dna02-afferent-isolated-edge-design.md)
+locked these previously unused seeds, 2,000 steps, the same 1,136 common
+afferent edges, the same 17+17 frozen edges, and the same thresholds. The
+runner's test fixture first reproduces the source-feedback confound without
+afferent isolation, then verifies that the common overlay removes it.
+
+| Seed | DNa02 spikes, identical in paired conditions | 17 targets: intact → direct zero → matched zero | Direct reduction | Matched reduction | Gate |
+| ---: | ---: | ---: | ---: | ---: | :---: |
+| 31 | 50 | 78 → 51 → 105 | 34.62% | −34.62% | pass |
+| 32 | 48 | 79 → 53 → 110 | 32.91% | −39.24% | pass |
+| 33 | 42 | 60 → 35 → 95 | 41.67% | −58.33% | pass |
+
+All seven declared gates passed in **3/3 new seeds**. No-source target totals
+were zero; intact replay was exact; the canonical graph was unchanged. A
+separate post-run calculation reproduced the gate from the JSON and
+reconstructed every source-afferent CSR position from the snapshot. Thus the
+specific model-circuit effect passed 6/6 simulator seeds across the initial
+and runner panels. These are seeds on **one** connectome and parameterization,
+not independent biological animals or a population confidence interval.
+
 ## Exact claim boundary
 
 Under **artificial DNa02 drive with all DNa02 afferents removed**, these 17
@@ -64,7 +89,7 @@ for each edge. All 1,136 source afferents were disabled, so this is **not**
 an intact circuit or natural sensory response. Both DNa02 sources have only
 `Prelim Roughly traced` source annotations, though the 17 motor targets are
 `Reviewed`/`Traced`. Transmitter-based edge signs and homogeneous Shiu
-dynamics are model assumptions. Three seeds on one connectome and one
+dynamics are model assumptions. Six seeds on one connectome and one
 parameterization are not a population confidence interval. No muscle force,
 leg trajectory, learned behavior, or animal-equivalent intelligence was
 tested. The project's autonomous-behavior claim remains false.
@@ -84,6 +109,20 @@ SHA-256 `9b7d4594216c8b37b5ffc4199f2b5cd448a77d0b1daadfbb3de8b322738a2f1f`
 gzip -dc artifacts/dna02-afferent-isolated-seeds28-30.json.gz | shasum -a 256
 ```
 
+The [new-seed compressed JSON](../../artifacts/dna02-afferent-isolated-cli-seeds31-33.json.gz)
+also passed `gzip -t`. Its uncompressed SHA-256 is
+`c0bd0eadcf8173b65dbf5df1e41143592f0fd8a1c093571b1eb4f18f4b14a8bd`;
+its `software_revision` is the clean runner source lock `3ce84da...`.
+Reproduce it without overwriting the published file:
+
+```bash
+.venv/bin/python -m flybrain.dna02_afferent_probe \
+  artifacts/male-cns-v1.0-w5 \
+  --frozen-edge-artifact artifacts/dna02-direct-edge-isolated-seeds25-27.json.gz \
+  --output artifacts/reproduced-dna02-new-seeds.json \
+  --steps 2000 --seeds 31 32 33
+```
+
 The seed-28–30 artifact was run through existing sparse-overlay and Shiu
 helpers using a one-off script. The later
 `src/flybrain/dna02_afferent_probe.py` runner was **not** used to generate
@@ -92,7 +131,7 @@ seeds 28–30 and its full per-seed condition/gate data, overlay positions,
 edge lists, and graph digest matched the original JSON exactly; only the
 software-revision field differed, and the runner additionally records
 `control_ids`. This is a code-path reproducibility check, not an independent
-biological replicate. Unused-seed replication remains a separate gate.
+biological replicate. The separate unused-seed runner gate above also passed.
 Neither check expands the biological interpretation beyond the
 afferent-isolated model circuit.
 

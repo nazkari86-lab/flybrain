@@ -478,8 +478,11 @@ kept DNa02 input events and observed spike timing equal by zeroing the same
 direct thoracic motor-target edges reduced target spikes by 28.3–29.8% in
 three seeds, versus increased target activity after a 17-edge weight-matched
 control; its narrow model-circuit gate passed 3/3. The common afferent lesion
-is artificial, so this does not rescue the failed intact embodied test or
-demonstrate natural steering, muscle force, or autonomous learning.
+was then tested by a committed runner on three new seeds, passing the same
+gate 3/3 with 32.9–41.7% target reduction. The common afferent lesion is
+artificial, so these 6/6 simulator seeds do not rescue the failed intact
+embodied test or demonstrate natural steering, muscle force, or autonomous
+learning.
 
 Run the multi-condition behavior benchmark:
 
