@@ -73,8 +73,8 @@ odor/seed pairs to meet all conditions:
 1. Identical ORN event digests; DNa02 and targets recruited above no-source;
    no-source has zero DNa02 and target spikes.
 2. Identical DNa02 **and selected control-source spike-time digests** across
-   intact and all three edge-zero conditions. The intact/direct pair also
-   preserves the aggregate spike count of other `vnc_motor` cells.
+   intact and all three edge-zero conditions. The aggregate spike count of
+   other `vnc_motor` cells is also identical across all four conditions.
 3. Direct-edge zero reduces 17-target spikes by at least 5% and by at least
    **5 percentage points more than both** same-post control arms.
 4. In the intact run, the two-edge control's summed canonical
