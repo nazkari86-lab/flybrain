@@ -472,6 +472,14 @@ their pooled spikes by 33–47% across three seeds. The matched-edge control
 changed DNa02 firing, however, and a separate embodied DNa02 lesion missed
 its pre-outcome primary gate in all three seeds. Neither result establishes a
 validated muscle response, learned walking, or autonomous intelligence.
+A separately [predeclared afferent-isolated DNa02 assay](docs/data/dna02-afferent-isolated-2026-09-30.md)
+kept DNa02 input events and observed spike timing equal by zeroing the same
+1,136 incoming DNa02 edges in every condition. Selectively zeroing its 17
+direct thoracic motor-target edges reduced target spikes by 28.3–29.8% in
+three seeds, versus increased target activity after a 17-edge weight-matched
+control; its narrow model-circuit gate passed 3/3. The common afferent lesion
+is artificial, so this does not rescue the failed intact embodied test or
+demonstrate natural steering, muscle force, or autonomous learning.
 
 Run the multi-condition behavior benchmark:
 

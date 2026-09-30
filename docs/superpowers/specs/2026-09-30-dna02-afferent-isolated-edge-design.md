@@ -72,3 +72,16 @@ establish a leg-muscle route, realistic electrophysiology, learned behavior,
 or autonomous intelligence. If it fails, report which invariant failed and
 retain the negative artifact. A technical success alone is not a biological
 behavior result.
+
+## Independent runner replication, locked before new outcomes
+
+After the original seed-28–30 run, the same assay is implemented as a
+non-overwriting, checksum-locked CLI with a synthetic regression that first
+reproduces the source-feedback confound without afferent isolation. Run
+**previously unused seeds 31, 32, 33** with exactly the same 2,000 steps,
+source IDs, 1,136 common afferent edges, frozen 17+17 edge sets,
+Shiu parameters, five conditions, thresholds, and fail-closed claim boundary.
+Commit and publish the runner and tests before examining these new outcomes.
+The replication passes only if the original primary gate passes in every new
+seed. Do not tune the runner or criteria based on seeds 31–33. A replicated
+model-circuit gate still does not validate muscles or natural behavior.
