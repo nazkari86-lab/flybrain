@@ -505,6 +505,12 @@ in another animal: all 12 same-side relays and 11/11 eligible explicit-segment
 motor slots pass the five-synapse threshold in both v2 and v3 edge sets.
 This supports anatomical conservation, not living-fly physiology or a
 complete autonomous brain.
+A [reanalysis of public DNa02 electrophysiology](docs/data/dna02-real-ephys-reanalysis-2026-09-30.md)
+adds a real-animal comparison: the right-minus-left firing-rate difference
+correlates with subsequent steering in all four published dual recordings
+(r=0.36–0.64 at the authors' 150-ms lag). This replicates an observational
+signal reported by the source paper; it does not validate the simulator's
+specific relay-to-muscle pathway.
 
 Run the multi-condition behavior benchmark:
 
