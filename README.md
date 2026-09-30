@@ -499,6 +499,12 @@ same-post specificity gate nevertheless failed 0/6 because the alternative
 input exposure was too low (39–64% of the route); one relay was inactive in
 one condition. This is a narrow model-circuit effect, not demonstrated
 steering, muscle force, walking, or learned autonomy.
+An independent, predeclared [BANC v888 anatomy audit](docs/data/banc-dna02-rotator-anatomy-2026-09-30.md)
+also finds the DNa02→IN19A003/IN08A006→annotated leg-rotator-motor route
+in another animal: all 12 same-side relays and 11/11 eligible explicit-segment
+motor slots pass the five-synapse threshold in both v2 and v3 edge sets.
+This supports anatomical conservation, not living-fly physiology or a
+complete autonomous brain.
 
 Run the multi-condition behavior benchmark:
 

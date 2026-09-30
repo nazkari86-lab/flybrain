@@ -1,0 +1,3598 @@
+{
+  "behavioral_claim_allowed": false,
+  "dataverse_doi": "10.7910/DVN/7WTH1N",
+  "dataverse_version": "3.0",
+  "design_revision": "59a6b9a",
+  "edge_threshold": 5,
+  "evidence_kind": "independent_connectome_anatomy",
+  "materialization": "BANC v888",
+  "metadata_rows": 188508,
+  "physiology_claim_allowed": false,
+  "protocol": "banc-v888-dna02-rotator-muscle-anatomy-v1",
+  "selected_cells": [
+    {
+      "banc_888_id": "720575941510475536",
+      "cell_type": "DNa02",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "DNa02",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": "acetylcholine",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "ITO_midbrain_AOTU_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "descending"
+    },
+    {
+      "banc_888_id": "720575941535086424",
+      "cell_type": "DNg13",
+      "fanc_cell_type": "auto:DNg13",
+      "flow": "intrinsic",
+      "manc_cell_type": "DNg13",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": "acetylcholine",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "ITO_midbrain_GNG",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "descending"
+    },
+    {
+      "banc_888_id": "720575941445859754",
+      "cell_type": "DNg13",
+      "fanc_cell_type": "auto:DNg13",
+      "flow": "intrinsic",
+      "manc_cell_type": "DNg13",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": "acetylcholine",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "ITO_midbrain_GNG",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "descending"
+    },
+    {
+      "banc_888_id": "720575941692129243",
+      "cell_type": "sternal_anterior_rotator_miller_31",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_NTct_UTct_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941537865165",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": "auto:IN08A006",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_NTct_UTct_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941455787245",
+      "cell_type": "sternal_anterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_NTct_UTct_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941531923147",
+      "cell_type": "sternal_anterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941402088304",
+      "cell_type": "sternal_posterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941549009663",
+      "cell_type": "sternal_posterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "IN03A066",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941494740094",
+      "cell_type": "sternal_anterior_rotator_ventrolateral_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MetaNM-T3",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941645259128",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "MNml29",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941517726936",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "auto:IN13B001",
+      "neuromere": null,
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941618260607",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "auto:IN08A002",
+      "neuromere": null,
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941525586507",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "auto:IN21A001",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941556144100",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "auto:IN19A003",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941531180261",
+      "cell_type": "sternal_anterior_rotator_miller_31",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_NTct_UTct_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941438181205",
+      "cell_type": "sternal_anterior_rotator_ventrolateral_ribbon",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MetaNM-T3",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941633243067",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_ANm",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941574355016",
+      "cell_type": "sternal_anterior_rotator_ventrolateral_ribbon",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MetaNM-T3",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941636735861",
+      "cell_type": "sternal_posterior_rotator_miller_32",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T1_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941568355066",
+      "cell_type": "sternal_anterior_rotator_MesoLN_ventral_1",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_AMNP",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941625808330",
+      "cell_type": "sternal_posterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_AMNP",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941591121463",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941559978797",
+      "cell_type": "sternal_posterior_rotator_miller_32",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T1_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941595712448",
+      "cell_type": "sternal_posterior_rotator_miller_32",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941353301552",
+      "cell_type": "sternal_posterior_rotator_miller_32",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "octopamine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941562150568",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_ANm",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941480138976",
+      "cell_type": "sternal_anterior_rotator_MesoLN_ventral_2",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Ti extensor MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MesoNM-T2",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941498748489",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_ANm",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941536577880",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MesoNM-T2",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941481621501",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_ANm",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941684824815",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941538992021",
+      "cell_type": "sternal_anterior_rotator_ventrolateral_ribbon",
+      "fanc_cell_type": "auto:IN19A015",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941519664856",
+      "cell_type": "sternal_anterior_rotator_MesoLN_ventral_2",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_WTct_UTct_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941679001021",
+      "cell_type": "sternal_posterior_rotator_dorsomedial_ribbon",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "auto:IN03B042",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941558861839",
+      "cell_type": "sternal_anterior_rotator_MesoLN_ventral_2",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal anterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_anterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941589657598",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941518133464",
+      "cell_type": "sternal_posterior_rotator",
+      "fanc_cell_type": null,
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941565315638",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941491293415",
+      "cell_type": "sternal_posterior_rotator_MesoLN_dorsal_5",
+      "fanc_cell_type": "auto:IN21A001",
+      "flow": "efferent",
+      "manc_cell_type": "Sternal posterior rotator MN",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": "sternal_posterior_rotator_muscle",
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "motor"
+    },
+    {
+      "banc_888_id": "720575941456897005",
+      "cell_type": "DNa02",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "DNa02",
+      "neuromere": null,
+      "neurotransmitter_predicted": "acetylcholine",
+      "neurotransmitter_verified": "acetylcholine",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "ITO_midbrain_MB_PED_R",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "descending"
+    },
+    {
+      "banc_888_id": "720575941504382999",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": "auto:IN08A006",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_WTct",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941567768423",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": "auto:IN19A003",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T3_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941553598180",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MetaNM-T3",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941541544028",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T1_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941594854251",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": "auto:IN19A003",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "MANC_vnc_LNp_T2_L",
+      "roughly_proofread": "FALSE",
+      "side": "left",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941438399807",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": "auto:DDDMGT PMF1_1, IN08A006",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MetaNM-T3",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941496630400",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941509326430",
+      "cell_type": "IN08A006",
+      "fanc_cell_type": "auto:IN08A006",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN08A006",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": null,
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MesoNM-T2",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941561135887",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": null,
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T3",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ABDNM",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941572062729",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": "auto:IN19A003",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T2",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_MesoNM-T2",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    },
+    {
+      "banc_888_id": "720575941496314697",
+      "cell_type": "IN19A003",
+      "fanc_cell_type": "auto:IN19A003",
+      "flow": "intrinsic",
+      "manc_cell_type": "IN19A003",
+      "neuromere": "T1",
+      "neurotransmitter_predicted": "gaba",
+      "neurotransmitter_verified": "gaba",
+      "peripheral_target_type": null,
+      "proofread": "TRUE",
+      "root_region": "COURT_vnc_ProNM-T1",
+      "roughly_proofread": "FALSE",
+      "side": "right",
+      "super_class": "ventral_nerve_cord_intrinsic"
+    }
+  ],
+  "software_revision": "68720941d1e079fd22a23dd8610c0b680197f052",
+  "source": {
+    "metadata": {
+      "bytes": 57550610,
+      "md5": "6275eda42f98c49539d1ab513d979d09",
+      "path": "artifacts/banc-v888-external/banc_888_meta.feather",
+      "sha256": "819bbcff476e52702d6f8d8604ce1f12d1d7b11942281df2f49df2a73a6f15a5"
+    },
+    "v2": {
+      "bytes": 305250378,
+      "md5": "394406f8a9bdf093c895f95aff4f6c49",
+      "path": "artifacts/banc-v888-external/banc_888_edgelist_simple_v2.feather",
+      "sha256": "363fdef3813b72a5e45a42f17034cd5a544b654c838929cecf6e1ce5f60625cb"
+    },
+    "v3": {
+      "bytes": 359161658,
+      "md5": "08542b0771db7418ed474be60dc9886c",
+      "path": "artifacts/banc-v888-external/banc_888_edgelist_simple_v3.feather",
+      "sha256": "8c296e946f3c69a8c7222f30ad75fa8a98eeb189124fec6df829c9125f4be64b"
+    }
+  },
+  "versions": {
+    "v2": {
+      "dna02_to_same_side_relays": {
+        "edges": [
+          {
+            "count": 51,
+            "post": "720575941438399807",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 47,
+            "post": "720575941496314697",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 125,
+            "post": "720575941496630400",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 86,
+            "post": "720575941509326430",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 31,
+            "post": "720575941561135887",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 47,
+            "post": "720575941572062729",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 72,
+            "post": "720575941504382999",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 142,
+            "post": "720575941537865165",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 64,
+            "post": "720575941541544028",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 65,
+            "post": "720575941553598180",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 35,
+            "post": "720575941567768423",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 57,
+            "post": "720575941594854251",
+            "pre": "720575941510475536"
+          }
+        ],
+        "eligible_pairs_or_segments": 12,
+        "observed_edges": 12,
+        "passing_edges": 12,
+        "passing_post_ids": [
+          "720575941438399807",
+          "720575941496314697",
+          "720575941496630400",
+          "720575941504382999",
+          "720575941509326430",
+          "720575941537865165",
+          "720575941541544028",
+          "720575941553598180",
+          "720575941561135887",
+          "720575941567768423",
+          "720575941572062729",
+          "720575941594854251"
+        ],
+        "passing_synapses": 822
+      },
+      "dng13_to_same_side_relays": {
+        "edges": [],
+        "eligible_pairs_or_segments": 12,
+        "observed_edges": 0,
+        "passing_edges": 0,
+        "passing_post_ids": [],
+        "passing_synapses": 0
+      },
+      "relay_to_muscle_primary": {
+        "covered_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "edges": [
+          {
+            "count": 23,
+            "post": "720575941438181205",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 170,
+            "post": "720575941574355016",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 275,
+            "post": "720575941353301552",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 38,
+            "post": "720575941559978797",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 93,
+            "post": "720575941595712448",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 105,
+            "post": "720575941636735861",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 436,
+            "post": "720575941531180261",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 359,
+            "post": "720575941692129243",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 380,
+            "post": "720575941519664856",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 488,
+            "post": "720575941558861839",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 444,
+            "post": "720575941480138976",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 317,
+            "post": "720575941568355066",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 442,
+            "post": "720575941455787245",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 360,
+            "post": "720575941531923147",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 327,
+            "post": "720575941402088304",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 33,
+            "post": "720575941518133464",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 103,
+            "post": "720575941549009663",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 86,
+            "post": "720575941625808330",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 74,
+            "post": "720575941494740094",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 294,
+            "post": "720575941538992021",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 2,
+            "post": "720575941481621501",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 259,
+            "post": "720575941498748489",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 260,
+            "post": "720575941562150568",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 200,
+            "post": "720575941633243067",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 263,
+            "post": "720575941491293415",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 218,
+            "post": "720575941536577880",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 237,
+            "post": "720575941565315638",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 301,
+            "post": "720575941591121463",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 156,
+            "post": "720575941556144100",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 265,
+            "post": "720575941589657598",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 267,
+            "post": "720575941645259128",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 410,
+            "post": "720575941684824815",
+            "pre": "720575941594854251"
+          }
+        ],
+        "eligible_pairs_or_segments": 11,
+        "eligible_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "observed_edges": 32,
+        "passing_edges": 31,
+        "passing_post_ids": [
+          "720575941353301552",
+          "720575941402088304",
+          "720575941438181205",
+          "720575941455787245",
+          "720575941480138976",
+          "720575941491293415",
+          "720575941494740094",
+          "720575941498748489",
+          "720575941518133464",
+          "720575941519664856",
+          "720575941531180261",
+          "720575941531923147",
+          "720575941536577880",
+          "720575941538992021",
+          "720575941549009663",
+          "720575941556144100",
+          "720575941558861839",
+          "720575941559978797",
+          "720575941562150568",
+          "720575941565315638",
+          "720575941568355066",
+          "720575941574355016",
+          "720575941589657598",
+          "720575941591121463",
+          "720575941595712448",
+          "720575941625808330",
+          "720575941633243067",
+          "720575941636735861",
+          "720575941645259128",
+          "720575941684824815",
+          "720575941692129243"
+        ],
+        "passing_synapses": 7683
+      },
+      "relay_to_muscle_with_root_region_inference": {
+        "covered_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "edges": [
+          {
+            "count": 23,
+            "post": "720575941438181205",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 170,
+            "post": "720575941574355016",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 275,
+            "post": "720575941353301552",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 38,
+            "post": "720575941559978797",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 93,
+            "post": "720575941595712448",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 105,
+            "post": "720575941636735861",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 436,
+            "post": "720575941531180261",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 359,
+            "post": "720575941692129243",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 380,
+            "post": "720575941519664856",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 488,
+            "post": "720575941558861839",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 444,
+            "post": "720575941480138976",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 317,
+            "post": "720575941568355066",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 442,
+            "post": "720575941455787245",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 360,
+            "post": "720575941531923147",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 327,
+            "post": "720575941402088304",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 33,
+            "post": "720575941518133464",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 103,
+            "post": "720575941549009663",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 86,
+            "post": "720575941625808330",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 74,
+            "post": "720575941494740094",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 294,
+            "post": "720575941538992021",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 2,
+            "post": "720575941481621501",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 259,
+            "post": "720575941498748489",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 260,
+            "post": "720575941562150568",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 200,
+            "post": "720575941633243067",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 330,
+            "post": "720575941517726936",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 308,
+            "post": "720575941525586507",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 1,
+            "post": "720575941618260607",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 222,
+            "post": "720575941679001021",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 263,
+            "post": "720575941491293415",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 218,
+            "post": "720575941536577880",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 237,
+            "post": "720575941565315638",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 301,
+            "post": "720575941591121463",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 156,
+            "post": "720575941556144100",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 265,
+            "post": "720575941589657598",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 267,
+            "post": "720575941645259128",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 410,
+            "post": "720575941684824815",
+            "pre": "720575941594854251"
+          }
+        ],
+        "eligible_pairs_or_segments": 12,
+        "eligible_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "observed_edges": 36,
+        "passing_edges": 34,
+        "passing_post_ids": [
+          "720575941353301552",
+          "720575941402088304",
+          "720575941438181205",
+          "720575941455787245",
+          "720575941480138976",
+          "720575941491293415",
+          "720575941494740094",
+          "720575941498748489",
+          "720575941517726936",
+          "720575941518133464",
+          "720575941519664856",
+          "720575941525586507",
+          "720575941531180261",
+          "720575941531923147",
+          "720575941536577880",
+          "720575941538992021",
+          "720575941549009663",
+          "720575941556144100",
+          "720575941558861839",
+          "720575941559978797",
+          "720575941562150568",
+          "720575941565315638",
+          "720575941568355066",
+          "720575941574355016",
+          "720575941589657598",
+          "720575941591121463",
+          "720575941595712448",
+          "720575941625808330",
+          "720575941633243067",
+          "720575941636735861",
+          "720575941645259128",
+          "720575941679001021",
+          "720575941684824815",
+          "720575941692129243"
+        ],
+        "passing_synapses": 8543
+      },
+      "relevant_edges": [
+        {
+          "count": 23,
+          "post": "720575941438181205",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 38,
+          "post": "720575941438399807",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 2,
+          "post": "720575941481621501",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 2,
+          "post": "720575941498748489",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 51,
+          "post": "720575941561135887",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 170,
+          "post": "720575941574355016",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 4,
+          "post": "720575941353301552",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941496630400",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941498748489",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 3,
+          "post": "720575941531180261",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941561135887",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 4,
+          "post": "720575941562150568",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 3,
+          "post": "720575941565315638",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941591121463",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 2,
+          "post": "720575941692129243",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 10,
+          "post": "720575941438181205",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 51,
+          "post": "720575941438399807",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 21,
+          "post": "720575941480138976",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 3,
+          "post": "720575941481621501",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 47,
+          "post": "720575941496314697",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 125,
+          "post": "720575941496630400",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 86,
+          "post": "720575941509326430",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 36,
+          "post": "720575941531180261",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 7,
+          "post": "720575941536577880",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 31,
+          "post": "720575941561135887",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 48,
+          "post": "720575941568355066",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 47,
+          "post": "720575941572062729",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 37,
+          "post": "720575941574355016",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 16,
+          "post": "720575941595712448",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 35,
+          "post": "720575941692129243",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 275,
+          "post": "720575941353301552",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 58,
+          "post": "720575941496314697",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 14,
+          "post": "720575941496630400",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 3,
+          "post": "720575941531180261",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 38,
+          "post": "720575941559978797",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 93,
+          "post": "720575941595712448",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 105,
+          "post": "720575941636735861",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 5,
+          "post": "720575941692129243",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 68,
+          "post": "720575941496314697",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 53,
+          "post": "720575941496630400",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 436,
+          "post": "720575941531180261",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 1,
+          "post": "720575941595712448",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 1,
+          "post": "720575941636735861",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 359,
+          "post": "720575941692129243",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 59,
+          "post": "720575941504382999",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 380,
+          "post": "720575941519664856",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 3,
+          "post": "720575941556144100",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 488,
+          "post": "720575941558861839",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 5,
+          "post": "720575941589657598",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 28,
+          "post": "720575941594854251",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 1,
+          "post": "720575941684824815",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 444,
+          "post": "720575941480138976",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 2,
+          "post": "720575941491293415",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 62,
+          "post": "720575941509326430",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 4,
+          "post": "720575941536577880",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 2,
+          "post": "720575941565315638",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 317,
+          "post": "720575941568355066",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 31,
+          "post": "720575941572062729",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 1,
+          "post": "720575941591121463",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 18,
+          "post": "720575941455787245",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 19,
+          "post": "720575941494740094",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 72,
+          "post": "720575941504382999",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 81,
+          "post": "720575941519664856",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 19,
+          "post": "720575941531923147",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 142,
+          "post": "720575941537865165",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 29,
+          "post": "720575941538992021",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 64,
+          "post": "720575941541544028",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 14,
+          "post": "720575941549009663",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 65,
+          "post": "720575941553598180",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 19,
+          "post": "720575941556144100",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 20,
+          "post": "720575941558861839",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 35,
+          "post": "720575941567768423",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 57,
+          "post": "720575941594854251",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 6,
+          "post": "720575941618260607",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 1,
+          "post": "720575941402088304",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 4,
+          "post": "720575941455787245",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 4,
+          "post": "720575941517726936",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 2,
+          "post": "720575941525586507",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 1,
+          "post": "720575941537865165",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 3,
+          "post": "720575941645259128",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 442,
+          "post": "720575941455787245",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 360,
+          "post": "720575941531923147",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 53,
+          "post": "720575941537865165",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 81,
+          "post": "720575941541544028",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 4,
+          "post": "720575941549009663",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 327,
+          "post": "720575941402088304",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 1,
+          "post": "720575941455787245",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 33,
+          "post": "720575941518133464",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 3,
+          "post": "720575941531923147",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 15,
+          "post": "720575941537865165",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 56,
+          "post": "720575941541544028",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 103,
+          "post": "720575941549009663",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 86,
+          "post": "720575941625808330",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 74,
+          "post": "720575941494740094",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 294,
+          "post": "720575941538992021",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 59,
+          "post": "720575941553598180",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 79,
+          "post": "720575941567768423",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 1,
+          "post": "720575941618260607",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 7,
+          "post": "720575941438399807",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 2,
+          "post": "720575941481621501",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 259,
+          "post": "720575941498748489",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 49,
+          "post": "720575941561135887",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 260,
+          "post": "720575941562150568",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 200,
+          "post": "720575941633243067",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 2,
+          "post": "720575941494740094",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 330,
+          "post": "720575941517726936",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 308,
+          "post": "720575941525586507",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 3,
+          "post": "720575941538992021",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 11,
+          "post": "720575941553598180",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 60,
+          "post": "720575941567768423",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 1,
+          "post": "720575941618260607",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 222,
+          "post": "720575941679001021",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 263,
+          "post": "720575941491293415",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 5,
+          "post": "720575941509326430",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 218,
+          "post": "720575941536577880",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 237,
+          "post": "720575941565315638",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 4,
+          "post": "720575941568355066",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 55,
+          "post": "720575941572062729",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 301,
+          "post": "720575941591121463",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 9,
+          "post": "720575941504382999",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 5,
+          "post": "720575941519664856",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 156,
+          "post": "720575941556144100",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 2,
+          "post": "720575941558861839",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 265,
+          "post": "720575941589657598",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 62,
+          "post": "720575941594854251",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 267,
+          "post": "720575941645259128",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 410,
+          "post": "720575941684824815",
+          "pre": "720575941594854251"
+        }
+      ]
+    },
+    "v3": {
+      "dna02_to_same_side_relays": {
+        "edges": [
+          {
+            "count": 71,
+            "post": "720575941438399807",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 52,
+            "post": "720575941496314697",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 138,
+            "post": "720575941496630400",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 95,
+            "post": "720575941509326430",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 44,
+            "post": "720575941561135887",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 46,
+            "post": "720575941572062729",
+            "pre": "720575941456897005"
+          },
+          {
+            "count": 90,
+            "post": "720575941504382999",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 152,
+            "post": "720575941537865165",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 68,
+            "post": "720575941541544028",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 89,
+            "post": "720575941553598180",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 44,
+            "post": "720575941567768423",
+            "pre": "720575941510475536"
+          },
+          {
+            "count": 57,
+            "post": "720575941594854251",
+            "pre": "720575941510475536"
+          }
+        ],
+        "eligible_pairs_or_segments": 12,
+        "observed_edges": 12,
+        "passing_edges": 12,
+        "passing_post_ids": [
+          "720575941438399807",
+          "720575941496314697",
+          "720575941496630400",
+          "720575941504382999",
+          "720575941509326430",
+          "720575941537865165",
+          "720575941541544028",
+          "720575941553598180",
+          "720575941561135887",
+          "720575941567768423",
+          "720575941572062729",
+          "720575941594854251"
+        ],
+        "passing_synapses": 946
+      },
+      "dng13_to_same_side_relays": {
+        "edges": [],
+        "eligible_pairs_or_segments": 12,
+        "observed_edges": 0,
+        "passing_edges": 0,
+        "passing_post_ids": [],
+        "passing_synapses": 0
+      },
+      "relay_to_muscle_primary": {
+        "covered_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "edges": [
+          {
+            "count": 23,
+            "post": "720575941438181205",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 194,
+            "post": "720575941574355016",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 275,
+            "post": "720575941353301552",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 36,
+            "post": "720575941559978797",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 86,
+            "post": "720575941595712448",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 81,
+            "post": "720575941636735861",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 431,
+            "post": "720575941531180261",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 364,
+            "post": "720575941692129243",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 403,
+            "post": "720575941519664856",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 508,
+            "post": "720575941558861839",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 469,
+            "post": "720575941480138976",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 329,
+            "post": "720575941568355066",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 450,
+            "post": "720575941455787245",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 344,
+            "post": "720575941531923147",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 331,
+            "post": "720575941402088304",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 36,
+            "post": "720575941518133464",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 105,
+            "post": "720575941549009663",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 90,
+            "post": "720575941625808330",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 84,
+            "post": "720575941494740094",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 310,
+            "post": "720575941538992021",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 4,
+            "post": "720575941481621501",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 277,
+            "post": "720575941498748489",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 284,
+            "post": "720575941562150568",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 224,
+            "post": "720575941633243067",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 284,
+            "post": "720575941491293415",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 226,
+            "post": "720575941536577880",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 245,
+            "post": "720575941565315638",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 304,
+            "post": "720575941591121463",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 171,
+            "post": "720575941556144100",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 272,
+            "post": "720575941589657598",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 290,
+            "post": "720575941645259128",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 434,
+            "post": "720575941684824815",
+            "pre": "720575941594854251"
+          }
+        ],
+        "eligible_pairs_or_segments": 11,
+        "eligible_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "observed_edges": 32,
+        "passing_edges": 31,
+        "passing_post_ids": [
+          "720575941353301552",
+          "720575941402088304",
+          "720575941438181205",
+          "720575941455787245",
+          "720575941480138976",
+          "720575941491293415",
+          "720575941494740094",
+          "720575941498748489",
+          "720575941518133464",
+          "720575941519664856",
+          "720575941531180261",
+          "720575941531923147",
+          "720575941536577880",
+          "720575941538992021",
+          "720575941549009663",
+          "720575941556144100",
+          "720575941558861839",
+          "720575941559978797",
+          "720575941562150568",
+          "720575941565315638",
+          "720575941568355066",
+          "720575941574355016",
+          "720575941589657598",
+          "720575941591121463",
+          "720575941595712448",
+          "720575941625808330",
+          "720575941633243067",
+          "720575941636735861",
+          "720575941645259128",
+          "720575941684824815",
+          "720575941692129243"
+        ],
+        "passing_synapses": 7960
+      },
+      "relay_to_muscle_with_root_region_inference": {
+        "covered_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "edges": [
+          {
+            "count": 23,
+            "post": "720575941438181205",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 194,
+            "post": "720575941574355016",
+            "pre": "720575941438399807"
+          },
+          {
+            "count": 275,
+            "post": "720575941353301552",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 36,
+            "post": "720575941559978797",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 86,
+            "post": "720575941595712448",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 81,
+            "post": "720575941636735861",
+            "pre": "720575941496314697"
+          },
+          {
+            "count": 431,
+            "post": "720575941531180261",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 364,
+            "post": "720575941692129243",
+            "pre": "720575941496630400"
+          },
+          {
+            "count": 403,
+            "post": "720575941519664856",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 508,
+            "post": "720575941558861839",
+            "pre": "720575941504382999"
+          },
+          {
+            "count": 469,
+            "post": "720575941480138976",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 329,
+            "post": "720575941568355066",
+            "pre": "720575941509326430"
+          },
+          {
+            "count": 450,
+            "post": "720575941455787245",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 344,
+            "post": "720575941531923147",
+            "pre": "720575941537865165"
+          },
+          {
+            "count": 331,
+            "post": "720575941402088304",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 36,
+            "post": "720575941518133464",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 105,
+            "post": "720575941549009663",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 90,
+            "post": "720575941625808330",
+            "pre": "720575941541544028"
+          },
+          {
+            "count": 84,
+            "post": "720575941494740094",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 310,
+            "post": "720575941538992021",
+            "pre": "720575941553598180"
+          },
+          {
+            "count": 4,
+            "post": "720575941481621501",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 277,
+            "post": "720575941498748489",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 284,
+            "post": "720575941562150568",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 224,
+            "post": "720575941633243067",
+            "pre": "720575941561135887"
+          },
+          {
+            "count": 333,
+            "post": "720575941517726936",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 320,
+            "post": "720575941525586507",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 1,
+            "post": "720575941618260607",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 253,
+            "post": "720575941679001021",
+            "pre": "720575941567768423"
+          },
+          {
+            "count": 284,
+            "post": "720575941491293415",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 226,
+            "post": "720575941536577880",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 245,
+            "post": "720575941565315638",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 304,
+            "post": "720575941591121463",
+            "pre": "720575941572062729"
+          },
+          {
+            "count": 171,
+            "post": "720575941556144100",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 272,
+            "post": "720575941589657598",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 290,
+            "post": "720575941645259128",
+            "pre": "720575941594854251"
+          },
+          {
+            "count": 434,
+            "post": "720575941684824815",
+            "pre": "720575941594854251"
+          }
+        ],
+        "eligible_pairs_or_segments": 12,
+        "eligible_slots": [
+          [
+            "IN08A006",
+            "left",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "left",
+            "T3"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T1"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T2"
+          ],
+          [
+            "IN08A006",
+            "right",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "left",
+            "T3"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T1"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T2"
+          ],
+          [
+            "IN19A003",
+            "right",
+            "T3"
+          ]
+        ],
+        "observed_edges": 36,
+        "passing_edges": 34,
+        "passing_post_ids": [
+          "720575941353301552",
+          "720575941402088304",
+          "720575941438181205",
+          "720575941455787245",
+          "720575941480138976",
+          "720575941491293415",
+          "720575941494740094",
+          "720575941498748489",
+          "720575941517726936",
+          "720575941518133464",
+          "720575941519664856",
+          "720575941525586507",
+          "720575941531180261",
+          "720575941531923147",
+          "720575941536577880",
+          "720575941538992021",
+          "720575941549009663",
+          "720575941556144100",
+          "720575941558861839",
+          "720575941559978797",
+          "720575941562150568",
+          "720575941565315638",
+          "720575941568355066",
+          "720575941574355016",
+          "720575941589657598",
+          "720575941591121463",
+          "720575941595712448",
+          "720575941625808330",
+          "720575941633243067",
+          "720575941636735861",
+          "720575941645259128",
+          "720575941679001021",
+          "720575941684824815",
+          "720575941692129243"
+        ],
+        "passing_synapses": 8866
+      },
+      "relevant_edges": [
+        {
+          "count": 23,
+          "post": "720575941438181205",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 2,
+          "post": "720575941481621501",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 3,
+          "post": "720575941498748489",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 50,
+          "post": "720575941561135887",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 194,
+          "post": "720575941574355016",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 3,
+          "post": "720575941633243067",
+          "pre": "720575941438399807"
+        },
+        {
+          "count": 5,
+          "post": "720575941353301552",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941498748489",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 3,
+          "post": "720575941531180261",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941561135887",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 9,
+          "post": "720575941562150568",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 4,
+          "post": "720575941565315638",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 1,
+          "post": "720575941591121463",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 4,
+          "post": "720575941692129243",
+          "pre": "720575941445859754"
+        },
+        {
+          "count": 13,
+          "post": "720575941438181205",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 71,
+          "post": "720575941438399807",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 25,
+          "post": "720575941480138976",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 3,
+          "post": "720575941481621501",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 52,
+          "post": "720575941496314697",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 138,
+          "post": "720575941496630400",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 95,
+          "post": "720575941509326430",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 35,
+          "post": "720575941531180261",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 7,
+          "post": "720575941536577880",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 44,
+          "post": "720575941561135887",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 48,
+          "post": "720575941568355066",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 46,
+          "post": "720575941572062729",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 44,
+          "post": "720575941574355016",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 19,
+          "post": "720575941595712448",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 33,
+          "post": "720575941692129243",
+          "pre": "720575941456897005"
+        },
+        {
+          "count": 275,
+          "post": "720575941353301552",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 10,
+          "post": "720575941496630400",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 1,
+          "post": "720575941531180261",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 36,
+          "post": "720575941559978797",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 86,
+          "post": "720575941595712448",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 81,
+          "post": "720575941636735861",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 2,
+          "post": "720575941692129243",
+          "pre": "720575941496314697"
+        },
+        {
+          "count": 61,
+          "post": "720575941496314697",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 431,
+          "post": "720575941531180261",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 1,
+          "post": "720575941595712448",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 364,
+          "post": "720575941692129243",
+          "pre": "720575941496630400"
+        },
+        {
+          "count": 403,
+          "post": "720575941519664856",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 2,
+          "post": "720575941556144100",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 508,
+          "post": "720575941558861839",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 3,
+          "post": "720575941589657598",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 31,
+          "post": "720575941594854251",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 1,
+          "post": "720575941684824815",
+          "pre": "720575941504382999"
+        },
+        {
+          "count": 469,
+          "post": "720575941480138976",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 4,
+          "post": "720575941491293415",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 3,
+          "post": "720575941536577880",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 329,
+          "post": "720575941568355066",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 37,
+          "post": "720575941572062729",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 3,
+          "post": "720575941591121463",
+          "pre": "720575941509326430"
+        },
+        {
+          "count": 20,
+          "post": "720575941455787245",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 24,
+          "post": "720575941494740094",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 90,
+          "post": "720575941504382999",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 91,
+          "post": "720575941519664856",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 17,
+          "post": "720575941531923147",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 152,
+          "post": "720575941537865165",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 37,
+          "post": "720575941538992021",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 68,
+          "post": "720575941541544028",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 17,
+          "post": "720575941549009663",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 89,
+          "post": "720575941553598180",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 20,
+          "post": "720575941556144100",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 23,
+          "post": "720575941558861839",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 44,
+          "post": "720575941567768423",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 57,
+          "post": "720575941594854251",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 8,
+          "post": "720575941618260607",
+          "pre": "720575941510475536"
+        },
+        {
+          "count": 1,
+          "post": "720575941402088304",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 2,
+          "post": "720575941517726936",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 2,
+          "post": "720575941525586507",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 1,
+          "post": "720575941531923147",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 1,
+          "post": "720575941541544028",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 3,
+          "post": "720575941645259128",
+          "pre": "720575941535086424"
+        },
+        {
+          "count": 450,
+          "post": "720575941455787245",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 344,
+          "post": "720575941531923147",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 79,
+          "post": "720575941541544028",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 3,
+          "post": "720575941549009663",
+          "pre": "720575941537865165"
+        },
+        {
+          "count": 331,
+          "post": "720575941402088304",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 1,
+          "post": "720575941455787245",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 36,
+          "post": "720575941518133464",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 3,
+          "post": "720575941531923147",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 13,
+          "post": "720575941537865165",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 105,
+          "post": "720575941549009663",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 90,
+          "post": "720575941625808330",
+          "pre": "720575941541544028"
+        },
+        {
+          "count": 84,
+          "post": "720575941494740094",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 1,
+          "post": "720575941517726936",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 310,
+          "post": "720575941538992021",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 93,
+          "post": "720575941567768423",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 1,
+          "post": "720575941618260607",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 1,
+          "post": "720575941679001021",
+          "pre": "720575941553598180"
+        },
+        {
+          "count": 13,
+          "post": "720575941438399807",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 4,
+          "post": "720575941481621501",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 277,
+          "post": "720575941498748489",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 284,
+          "post": "720575941562150568",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 2,
+          "post": "720575941574355016",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 224,
+          "post": "720575941633243067",
+          "pre": "720575941561135887"
+        },
+        {
+          "count": 2,
+          "post": "720575941494740094",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 333,
+          "post": "720575941517726936",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 320,
+          "post": "720575941525586507",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 9,
+          "post": "720575941553598180",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 1,
+          "post": "720575941618260607",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 253,
+          "post": "720575941679001021",
+          "pre": "720575941567768423"
+        },
+        {
+          "count": 1,
+          "post": "720575941480138976",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 284,
+          "post": "720575941491293415",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 4,
+          "post": "720575941509326430",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 226,
+          "post": "720575941536577880",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 245,
+          "post": "720575941565315638",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 2,
+          "post": "720575941568355066",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 304,
+          "post": "720575941591121463",
+          "pre": "720575941572062729"
+        },
+        {
+          "count": 12,
+          "post": "720575941504382999",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 2,
+          "post": "720575941519664856",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 171,
+          "post": "720575941556144100",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 4,
+          "post": "720575941558861839",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 272,
+          "post": "720575941589657598",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 290,
+          "post": "720575941645259128",
+          "pre": "720575941594854251"
+        },
+        {
+          "count": 434,
+          "post": "720575941684824815",
+          "pre": "720575941594854251"
+        }
+      ]
+    }
+  }
+}
