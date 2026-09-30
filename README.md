@@ -483,6 +483,14 @@ gate 3/3 with 32.9–41.7% target reduction. The common afferent lesion is
 artificial, so these 6/6 simulator seeds do not rescue the failed intact
 embodied test or demonstrate natural steering, muscle force, or autonomous
 learning.
+The later [same-postsynaptic control](docs/data/dna02-same-post-control-2026-09-30.md)
+held DNa02 and control-source spike timing equal but failed its strict
+specificity gate in all six new ORN conditions. A separate
+[literature-anchored anatomy audit](docs/data/dna02-literature-anchored-premotor-motif-2026-09-30.md)
+finds DNa02 connections to 12 GABAergic premotor cells across both sides, whose
+retained edges reach 33 typed leg-rotator motor cells. This reproduces a
+published connectome motif in the retained snapshot; it neither reverses the
+failed control nor demonstrates a functional stride or behavioral effect.
 
 Run the multi-condition behavior benchmark:
 
